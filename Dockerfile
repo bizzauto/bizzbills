@@ -39,4 +39,4 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
 # Auto-create tables on startup, then start server
-CMD ["sh", "-c", "npx prisma db push --skip-generate --accept-data-loss 2>&1 && node server.js"]
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss 2>&1 && node server.js"]
