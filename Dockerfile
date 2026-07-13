@@ -27,7 +27,16 @@ RUN addgroup --system --gid 1001 nodejs && \
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
+
+# Copy Prisma schema, config, and node_modules needed for migration
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder /app/node_modules/.package-lock.json ./node_modules/.package-lock.json 2>/dev/null || true
+COPY --from=builder /app/node_modules/pg ./node_modules/pg
+COPY --from=builder /app/node_modules/@types ./node_modules/@types 2>/dev/null || true
 
 USER nextjs
 
@@ -36,7 +45,5 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# DATABASE_URL must be set via Coolify environment variable
-# Format: postgresql://user:password@host:5432/database?schema=public
-
-CMD ["node", "server.js"]
+# Auto-create database tables on first deploy, then start the server
+CMD ["sh", "-c", "npx prisma db push --skip-generate && node server.js"]
