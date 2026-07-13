@@ -44,4 +44,4 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
 # Auto-create database tables on first deploy, then start the server
-CMD ["sh", "-c", "npx prisma db push --skip-generate && node server.js"]
+CMD ["sh", "-c", "node /app/node_modules/prisma/build/index.js db push --skip-generate && node server.js"]
