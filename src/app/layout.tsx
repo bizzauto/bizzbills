@@ -57,12 +57,15 @@ export default function RootLayout({
 <Link href="/accounting/reports" className="transition hover:text-white">
                       Reports
                     </Link>
-                    <Link href="/gst" className="transition hover:text-white">
+                                        <Link href="/gst" className="transition hover:text-white">
                       GST
                     </Link>
+                    <Link href="/ai" className="transition hover:text-white">
+                      AI
+                    </Link>
                     <Link href="/settings" className="transition hover:text-white">
-                    AI Settings
-                  </Link>
+                      Settings
+                    </Link>
                 </div>
 
                 <div className="flex items-center gap-2">

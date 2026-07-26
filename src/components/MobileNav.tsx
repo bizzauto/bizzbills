@@ -42,8 +42,20 @@ export function MobileNav() {
               <MobileLink href="/billing" onClick={() => setOpen(false)}>
                 Billing
               </MobileLink>
+              <MobileLink href="/accounting/chart-of-accounts" onClick={() => setOpen(false)}>
+                Accounting
+              </MobileLink>
+              <MobileLink href="/accounting/reports" onClick={() => setOpen(false)}>
+                Reports
+              </MobileLink>
+              <MobileLink href="/gst" onClick={() => setOpen(false)}>
+                GST
+              </MobileLink>
+              <MobileLink href="/ai" onClick={() => setOpen(false)}>
+                AI
+              </MobileLink>
               <MobileLink href="/settings" onClick={() => setOpen(false)}>
-                AI Settings
+                Settings
               </MobileLink>
             </div>
             <hr className="my-3 border-white/10" />

@@ -138,32 +138,17 @@ export default function SettingsPage() {
 
         <div className="space-y-6">
           <div className="rounded-[1.5rem] border border-white/10 bg-slate-900/70 p-6 backdrop-blur">
-            <h2 className="text-xl font-semibold text-white">Features requiring AI</h2>
-            <div className="mt-4 space-y-3 text-sm text-slate-300">
-              <div className="rounded-xl border border-white/10 bg-slate-950/70 p-3">
-                <span className="font-medium text-white">GST / HSN suggestions</span>
-                <p className="mt-0.5 text-slate-400">Works without an API key using built-in rule matching.</p>
-              </div>
-              <div className="rounded-xl border border-white/10 bg-slate-950/70 p-3">
-                <span className="font-medium text-white">Anomaly detection</span>
-                <p className="mt-0.5 text-slate-400">Works without an API key using rule-based checks.</p>
-              </div>
-              <div className="rounded-xl border border-white/10 bg-slate-950/70 p-3">
-                <span className="font-medium text-white">OCR document scanning</span>
-                <p className="mt-0.5 text-slate-400">Uses built-in extraction without an API key.</p>
-              </div>
-              <div className="rounded-xl border border-white/10 bg-slate-950/70 p-3">
-                <span className="font-medium text-white">AI invoice drafting</span>
-                <p className="mt-0.5 text-slate-400">Requires an API key for natural language generation.</p>
-              </div>
-            </div>
+            <h2 className="text-xl font-semibold text-white">AI Features</h2>
+            <p className="mt-2 text-sm text-slate-400">
+              Visit the <a href="/ai" className="text-cyan-300 underline hover:text-cyan-200">AI dashboard</a> to use AI-powered features including invoice drafting, HSN suggestions, OCR scanning, and invoice analysis.
+            </p>
           </div>
 
           <div className="rounded-[1.5rem] border border-white/10 bg-slate-900/70 p-6 backdrop-blur">
             <h2 className="text-xl font-semibold text-white">Privacy</h2>
             <p className="mt-2 text-sm leading-6 text-slate-400">
-              API keys are stored locally. Invoice data sent to external AI providers is subject to their privacy policy.
-              For full data control, run a local model or keep AI features disabled.
+              API keys are stored encrypted in the database. Invoice data sent to external AI providers is subject to their privacy policy.
+              For full data control, keep AI features disabled.
             </p>
           </div>
         </div>

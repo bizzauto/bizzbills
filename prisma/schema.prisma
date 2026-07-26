@@ -107,6 +107,7 @@ model Organization {
   gstRates        GstRate[]
   ewayBills       EwayBill[]
   hsnSacCodes     HsnSacCode[]
+  aiConfig        AIConfig?
 }
 
 /// Branch/location within an organization
@@ -380,4 +381,17 @@ model HsnSacCode {
   @@unique([orgId, code])
   @@index([orgId])
   @@index([orgId, type])
+}
+
+/// Encrypted AI provider configurations per organization
+model AIConfig {
+  id        String   @id @default(cuid())
+  orgId     String   @unique
+  provider  String   @default("openai") // openai | anthropic
+  apiKeyEncrypted String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 }

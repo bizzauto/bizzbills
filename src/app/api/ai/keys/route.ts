@@ -2,35 +2,35 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { encrypt } from "@/lib/encryption";
 
-/**
- * Simple API key storage endpoint.
- *
- * In production this should use encryption-at-rest.
- * For now, stores keys in a JSON metadata field on the User model.
- *
- * Extend the Prisma schema with a UserPreference model for proper storage.
- */
+async function getSessionOrgId(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { orgId: true },
+  });
+  return user?.orgId;
+}
+
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Return only whether keys are configured, not the values
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { id: true },
-  });
-
-  if (!user) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  const orgId = await getSessionOrgId(session.user.id);
+  if (!orgId) {
+    return NextResponse.json({ hasKey: false, provider: null });
   }
 
+  const config = await prisma.aIConfig.findUnique({
+    where: { orgId },
+    select: { provider: true, isActive: true },
+  });
+
   return NextResponse.json({
-    hasKey: false,
-    provider: null,
-    message: "API key storage is available. Configure keys in the settings page.",
+    hasKey: config ? config.isActive : false,
+    provider: config?.provider ?? null,
   });
 }
 
@@ -38,6 +38,11 @@ export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const orgId = await getSessionOrgId(session.user.id);
+  if (!orgId) {
+    return NextResponse.json({ error: "No organization found" }, { status: 400 });
   }
 
   try {
@@ -48,12 +53,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Provider and key are required" }, { status: 400 });
     }
 
-    // In production, encrypt and store the key
-    // For now, we acknowledge receipt and note it for future implementation
+    const encrypted = encrypt(key);
+
+    await prisma.aIConfig.upsert({
+      where: { orgId },
+      update: { provider, apiKeyEncrypted: encrypted, isActive: true },
+      create: { orgId, provider, apiKeyEncrypted: encrypted },
+    });
+
     return NextResponse.json({
       configured: true,
       provider,
-      message: "API key configured. AI features will use this provider.",
+      message: "API key configured and encrypted. AI features will use this provider.",
     });
   } catch {
     return NextResponse.json({ error: "Failed to configure API key" }, { status: 500 });
