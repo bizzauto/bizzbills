@@ -57,6 +57,12 @@ export function MobileNav() {
               <MobileLink href="/payments" onClick={() => setOpen(false)}>
                 Payments
               </MobileLink>
+              <MobileLink href="/credit-notes" onClick={() => setOpen(false)}>
+                Credit Notes
+              </MobileLink>
+              <MobileLink href="/debit-notes" onClick={() => setOpen(false)}>
+                Debit Notes
+              </MobileLink>
               <MobileLink href="/currency" onClick={() => setOpen(false)}>
                 Currency
               </MobileLink>

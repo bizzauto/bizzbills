@@ -66,6 +66,12 @@ export default function RootLayout({
                     <Link href="/payments" className="transition hover:text-white">
                       Payments
                     </Link>
+                    <Link href="/credit-notes" className="transition hover:text-white">
+                      Credit Notes
+                    </Link>
+                    <Link href="/debit-notes" className="transition hover:text-white">
+                      Debit Notes
+                    </Link>
                     <Link href="/currency" className="transition hover:text-white">
                       Currency
                     </Link>

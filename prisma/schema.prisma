@@ -111,6 +111,8 @@ model Organization {
   aiConfig        AIConfig?
   exchangeRates   CurrencyExchangeRate[]
   payments        Payment[]
+  creditNotes     CreditNote[]
+  debitNotes      DebitNote[]
 }
 
 /// Branch/location within an organization
@@ -209,6 +211,8 @@ model Invoice {
   payments   Payment[]
   lines    InvoiceLine[]
   versions InvoiceVersion[]
+  creditNotes CreditNote[]
+  debitNotes  DebitNote[]
 
   @@index([userId])
   @@index([orgId])
@@ -439,4 +443,86 @@ model Payment {
 
   @@index([orgId])
   @@index([invoiceId])
+}
+
+/// Credit note — sales return / credit to customer
+model CreditNote {
+  id              String   @id @default(cuid())
+  creditNoteNumber String
+  orgId           String
+  invoiceId       String?
+  customerName    String
+  customerGstin   String   @default("")
+  currency        String   @default("INR")
+  reason          String   @default("return")
+  subtotal        Float    @default(0)
+  taxTotal        Float    @default(0)
+  total           Float    @default(0)
+  status          String   @default("draft")
+  date            DateTime
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  org     Organization? @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  invoice Invoice?      @relation(fields: [invoiceId], references: [id])
+
+  lines    CreditNoteLine[]
+
+  @@index([orgId])
+  @@index([invoiceId])
+}
+
+model CreditNoteLine {
+  id          String @id @default(cuid())
+  description String
+  quantity    Float
+  unitPrice   Float
+  taxRate     Float  @default(0)
+  hsnCode     String @default("")
+
+  creditNoteId String
+  creditNote   CreditNote @relation(fields: [creditNoteId], references: [id], onDelete: Cascade)
+
+  @@index([creditNoteId])
+}
+
+/// Debit note — purchase return / debit from supplier
+model DebitNote {
+  id            String   @id @default(cuid())
+  debitNoteNumber String
+  orgId         String
+  invoiceId     String?
+  supplierName  String
+  supplierGstin String   @default("")
+  currency      String   @default("INR")
+  reason        String   @default("return")
+  subtotal      Float    @default(0)
+  taxTotal      Float    @default(0)
+  total         Float    @default(0)
+  status        String   @default("draft")
+  date          DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  org     Organization? @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  invoice Invoice?      @relation(fields: [invoiceId], references: [id])
+
+  lines    DebitNoteLine[]
+
+  @@index([orgId])
+  @@index([invoiceId])
+}
+
+model DebitNoteLine {
+  id          String @id @default(cuid())
+  description String
+  quantity    Float
+  unitPrice   Float
+  taxRate     Float  @default(0)
+  hsnCode     String @default("")
+
+  debitNoteId String
+  debitNote   DebitNote @relation(fields: [debitNoteId], references: [id], onDelete: Cascade)
+
+  @@index([debitNoteId])
 }
