@@ -13,6 +13,14 @@ function escapeMarkdownTable(value: string | number): string {
   return String(value).replace(/\|/g, "\\|");
 }
 
+async function getSessionOrgId(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { orgId: true },
+  });
+  return user?.orgId;
+}
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -26,8 +34,16 @@ export async function GET(
   const url = new URL(request.url);
   const format = url.searchParams.get("format") || "json";
 
+  const orgId = await getSessionOrgId(session.user.id);
+  const where: { id: string; userId?: string; orgId?: string } = { id };
+  if (orgId) {
+    where.orgId = orgId;
+  } else {
+    where.userId = session.user.id;
+  }
+
   const invoice = await prisma.invoice.findFirst({
-    where: { id, userId: session.user.id },
+    where,
     include: { lines: true },
   });
 

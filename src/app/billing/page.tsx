@@ -149,6 +149,46 @@ export default function BillingPage() {
         throw new Error(data.error || "Failed to save invoice");
       }
 
+      try {
+        const invoice = await res.json();
+        await fetch("/api/accounting/journal-entries", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            entryNumber: `JE-${invoice.invoiceNumber}`,
+            date: new Date().toISOString().split("T")[0],
+            description: `Invoice ${invoice.invoiceNumber} for ${sanitizedDraft.customerName}`,
+            reference: `INV-${invoice.invoiceNumber}`,
+            lines: [
+              {
+                accountId: "revenue",
+                debit: 0,
+                credit: summary.total,
+                description: `Invoice ${invoice.invoiceNumber} - Revenue`,
+              },
+              {
+                accountId: "receivable",
+                debit: summary.total,
+                credit: 0,
+                description: `Invoice ${invoice.invoiceNumber} - Receivable`,
+              },
+              ...sanitizedDraft.lines.flatMap((line) => {
+                const taxAmount = (line.quantity * line.unitPrice * line.taxRate) / 100;
+                if (line.taxRate > 0) {
+                  return [
+                    { accountId: "expense", debit: line.quantity * line.unitPrice, credit: 0, description: `Invoice ${invoice.invoiceNumber} - ${line.description}` },
+                    { accountId: "tax-payable", debit: 0, credit: taxAmount, description: `GST ${line.taxRate}% on ${line.description}` },
+                  ];
+                }
+                return [{ accountId: "expense", debit: line.quantity * line.unitPrice, credit: 0, description: `Invoice ${invoice.invoiceNumber} - ${line.description}` }];
+              }),
+            ],
+          }),
+        });
+      } catch {
+        // Ledger posting is non-critical — invoice is still saved
+      }
+
       setSaved(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save");

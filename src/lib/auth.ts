@@ -24,6 +24,7 @@ export const authOptions: NextAuthOptions = {
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
+          include: { org: true, tenantUsers: { include: { org: true } } },
         });
 
         if (!user || !user.passwordHash) return null;
@@ -31,11 +32,25 @@ export const authOptions: NextAuthOptions = {
         const isValid = await verifyPassword(credentials.password, user.passwordHash);
         if (!isValid) return null;
 
+        let orgId: string | undefined;
+        let role: string = "VIEWER";
+
+        if (user.orgId) {
+          orgId = user.orgId;
+          role = user.role;
+        } else if (user.tenantUsers.length > 0) {
+          const primary = user.tenantUsers[0];
+          orgId = primary.orgId;
+          role = primary.role;
+        }
+
         return {
           id: user.id,
           email: user.email ?? undefined,
           name: user.name,
           image: user.image,
+          orgId,
+          role,
         };
       },
     }),
@@ -44,12 +59,16 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        token.orgId = (user as { orgId?: string }).orgId;
+        token.role = (user as { role?: string }).role;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         (session.user as { id: string }).id = token.id as string;
+        (session.user as { orgId?: string }).orgId = token.orgId as string | undefined;
+        (session.user as { role?: string }).role = token.role as string | undefined;
       }
       return session;
     },

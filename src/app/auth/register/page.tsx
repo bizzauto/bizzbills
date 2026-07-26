@@ -30,8 +30,8 @@ export default function RegisterPage() {
         throw new Error(data.error || "Registration failed");
       }
 
-      await signIn("credentials", { email, password, redirect: false });
-      router.push("/dashboard");
+await signIn("credentials", { email, password, redirect: false });
+      router.push("/onboarding");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");

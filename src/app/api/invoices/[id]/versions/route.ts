@@ -5,6 +5,24 @@ import { prisma } from "@/lib/db";
 import { Prisma } from "@prisma/client";
 import { snapshotFromInvoice, diffSnapshots } from "@/lib/diff";
 
+async function getSessionOrgId(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { orgId: true },
+  });
+  return user?.orgId;
+}
+
+function orgWhere(id: string, userId: string, orgId?: string) {
+  const where: { id: string; userId?: string; orgId?: string } = { id };
+  if (orgId) {
+    where.orgId = orgId;
+  } else {
+    where.userId = userId;
+  }
+  return where;
+}
+
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -15,9 +33,10 @@ export async function GET(
   }
 
   const { id } = await params;
+  const orgId = await getSessionOrgId(session.user.id);
 
   const invoice = await prisma.invoice.findFirst({
-    where: { id, userId: session.user.id },
+    where: orgWhere(id, session.user.id, orgId ?? undefined),
   });
 
   if (!invoice) {

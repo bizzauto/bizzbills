@@ -5,6 +5,7 @@ import "./globals.css";
 import { AuthProvider } from "@/components/AuthProvider";
 import { AuthNav } from "@/components/AuthNav";
 import { MobileNav } from "@/components/MobileNav";
+import { OrgSwitcher } from "@/components/OrgSwitcher";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -40,6 +41,8 @@ export default function RootLayout({
                   BizzBills
                 </Link>
 
+                <OrgSwitcher />
+
                 {/* Desktop nav */}
                 <div className="hidden items-center gap-6 text-sm text-slate-300 md:flex">
                   <Link href="/dashboard" className="transition hover:text-white">
@@ -47,6 +50,12 @@ export default function RootLayout({
                   </Link>
                   <Link href="/billing" className="transition hover:text-white">
                     Billing
+                  </Link>
+                  <Link href="/accounting/chart-of-accounts" className="transition hover:text-white">
+                    Accounting
+                  </Link>
+                  <Link href="/accounting/reports" className="transition hover:text-white">
+                    Reports
                   </Link>
                   <Link href="/settings" className="transition hover:text-white">
                     AI Settings

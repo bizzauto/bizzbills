@@ -6,7 +6,23 @@ datasource db {
   provider = "sqlite"
 }
 
-/// NextAuth models
+enum Role {
+  SUPER_ADMIN
+  ORG_ADMIN
+  ACCOUNTANT
+  SALES_MANAGER
+  VIEWER
+}
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  INCOME
+  EXPENSE
+}
+
+/// NextAuth models — extended with orgId for multi-tenancy
 model Account {
   id                String  @id @default(cuid())
   userId            String
@@ -44,9 +60,14 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts Account[]
-  sessions Session[]
-  invoices Invoice[]
+  orgId String?
+  role  Role          @default(VIEWER)
+  org   Organization? @relation(fields: [orgId], references: [id])
+
+  accounts    Account[]
+  sessions    Session[]
+  invoices    Invoice[]
+  tenantUsers TenantUser[]
 }
 
 model VerificationToken {
@@ -57,34 +78,140 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-/// Application models
+/// Multi-tenant organization model
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  logo      String?
+  currency  String   @default("INR")
+  gstin     String?
+  address   String?
+  phone     String?
+  email     String?
+  website   String?
+  plan      String   @default("free")
+  settings  String   @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  branches        Branch[]
+  tenants         TenantUser[]
+  invoices        Invoice[]
+  subscriptions   Subscription[]
+  plans           Plan[]
+  users           User[]
+  chartOfAccounts ChartOfAccount[]
+  journalEntries  JournalEntry[]
+  ledgers         Ledger[]
+}
+
+/// Branch/location within an organization
+model Branch {
+  id        String   @id @default(cuid())
+  name      String
+  address   String?
+  city      String?
+  state     String?
+  pincode   String?
+  gstin     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  invoices Invoice[]
+
+  @@index([orgId])
+}
+
+/// TenantUser links a User to an Organization with a specific role
+model TenantUser {
+  id       String   @id @default(cuid())
+  userId   String
+  orgId    String
+  role     Role     @default(VIEWER)
+  joinedAt DateTime @default(now())
+
+  user User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  org  Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, orgId])
+  @@index([orgId])
+}
+
+/// Subscription plan definition
+model Plan {
+  id           String   @id @default(cuid())
+  orgId        String
+  name         String
+  price        Float    @default(0)
+  billingCycle String   @default("monthly") // monthly, annual
+  features     String   @default("[]") // JSON array of feature names
+  maxUsers     Int      @default(1)
+  maxOrgs      Int      @default(1)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+}
+
+/// Active subscription for an organization
+model Subscription {
+  id                 String    @id @default(cuid())
+  orgId              String
+  planId             String
+  status             String    @default("active") // active, past_due, cancelled, trial
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  startedAt          DateTime  @default(now())
+  endedAt            DateTime?
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+}
+
+/// Application models — org-scoped
 model Invoice {
-  id            String          @id @default(cuid())
+  id            String   @id @default(cuid())
   invoiceNumber String
   customerName  String
-  customerGstin String          @default("")
-  currency      String          @default("INR")
+  customerGstin String   @default("")
+  currency      String   @default("INR")
   dueDate       String
-  status        String          @default("draft")
-  subtotal      Float           @default(0)
-  taxTotal      Float           @default(0)
-  total         Float           @default(0)
-  version       Int             @default(1)
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  status        String   @default("draft")
+  subtotal      Float    @default(0)
+  taxTotal      Float    @default(0)
+  total         Float    @default(0)
+  version       Int      @default(1)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   userId   String
-  user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orgId    String?
+  org      Organization?    @relation(fields: [orgId], references: [id])
+  branchId String?
+  branch   Branch?          @relation(fields: [branchId], references: [id])
   lines    InvoiceLine[]
   versions InvoiceVersion[]
+
+  @@index([userId])
+  @@index([orgId])
+  @@index([branchId])
 }
 
 model InvoiceLine {
-  id          String  @id @default(cuid())
+  id          String @id @default(cuid())
   description String
   quantity    Float
   unitPrice   Float
-  taxRate     Float   @default(0)
+  taxRate     Float  @default(0)
 
   invoiceId String
   invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
@@ -102,4 +229,88 @@ model InvoiceVersion {
 
   @@unique([invoiceId, version])
   @@index([invoiceId])
+}
+
+/// Double-entry bookkeeping models
+
+/// Chart of accounts — the complete list of accounts for an organization
+model ChartOfAccount {
+  id        String      @id @default(cuid())
+  orgId     String
+  code      String
+  name      String
+  type      AccountType
+  parentId  String?
+  isActive  Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  org            Organization       @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  parent         ChartOfAccount?    @relation("AccountHierarchy", fields: [parentId], references: [id])
+  children       ChartOfAccount[]   @relation("AccountHierarchy")
+  journalEntries JournalEntryLine[]
+  ledgerEntries  Ledger[]
+
+  @@unique([orgId, code])
+  @@index([orgId])
+  @@index([parentId])
+}
+
+/// A journal entry — the core double-entry transaction record
+model JournalEntry {
+  id          String   @id @default(cuid())
+  orgId       String
+  entryNumber String
+  date        DateTime
+  description String
+  reference   String?
+  isPosted    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  org     Organization       @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  lines   JournalEntryLine[]
+  ledgers Ledger[]
+
+  @@index([orgId])
+  @@index([orgId, date])
+}
+
+/// A single line within a journal entry (debit or credit)
+model JournalEntryLine {
+  id             String   @id @default(cuid())
+  journalEntryId String
+  accountId      String
+  debit          Float    @default(0)
+  credit         Float    @default(0)
+  description    String   @default("")
+  createdAt      DateTime @default(now())
+
+  journalEntry JournalEntry   @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  account      ChartOfAccount @relation(fields: [accountId], references: [id])
+
+  @@index([journalEntryId])
+  @@index([accountId])
+}
+
+/// Running balance ledger for each account
+model Ledger {
+  id             String   @id @default(cuid())
+  orgId          String
+  accountId      String
+  entryDate      DateTime
+  JournalEntryId String?
+  description    String   @default("")
+  debit          Float    @default(0)
+  credit         Float    @default(0)
+  balance        Float    @default(0)
+  createdAt      DateTime @default(now())
+
+  org          Organization   @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  account      ChartOfAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  journalEntry JournalEntry?  @relation(fields: [JournalEntryId], references: [id])
+
+  @@index([orgId])
+  @@index([accountId])
+  @@index([orgId, accountId, entryDate])
 }

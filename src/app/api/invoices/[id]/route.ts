@@ -6,9 +6,26 @@ import { Prisma } from "@prisma/client";
 import { calculateInvoiceSummary, sanitizeInvoiceDraft, type InvoiceDraft } from "@/lib/invoicing";
 import { snapshotFromInvoice, diffSnapshots } from "@/lib/diff";
 
+async function getSessionOrgId(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { orgId: true },
+  });
+  return user?.orgId;
+}
+
 async function getAuthInvoice(id: string, userId: string) {
+  const orgId = await getSessionOrgId(userId);
+
+  const where: { id: string; userId?: string; orgId?: string } = { id };
+  if (orgId) {
+    where.orgId = orgId;
+  } else {
+    where.userId = userId;
+  }
+
   return prisma.invoice.findFirst({
-    where: { id, userId },
+    where,
     include: { lines: true },
   });
 }

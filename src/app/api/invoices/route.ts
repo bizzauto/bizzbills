@@ -2,8 +2,31 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { type AccountType } from "@prisma/client";
 import { calculateInvoiceSummary, sanitizeInvoiceDraft, type InvoiceDraft } from "@/lib/invoicing";
 import { snapshotFromInvoice } from "@/lib/diff";
+
+async function getSessionOrg() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return null;
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { orgId: true },
+  });
+  return { orgId: user?.orgId, userId: session.user.id };
+}
+
+async function findAccount(orgId: string, types: AccountType[], preferredCode?: string) {
+  const accounts = await prisma.chartOfAccount.findMany({
+    where: { orgId, type: { in: types }, isActive: true },
+    orderBy: { code: "asc" },
+  });
+  if (preferredCode) {
+    const found = accounts.find((a) => a.code === preferredCode);
+    if (found) return found;
+  }
+  return accounts[0] ?? null;
+}
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -11,8 +34,17 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const { orgId } = await getSessionOrg() ?? {};
+
+  const whereClause: { userId?: string; orgId?: string } = {
+    userId: session.user.id,
+  };
+  if (orgId) {
+    whereClause.orgId = orgId;
+  }
+
   const invoices = await prisma.invoice.findMany({
-    where: { userId: session.user.id },
+    where: whereClause,
     include: { lines: true },
     orderBy: { createdAt: "desc" },
   });
@@ -31,6 +63,8 @@ export async function POST(request: Request) {
     const clean = sanitizeInvoiceDraft(body);
     const summary = calculateInvoiceSummary(clean);
 
+    const { orgId } = (await getSessionOrg()) ?? {};
+
     const invoice = await prisma.invoice.create({
       data: {
         invoiceNumber: clean.invoiceNumber,
@@ -43,6 +77,7 @@ export async function POST(request: Request) {
         total: summary.total,
         version: 1,
         userId: session.user.id,
+        orgId: orgId ?? undefined,
         lines: {
           create: clean.lines.map((line) => ({
             description: line.description,
@@ -55,7 +90,6 @@ export async function POST(request: Request) {
       include: { lines: true },
     });
 
-    // Create version 1 snapshot
     const snapshot = snapshotFromInvoice(invoice);
     await prisma.invoiceVersion.create({
       data: {
@@ -66,11 +100,65 @@ export async function POST(request: Request) {
       },
     });
 
+    if (orgId) {
+      await autoPostJournalEntries(orgId, invoice, clean, summary);
+    }
+
     return NextResponse.json(invoice, { status: 201 });
   } catch {
     return NextResponse.json(
       { error: "Failed to create invoice" },
       { status: 500 },
     );
+  }
+}
+
+async function autoPostJournalEntries(
+  orgId: string,
+  invoice: { invoiceNumber: string; customerName: string; total: number; subtotal: number; taxTotal: number; id: string },
+  clean: { lines: { description: string; quantity: number; unitPrice: number; taxRate: number }[] },
+  summary: { subtotal: number; taxTotal: number; total: number },
+) {
+  const revenueAccount = await findAccount(orgId, ["INCOME"], "REV");
+  const receivableAccount = await findAccount(orgId, ["ASSET"], "AR");
+  const expenseAccount = await findAccount(orgId, ["EXPENSE"], "EXP");
+  const taxAccount = await findAccount(orgId, ["LIABILITY"], "GST-PAY");
+
+  const lines: { accountId: string; debit: number; credit: number; description: string }[] = [];
+
+  if (revenueAccount) {
+    lines.push({ accountId: revenueAccount.id, debit: 0, credit: summary.total, description: `Invoice ${invoice.invoiceNumber} - Revenue` });
+  }
+
+  if (receivableAccount) {
+    lines.push({ accountId: receivableAccount.id, debit: summary.total, credit: 0, description: `Invoice ${invoice.invoiceNumber} - Receivable` });
+  }
+
+  for (const line of clean.lines) {
+    const lineTotal = line.quantity * line.unitPrice;
+    const lineTax = (lineTotal * line.taxRate) / 100;
+    if (expenseAccount) {
+      lines.push({ accountId: expenseAccount.id, debit: lineTotal, credit: 0, description: `Invoice ${invoice.invoiceNumber} - ${line.description}` });
+    }
+    if (lineTax > 0 && taxAccount) {
+      lines.push({ accountId: taxAccount.id, debit: 0, credit: lineTax, description: `GST ${line.taxRate}% on Invoice ${invoice.invoiceNumber}` });
+    }
+  }
+
+  const totalDebit = lines.reduce((s, l) => s + l.debit, 0);
+  const totalCredit = lines.reduce((s, l) => s + l.credit, 0);
+
+  if (Math.abs(totalDebit - totalCredit) < 0.01 && lines.length > 0) {
+    await prisma.journalEntry.create({
+      data: {
+        orgId,
+        entryNumber: `JE-${invoice.invoiceNumber}`,
+        date: new Date(),
+        description: `Auto-posted for Invoice ${invoice.invoiceNumber} to ${invoice.customerName}`,
+        reference: `INV-${invoice.invoiceNumber}`,
+        isPosted: true,
+        lines: { create: lines },
+      },
+    });
   }
 }

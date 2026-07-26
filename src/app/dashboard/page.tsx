@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useOrg } from "@/components/OrgProvider";
 
 type InvoiceSummary = {
   id: string;
@@ -17,6 +18,7 @@ type InvoiceSummary = {
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { currentOrgName } = useOrg();
   const [invoices, setInvoices] = useState<InvoiceSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
