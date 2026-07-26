@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { formatAmount } from "@/lib/currency";
 
 interface ItcData {
   period: string;
@@ -46,7 +47,7 @@ export default function ItcPage() {
       <section className="grid gap-6 md:grid-cols-2">
         <div className="rounded-[1.5rem] border border-white/10 bg-slate-900/70 p-6 backdrop-blur">
           <p className="text-sm text-slate-400">Total ITC Claimable</p>
-          <p className="mt-1 text-3xl font-semibold text-cyan-300">₹{data.totalItc.toLocaleString()}</p>
+          <p className="mt-1 text-3xl font-semibold text-cyan-300">{formatAmount(data.totalItc, "INR")}</p>
         </div>
         <div className="rounded-[1.5rem] border border-white/10 bg-slate-900/70 p-6 backdrop-blur">
           <p className="text-sm text-slate-400">Invoices with ITC</p>
@@ -71,8 +72,8 @@ export default function ItcPage() {
                 <tr key={rate} className="border-t border-white/10 bg-slate-900/50">
                   <td className="p-3 font-semibold text-white">{rate}</td>
                   <td className="p-3 text-slate-300">{info.count}</td>
-                  <td className="p-3 text-white">₹{info.taxableAmount.toLocaleString()}</td>
-                  <td className="p-3 text-emerald-300">₹{info.gstAmount.toLocaleString()}</td>
+                  <td className="p-3 text-white">{formatAmount(info.taxableAmount, "INR")}</td>
+                  <td className="p-3 text-emerald-300">{formatAmount(info.gstAmount, "INR")}</td>
                 </tr>
               ))}
               {Object.keys(data.byRate).length === 0 && (

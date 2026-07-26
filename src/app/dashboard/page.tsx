@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useOrg } from "@/components/OrgProvider";
+import { formatAmount } from "@/lib/currency";
 
 type InvoiceSummary = {
   id: string;
@@ -18,7 +19,7 @@ type InvoiceSummary = {
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const { currentOrgName } = useOrg();
+  const { currentOrgName, currentOrgCurrency } = useOrg();
   const [invoices, setInvoices] = useState<InvoiceSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -72,7 +73,7 @@ export default function DashboardPage() {
           <p className="text-sm text-slate-400">Total revenue</p>
           <div className="mt-2 flex items-end justify-between">
             <p className="text-2xl font-semibold text-white">
-              ₹{totals.revenue.toLocaleString()}
+              {formatAmount(totals.revenue, currentOrgCurrency)}
             </p>
           </div>
         </div>
@@ -80,7 +81,7 @@ export default function DashboardPage() {
           <p className="text-sm text-slate-400">Collections</p>
           <div className="mt-2 flex items-end justify-between">
             <p className="text-2xl font-semibold text-white">
-              ₹{totals.sent.toLocaleString()}
+              {formatAmount(totals.sent, currentOrgCurrency)}
             </p>
           </div>
         </div>
@@ -88,7 +89,7 @@ export default function DashboardPage() {
           <p className="text-sm text-slate-400">Overdue</p>
           <div className="mt-2 flex items-end justify-between">
             <p className="text-2xl font-semibold text-amber-300">
-              ₹{totals.overdue.toLocaleString()}
+              {formatAmount(totals.overdue, currentOrgCurrency)}
             </p>
           </div>
         </div>
@@ -123,7 +124,7 @@ export default function DashboardPage() {
                     <p className="text-xs text-slate-400">#{inv.invoiceNumber}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-semibold text-white">₹{inv.total.toLocaleString()}</p>
+                    <p className="text-sm font-semibold text-white">{formatAmount(inv.total, currentOrgCurrency)}</p>
                     <span className={`text-xs ${inv.status === "paid" ? "text-emerald-300" : inv.status === "overdue" ? "text-red-300" : "text-slate-400"}`}>
                       {inv.status}
                     </span>
@@ -144,7 +145,7 @@ export default function DashboardPage() {
             </div>
             <div className="rounded-xl border border-white/10 bg-slate-950/70 p-3">
               {totals.overdue > 0
-                ? `You have ₹${totals.overdue.toLocaleString()} in overdue invoices needing attention.`
+                ? `You have ${formatAmount(totals.overdue, currentOrgCurrency)} in overdue invoices needing attention.`
                 : "No overdue invoices — collections are on track."}
             </div>
             <div className="rounded-xl border border-white/10 bg-slate-950/70 p-3">

@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { formatAmount } from "@/lib/currency";
+import { useOrg } from "@/components/OrgProvider";
 
 type Account = {
   id: string;
@@ -112,6 +114,7 @@ export default function NewJournalEntryPage() {
     }
   }
 
+  const { currentOrgCurrency } = useOrg();
   const { totalDebit, totalCredit, isBalanced } = calculateTotals();
 
   return (
@@ -199,8 +202,8 @@ export default function NewJournalEntryPage() {
 
           {lines.length > 0 && (
             <div className="mt-4 flex gap-6 text-sm">
-              <span className="text-slate-400">Total Debit: <span className="font-semibold text-white">₹{totalDebit.toLocaleString()}</span></span>
-              <span className="text-slate-400">Total Credit: <span className="font-semibold text-white">₹{totalCredit.toLocaleString()}</span></span>
+              <span className="text-slate-400">Total Debit: <span className="font-semibold text-white">{formatAmount(totalDebit, currentOrgCurrency)}</span></span>
+              <span className="text-slate-400">Total Credit: <span className="font-semibold text-white">{formatAmount(totalCredit, currentOrgCurrency)}</span></span>
               <span className={`font-medium ${isBalanced ? "text-emerald-400" : "text-red-400"}`}>
                 {isBalanced ? "✓ Balanced" : "✗ Unbalanced"}
               </span>

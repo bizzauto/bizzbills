@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { formatAmount } from "@/lib/currency";
 
 interface Gstr1Data {
   period: { from: string; to: string };
@@ -51,11 +52,11 @@ export default function Gstr1Page() {
         </div>
         <div className="rounded-[1.5rem] border border-white/10 bg-slate-900/70 p-6 backdrop-blur">
           <p className="text-sm text-slate-400">Taxable Amount</p>
-          <p className="mt-1 text-3xl font-semibold text-white">₹{data.totalTaxableAmount.toLocaleString()}</p>
+          <p className="mt-1 text-3xl font-semibold text-white">{formatAmount(data.totalTaxableAmount, "INR")}</p>
         </div>
         <div className="rounded-[1.5rem] border border-white/10 bg-slate-900/70 p-6 backdrop-blur">
           <p className="text-sm text-slate-400">Total GST</p>
-          <p className="mt-1 text-3xl font-semibold text-white">₹{data.totalGstAmount.toLocaleString()}</p>
+          <p className="mt-1 text-3xl font-semibold text-white">{formatAmount(data.totalGstAmount, "INR")}</p>
         </div>
       </section>
 
@@ -76,8 +77,8 @@ export default function Gstr1Page() {
                 <tr key={rate} className="border-t border-white/10 bg-slate-900/50">
                   <td className="p-3 font-semibold text-white">{rate}</td>
                   <td className="p-3 text-slate-300">{info.count}</td>
-                  <td className="p-3 text-white">₹{info.taxableAmount.toLocaleString()}</td>
-                  <td className="p-3 text-white">₹{info.gstAmount.toLocaleString()}</td>
+                  <td className="p-3 text-white">{formatAmount(info.taxableAmount, "INR")}</td>
+                  <td className="p-3 text-white">{formatAmount(info.gstAmount, "INR")}</td>
                 </tr>
               ))}
               {Object.keys(data.byRate).length === 0 && (
@@ -88,8 +89,8 @@ export default function Gstr1Page() {
               <tr className="bg-slate-800/50">
                 <td className="p-3 font-semibold text-white">Total</td>
                 <td className="p-3 font-semibold text-slate-300">—</td>
-                <td className="p-3 font-semibold text-white">₹{data.totalTaxableAmount.toLocaleString()}</td>
-                <td className="p-3 font-semibold text-white">₹{data.totalGstAmount.toLocaleString()}</td>
+                <td className="p-3 font-semibold text-white">{formatAmount(data.totalTaxableAmount, "INR")}</td>
+                <td className="p-3 font-semibold text-white">{formatAmount(data.totalGstAmount, "INR")}</td>
               </tr>
             </tfoot>
           </table>

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { formatAmount } from "@/lib/currency";
+import { useOrg } from "@/components/OrgProvider";
 
 type LedgerEntry = {
   id: string;
@@ -14,6 +16,7 @@ type LedgerEntry = {
 };
 
 export default function LedgerPage() {
+  const { currentOrgCurrency } = useOrg();
   const [accountId, setAccountId] = useState("");
   const [fromDate, setFromDate] = useState("2024-01-01");
   const [toDate, setToDate] = useState(new Date().toISOString().split("T")[0]);
@@ -122,9 +125,9 @@ export default function LedgerPage() {
                     <td className="px-4 py-3 text-slate-300">{new Date(entry.entryDate).toLocaleDateString()}</td>
                     <td className="px-4 py-3 font-mono text-slate-300">{entry.journalEntry?.entryNumber ?? "—"}</td>
                     <td className="px-4 py-3 text-slate-300">{entry.description}</td>
-                    <td className="px-4 py-3 text-right text-emerald-300 font-medium">{entry.debit > 0 ? `₹${entry.debit.toLocaleString()}` : "—"}</td>
-                    <td className="px-4 py-3 text-right text-red-300 font-medium">{entry.credit > 0 ? `₹${entry.credit.toLocaleString()}` : "—"}</td>
-                    <td className="px-4 py-3 text-right text-white font-medium">₹{entry.balance.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-right text-emerald-300 font-medium">{entry.debit > 0 ? formatAmount(entry.debit, currentOrgCurrency) : "—"}</td>
+                    <td className="px-4 py-3 text-right text-red-300 font-medium">{entry.credit > 0 ? formatAmount(entry.credit, currentOrgCurrency) : "—"}</td>
+                    <td className="px-4 py-3 text-right text-white font-medium">{formatAmount(entry.balance, currentOrgCurrency)}</td>
                   </tr>
                 ))}
               </tbody>

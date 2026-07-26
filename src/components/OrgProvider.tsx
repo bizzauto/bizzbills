@@ -1,11 +1,12 @@
 "use client";
 
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
 import { useSession } from "next-auth/react";
 
 type OrgContextType = {
   currentOrgId: string | undefined;
   currentOrgName: string | undefined;
+  currentOrgCurrency: string;
   currentRole: string | undefined;
   setCurrentOrg: (orgId: string, orgName: string, role: string) => void;
   organizations: { id: string; name: string; slug: string }[];
@@ -16,6 +17,7 @@ type OrgContextType = {
 const OrgContext = createContext<OrgContextType>({
   currentOrgId: undefined,
   currentOrgName: undefined,
+  currentOrgCurrency: "INR",
   currentRole: undefined,
   setCurrentOrg: () => {},
   organizations: [],
@@ -29,12 +31,24 @@ export function OrgProvider({ children }: { children: ReactNode }) {
     (session?.user as { orgId?: string })?.orgId,
   );
   const [currentOrgName, setCurrentOrgName] = useState<string | undefined>(undefined);
+  const [currentOrgCurrency, setCurrentOrgCurrency] = useState("INR");
   const [currentRole, setCurrentRole] = useState<string | undefined>(
     (session?.user as { role?: string })?.role,
   );
   const [organizations, setOrganizations] = useState<
     { id: string; name: string; slug: string }[]
   >([]);
+
+  useEffect(() => {
+    if (currentOrgId) {
+      fetch("/api/organization/settings")
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.currency) setCurrentOrgCurrency(data.currency);
+        })
+        .catch(() => {});
+    }
+  }, [currentOrgId]);
 
   function setCurrentOrg(orgId: string, orgName: string, role: string) {
     setCurrentOrgId(orgId);
@@ -55,6 +69,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
       value={{
         currentOrgId,
         currentOrgName,
+        currentOrgCurrency,
         currentRole,
         setCurrentOrg,
         organizations,

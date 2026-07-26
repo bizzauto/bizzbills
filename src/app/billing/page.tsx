@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect, useCallback, useRef } from "react";
+import { formatAmount } from "@/lib/currency";
 import {
   calculateInvoiceSummary,
   sanitizeInvoiceDraft,
@@ -426,7 +427,7 @@ export default function BillingPage() {
                           />
                         </td>
                         <td className="p-3 font-medium text-white">
-                          ₹{lineTotal.toLocaleString()}
+                          {formatAmount(lineTotal, draft.currency)}
                         </td>
                         <td className="p-2">
                           <button
@@ -455,19 +456,19 @@ export default function BillingPage() {
               <div className="flex items-center justify-between text-slate-300">
                 <span>Subtotal</span>
                 <span className="font-semibold text-white">
-                  ₹{summary.subtotal.toLocaleString()}
+                  {formatAmount(summary.subtotal, draft.currency)}
                 </span>
               </div>
               <div className="flex items-center justify-between text-slate-300">
                 <span>Tax</span>
                 <span className="font-semibold text-white">
-                  ₹{summary.taxTotal.toLocaleString()}
+                  {formatAmount(summary.taxTotal, draft.currency)}
                 </span>
               </div>
               <div className="flex items-center justify-between border-t border-white/10 pt-2 text-white">
                 <span>Total</span>
                 <span className="font-semibold">
-                  ₹{summary.total.toLocaleString()}
+                  {formatAmount(summary.total, draft.currency)}
                 </span>
               </div>
             </div>

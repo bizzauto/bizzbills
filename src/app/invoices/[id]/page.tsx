@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { DiffViewer } from "@/components/invoice/DiffViewer";
 import { VersionTimeline } from "@/components/invoice/VersionTimeline";
+import { formatAmount } from "@/lib/currency";
 import type { DiffChange } from "@/lib/diff";
 
 type LineItem = {
@@ -231,9 +232,9 @@ export default function InvoiceDetailPage() {
                         <td className="p-3 text-white">{line.description}</td>
                         <td className="p-3 text-slate-300 font-mono text-xs">{line.hsnCode || "—"}</td>
                         <td className="p-3 text-slate-300">{line.quantity}</td>
-                        <td className="p-3 text-slate-300">₹{line.unitPrice.toLocaleString()}</td>
+                        <td className="p-3 text-slate-300">{formatAmount(line.unitPrice, invoice.currency)}</td>
                         <td className="p-3 text-slate-300">{line.taxRate}%</td>
-                        <td className="p-3 font-medium text-white">₹{lineTotal.toLocaleString()}</td>
+                        <td className="p-3 font-medium text-white">{formatAmount(lineTotal, invoice.currency)}</td>
                       </tr>
                     );
                   })}
@@ -243,13 +244,13 @@ export default function InvoiceDetailPage() {
 
           <div className="mt-4 space-y-1 rounded-xl bg-slate-900/80 p-3 text-right text-sm">
             <div className="text-slate-300">
-              Subtotal: <span className="font-semibold text-white">₹{invoice.subtotal.toLocaleString()}</span>
+              Subtotal: <span className="font-semibold text-white">{formatAmount(invoice.subtotal, invoice.currency)}</span>
             </div>
             <div className="text-slate-300">
-              Tax: <span className="font-semibold text-white">₹{invoice.taxTotal.toLocaleString()}</span>
+              Tax: <span className="font-semibold text-white">{formatAmount(invoice.taxTotal, invoice.currency)}</span>
             </div>
             <div className="border-t border-white/10 pt-1 text-white">
-              Total: <span className="font-semibold">₹{invoice.total.toLocaleString()}</span>
+              Total: <span className="font-semibold">{formatAmount(invoice.total, invoice.currency)}</span>
             </div>
           </div>
         </div>

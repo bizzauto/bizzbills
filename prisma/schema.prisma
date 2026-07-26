@@ -108,6 +108,7 @@ model Organization {
   ewayBills       EwayBill[]
   hsnSacCodes     HsnSacCode[]
   aiConfig        AIConfig?
+  exchangeRates   CurrencyExchangeRate[]
 }
 
 /// Branch/location within an organization
@@ -394,4 +395,22 @@ model AIConfig {
   updatedAt DateTime @updatedAt
 
   org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+}
+
+/// Exchange rates for multi-currency support
+model CurrencyExchangeRate {
+  id        String   @id @default(cuid())
+  orgId     String
+  fromCurrency String @default("INR")
+  toCurrency   String
+  rate      Float
+  date      DateTime @default(now())
+  source    String   @default("manual") // manual | api
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, fromCurrency, toCurrency])
+  @@index([orgId])
 }

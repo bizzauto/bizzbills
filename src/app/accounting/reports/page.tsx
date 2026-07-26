@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { formatAmount } from "@/lib/currency";
+import { useOrg } from "@/components/OrgProvider";
 
 type TrialBalanceEntry = {
   id: string;
@@ -28,6 +30,7 @@ type BalanceSheetEntry = {
 };
 
 export default function ReportsPage() {
+  const { currentOrgCurrency } = useOrg();
   const [reportType, setReportType] = useState("trial-balance");
   const [fromDate, setFromDate] = useState("2024-01-01");
   const [toDate, setToDate] = useState(new Date().toISOString().split("T")[0]);
@@ -161,17 +164,17 @@ export default function ReportsPage() {
                     <td className="px-4 py-3">
                       <span className="rounded-full bg-slate-500/15 px-2.5 py-1 text-xs font-medium text-slate-300">{row.type}</span>
                     </td>
-                    <td className="px-4 py-3 text-right text-emerald-300">{row.debitTotal > 0 ? `₹${row.debitTotal.toLocaleString()}` : "—"}</td>
-                    <td className="px-4 py-3 text-right text-red-300">{row.creditTotal > 0 ? `₹${row.creditTotal.toLocaleString()}` : "—"}</td>
-                    <td className="px-4 py-3 text-right text-white font-medium">₹{row.balance.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-right text-emerald-300">{row.debitTotal > 0 ? formatAmount(row.debitTotal, currentOrgCurrency) : "—"}</td>
+                    <td className="px-4 py-3 text-right text-red-300">{row.creditTotal > 0 ? formatAmount(row.creditTotal, currentOrgCurrency) : "—"}</td>
+                    <td className="px-4 py-3 text-right text-white font-medium">{formatAmount(row.balance, currentOrgCurrency)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
           <div className="p-4 border-t border-white/10 text-sm text-slate-400">
-            Total Debits: <span className="text-white font-medium">₹{data.reduce((s: number, r: TrialBalanceEntry) => s + r.debitTotal, 0).toLocaleString()}</span> |
-            Total Credits: <span className="text-white font-medium">₹{data.reduce((s: number, r: TrialBalanceEntry) => s + r.creditTotal, 0).toLocaleString()}</span>
+            Total Debits: <span className="text-white font-medium">{formatAmount(data.reduce((s: number, r: TrialBalanceEntry) => s + r.debitTotal, 0), currentOrgCurrency)}</span> |
+            Total Credits: <span className="text-white font-medium">{formatAmount(data.reduce((s: number, r: TrialBalanceEntry) => s + r.creditTotal, 0), currentOrgCurrency)}</span>
           </div>
         </div>
       )}
@@ -184,14 +187,14 @@ export default function ReportsPage() {
             {data.accounts?.map((row: ProfitLossEntry) => (
               <div key={row.code} className="flex justify-between text-sm py-1.5 border-b border-white/5">
                 <span className="text-slate-300">{row.code} — {row.name}</span>
-                <span className={`font-medium ${row.type === "INCOME" ? "text-emerald-300" : "text-red-300"}`}>₹{row.amount.toLocaleString()}</span>
+                <span className={`font-medium ${row.type === "INCOME" ? "text-emerald-300" : "text-red-300"}`}>{formatAmount(row.amount, currentOrgCurrency)}</span>
               </div>
             ))}
           </div>
           <div className="mt-6 space-y-2 pt-4 border-t border-white/10">
-            <div className="flex justify-between text-sm"><span className="text-slate-400">Total Income</span><span className="text-emerald-300 font-medium">₹{data.totalIncome?.toLocaleString()}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-slate-400">Total Expenses</span><span className="text-red-300 font-medium">₹{data.totalExpenses?.toLocaleString()}</span></div>
-            <div className="flex justify-between text-sm pt-2 border-t border-white/10"><span className="text-white font-semibold">Net Income</span><span className={`font-semibold ${data.netIncome >= 0 ? "text-emerald-300" : "text-red-300"}`}>₹{data.netIncome?.toLocaleString()}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-slate-400">Total Income</span><span className="text-emerald-300 font-medium">{formatAmount(data.totalIncome ?? 0, currentOrgCurrency)}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-slate-400">Total Expenses</span><span className="text-red-300 font-medium">{formatAmount(data.totalExpenses ?? 0, currentOrgCurrency)}</span></div>
+            <div className="flex justify-between text-sm pt-2 border-t border-white/10"><span className="text-white font-semibold">Net Income</span><span className={`font-semibold ${data.netIncome >= 0 ? "text-emerald-300" : "text-red-300"}`}>{formatAmount(data.netIncome ?? 0, currentOrgCurrency)}</span></div>
           </div>
         </div>
       )}
@@ -205,26 +208,26 @@ export default function ReportsPage() {
               <h3 className="text-sm font-semibold text-white mb-3">ASSETS</h3>
               <div className="space-y-1">
                 {data.assets?.map((row: BalanceSheetEntry) => (
-                  <div key={row.code} className="flex justify-between text-sm"><span className="text-slate-300">{row.code} — {row.name}</span><span className="text-white">₹{row.balance.toLocaleString()}</span></div>
+                  <div key={row.code} className="flex justify-between text-sm"><span className="text-slate-300">{row.code} — {row.name}</span><span className="text-white">{formatAmount(row.balance, currentOrgCurrency)}</span></div>
                 ))}
               </div>
-              <div className="mt-3 pt-3 border-t border-white/10 flex justify-between text-sm font-semibold"><span>Total Assets</span><span className="text-white">₹{data.totalAssets?.toLocaleString()}</span></div>
+              <div className="mt-3 pt-3 border-t border-white/10 flex justify-between text-sm font-semibold"><span>Total Assets</span><span className="text-white">{formatAmount(data.totalAssets ?? 0, currentOrgCurrency)}</span></div>
             </div>
             <div>
               <h3 className="text-sm font-semibold text-white mb-3">LIABILITIES</h3>
               <div className="space-y-1">
                 {data.liabilities?.map((row: BalanceSheetEntry) => (
-                  <div key={row.code} className="flex justify-between text-sm"><span className="text-slate-300">{row.code} — {row.name}</span><span className="text-white">₹{row.balance.toLocaleString()}</span></div>
+                  <div key={row.code} className="flex justify-between text-sm"><span className="text-slate-300">{row.code} — {row.name}</span><span className="text-white">{formatAmount(row.balance, currentOrgCurrency)}</span></div>
                 ))}
               </div>
-              <div className="mt-3 pt-3 border-t border-white/10 flex justify-between text-sm font-semibold"><span>Total Liabilities</span><span className="text-white">₹{data.totalLiabilities?.toLocaleString()}</span></div>
+              <div className="mt-3 pt-3 border-t border-white/10 flex justify-between text-sm font-semibold"><span>Total Liabilities</span><span className="text-white">{formatAmount(data.totalLiabilities ?? 0, currentOrgCurrency)}</span></div>
               <h3 className="text-sm font-semibold text-white mt-6 mb-3">EQUITY</h3>
               <div className="space-y-1">
                 {data.equity?.map((row: BalanceSheetEntry) => (
-                  <div key={row.code} className="flex justify-between text-sm"><span className="text-slate-300">{row.code} — {row.name}</span><span className="text-white">₹{row.balance.toLocaleString()}</span></div>
+                  <div key={row.code} className="flex justify-between text-sm"><span className="text-slate-300">{row.code} — {row.name}</span><span className="text-white">{formatAmount(row.balance, currentOrgCurrency)}</span></div>
                 ))}
               </div>
-              <div className="mt-3 pt-3 border-t border-white/10 flex justify-between text-sm font-semibold"><span>Total Equity</span><span className="text-white">₹{data.totalEquity?.toLocaleString()}</span></div>
+              <div className="mt-3 pt-3 border-t border-white/10 flex justify-between text-sm font-semibold"><span>Total Equity</span><span className="text-white">{formatAmount(data.totalEquity ?? 0, currentOrgCurrency)}</span></div>
             </div>
           </div>
         </div>
@@ -235,10 +238,10 @@ export default function ReportsPage() {
           <h2 className="text-lg font-semibold text-white mb-4">Cash Flow Statement</h2>
           <p className="text-sm text-slate-400 mb-6">{fromDate} — {toDate}</p>
           <div className="space-y-3">
-            <div className="flex justify-between text-sm py-2 border-b border-white/5"><span className="text-slate-300">Operating Activities</span><span className={`font-medium ${data.operatingCashFlow >= 0 ? "text-emerald-300" : "text-red-300"}`}>₹{data.operatingCashFlow.toLocaleString()}</span></div>
-            <div className="flex justify-between text-sm py-2 border-b border-white/5"><span className="text-slate-300">Investing Activities</span><span className={`font-medium ${data.investingCashFlow >= 0 ? "text-emerald-300" : "text-red-300"}`}>₹{data.investingCashFlow.toLocaleString()}</span></div>
-            <div className="flex justify-between text-sm py-2 border-b border-white/5"><span className="text-slate-300">Financing Activities</span><span className={`font-medium ${data.financingCashFlow >= 0 ? "text-emerald-300" : "text-red-300"}`}>₹{data.financingCashFlow.toLocaleString()}</span></div>
-            <div className="flex justify-between text-sm pt-3 border-t-2 border-white/10 font-semibold"><span>Net Change in Cash</span><span className="text-white">₹{(data.operatingCashFlow + data.investingCashFlow + data.financingCashFlow).toLocaleString()}</span></div>
+            <div className="flex justify-between text-sm py-2 border-b border-white/5"><span className="text-slate-300">Operating Activities</span><span className={`font-medium ${data.operatingCashFlow >= 0 ? "text-emerald-300" : "text-red-300"}`}>{formatAmount(data.operatingCashFlow, currentOrgCurrency)}</span></div>
+            <div className="flex justify-between text-sm py-2 border-b border-white/5"><span className="text-slate-300">Investing Activities</span><span className={`font-medium ${data.investingCashFlow >= 0 ? "text-emerald-300" : "text-red-300"}`}>{formatAmount(data.investingCashFlow, currentOrgCurrency)}</span></div>
+            <div className="flex justify-between text-sm py-2 border-b border-white/5"><span className="text-slate-300">Financing Activities</span><span className={`font-medium ${data.financingCashFlow >= 0 ? "text-emerald-300" : "text-red-300"}`}>{formatAmount(data.financingCashFlow, currentOrgCurrency)}</span></div>
+            <div className="flex justify-between text-sm pt-3 border-t-2 border-white/10 font-semibold"><span>Net Change in Cash</span><span className="text-white">{formatAmount(data.operatingCashFlow + data.investingCashFlow + data.financingCashFlow, currentOrgCurrency)}</span></div>
           </div>
         </div>
       )}

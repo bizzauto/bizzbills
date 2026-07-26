@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { formatAmount } from "@/lib/currency";
 
 interface Gstr3bData {
   period: { from: string; to: string };
@@ -53,27 +54,27 @@ export default function Gstr3bPage() {
         <div className="rounded-[1.5rem] border border-white/10 bg-slate-900/70 p-6 backdrop-blur">
           <h2 className="text-lg font-semibold text-white">Outward Supplies</h2>
           <div className="mt-4 space-y-3 text-sm">
-            <div className="flex justify-between"><span className="text-slate-300">Total Taxable</span><span className="font-semibold text-white">₹{data.outwardSupplies.totalTaxable.toLocaleString()}</span></div>
-            <div className="flex justify-between"><span className="text-slate-300">Total GST</span><span className="font-semibold text-white">₹{data.outwardSupplies.totalGst.toLocaleString()}</span></div>
+            <div className="flex justify-between"><span className="text-slate-300">Total Taxable</span><span className="font-semibold text-white">{formatAmount(data.outwardSupplies.totalTaxable, "INR")}</span></div>
+            <div className="flex justify-between"><span className="text-slate-300">Total GST</span><span className="font-semibold text-white">{formatAmount(data.outwardSupplies.totalGst, "INR")}</span></div>
             <hr className="border-white/10" />
-            <div className="flex justify-between"><span className="text-slate-300">Inter-State Taxable</span><span className="text-white">₹{data.outwardSupplies.interState.taxable.toLocaleString()}</span></div>
-            <div className="flex justify-between"><span className="text-slate-300">Inter-State GST</span><span className="text-white">₹{data.outwardSupplies.interState.gst.toLocaleString()}</span></div>
-            <div className="flex justify-between"><span className="text-slate-300">Intra-State Taxable</span><span className="text-white">₹{data.outwardSupplies.intraState.taxable.toLocaleString()}</span></div>
-            <div className="flex justify-between"><span className="text-slate-300">Intra-State GST</span><span className="text-white">₹{data.outwardSupplies.intraState.gst.toLocaleString()}</span></div>
-            <div className="flex justify-between"><span className="text-slate-300">Nil Rated</span><span className="text-white">₹{data.outwardSupplies.nilRated.toLocaleString()}</span></div>
-            <div className="flex justify-between"><span className="text-slate-300">Exempt</span><span className="text-white">₹{data.outwardSupplies.exempt.toLocaleString()}</span></div>
+            <div className="flex justify-between"><span className="text-slate-300">Inter-State Taxable</span><span className="text-white">{formatAmount(data.outwardSupplies.interState.taxable, "INR")}</span></div>
+            <div className="flex justify-between"><span className="text-slate-300">Inter-State GST</span><span className="text-white">{formatAmount(data.outwardSupplies.interState.gst, "INR")}</span></div>
+            <div className="flex justify-between"><span className="text-slate-300">Intra-State Taxable</span><span className="text-white">{formatAmount(data.outwardSupplies.intraState.taxable, "INR")}</span></div>
+            <div className="flex justify-between"><span className="text-slate-300">Intra-State GST</span><span className="text-white">{formatAmount(data.outwardSupplies.intraState.gst, "INR")}</span></div>
+            <div className="flex justify-between"><span className="text-slate-300">Nil Rated</span><span className="text-white">{formatAmount(data.outwardSupplies.nilRated, "INR")}</span></div>
+            <div className="flex justify-between"><span className="text-slate-300">Exempt</span><span className="text-white">{formatAmount(data.outwardSupplies.exempt, "INR")}</span></div>
           </div>
         </div>
 
         <div className="rounded-[1.5rem] border border-white/10 bg-slate-900/70 p-6 backdrop-blur">
           <h2 className="text-lg font-semibold text-white">Input Tax Credit</h2>
           <div className="mt-4 space-y-3 text-sm">
-            <div className="flex justify-between"><span className="text-slate-300">Total ITC</span><span className="font-semibold text-white">₹{data.inputTaxCredit.totalItc.toLocaleString()}</span></div>
+            <div className="flex justify-between"><span className="text-slate-300">Total ITC</span><span className="font-semibold text-white">{formatAmount(data.inputTaxCredit.totalItc, "INR")}</span></div>
           </div>
           <hr className="my-4 border-white/10" />
           <div className="rounded-xl bg-cyan-500/10 p-4">
             <p className="text-sm text-slate-400">Net Tax Payable</p>
-            <p className="mt-1 text-2xl font-semibold text-cyan-300">₹{data.netTaxPayable.toLocaleString()}</p>
+            <p className="mt-1 text-2xl font-semibold text-cyan-300">{formatAmount(data.netTaxPayable, "INR")}</p>
           </div>
         </div>
       </section>
