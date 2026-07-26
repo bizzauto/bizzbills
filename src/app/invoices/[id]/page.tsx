@@ -187,6 +187,35 @@ export default function InvoiceDetailPage() {
         </div>
       </section>
 
+      {/* Payment status bar */}
+      {invoice.status !== "draft" && (
+        <div className={`rounded-[1.5rem] border p-5 backdrop-blur ${
+          invoice.status === "paid"
+            ? "border-emerald-400/20 bg-emerald-500/10"
+            : invoice.status === "overdue"
+            ? "border-red-400/20 bg-red-500/10"
+            : "border-amber-400/20 bg-amber-500/10"
+        }`}>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-medium text-white capitalize">
+                {invoice.status === "paid" ? "✓ Paid" : invoice.status === "overdue" ? "⚠ Overdue" : "● Sent"}
+              </p>
+              <p className="text-xs text-slate-400">
+                {invoice.status === "paid"
+                  ? "This invoice has been fully paid."
+                  : "Awaiting payment from customer."}
+              </p>
+            </div>
+            {invoice.status !== "paid" && (
+              <div className="flex gap-2">
+                <MarkAsPaidButton invoiceId={invoice.id} />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Main content grid */}
       <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
         {/* Invoice details */}
@@ -281,5 +310,88 @@ export default function InvoiceDetailPage() {
         </div>
       </section>
     </main>
+  );
+}
+
+function MarkAsPaidButton({ invoiceId }: { invoiceId: string }) {
+  const [showModal, setShowModal] = useState(false);
+  const [method, setMethod] = useState("cash");
+  const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  async function handleMarkPaid() {
+    setSaving(true);
+    try {
+      await fetch("/api/payments/mark-paid", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ invoiceId, method, notes: notes || undefined }),
+      });
+      window.location.reload();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <>
+      <button
+        onClick={() => setShowModal(true)}
+        className="rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-emerald-400"
+      >
+        Mark as Paid
+      </button>
+
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-slate-900 p-6 shadow-2xl">
+            <h3 className="text-lg font-semibold text-white">Record Payment</h3>
+            <p className="mt-1 text-sm text-slate-400">Mark this invoice as paid.</p>
+
+            <div className="mt-4 space-y-3">
+              <label className="block text-sm">
+                <span className="text-slate-400">Payment method</span>
+                <select
+                  value={method}
+                  onChange={(e) => setMethod(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-white outline-none"
+                >
+                  <option value="cash">Cash</option>
+                  <option value="bank_transfer">Bank Transfer</option>
+                  <option value="cheque">Cheque</option>
+                  <option value="upi">UPI</option>
+                  <option value="card">Card</option>
+                </select>
+              </label>
+              <label className="block text-sm">
+                <span className="text-slate-400">Notes (optional)</span>
+                <input
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-white outline-none"
+                  placeholder="Payment reference or note"
+                />
+              </label>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                onClick={() => setShowModal(false)}
+                className="rounded-full border border-white/10 px-4 py-2 text-sm text-white hover:bg-white/10"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleMarkPaid}
+                disabled={saving}
+                className="rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-50"
+              >
+                {saving ? "Saving…" : "Confirm Payment"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

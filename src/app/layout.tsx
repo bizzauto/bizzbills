@@ -63,6 +63,12 @@ export default function RootLayout({
                     <Link href="/ai" className="transition hover:text-white">
                       AI
                     </Link>
+                    <Link href="/payments" className="transition hover:text-white">
+                      Payments
+                    </Link>
+                    <Link href="/currency" className="transition hover:text-white">
+                      Currency
+                    </Link>
                     <Link href="/settings" className="transition hover:text-white">
                       Settings
                     </Link>

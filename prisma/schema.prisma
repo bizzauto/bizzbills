@@ -90,6 +90,7 @@ model Organization {
   phone     String?
   email     String?
   website   String?
+  upiId     String?
   plan      String   @default("free")
   settings  String   @default("{}")
   createdAt DateTime @default(now())
@@ -109,6 +110,7 @@ model Organization {
   hsnSacCodes     HsnSacCode[]
   aiConfig        AIConfig?
   exchangeRates   CurrencyExchangeRate[]
+  payments        Payment[]
 }
 
 /// Branch/location within an organization
@@ -204,6 +206,7 @@ model Invoice {
   branchId String?
   branch   Branch?          @relation(fields: [branchId], references: [id])
   ewayBillId String?
+  payments   Payment[]
   lines    InvoiceLine[]
   versions InvoiceVersion[]
 
@@ -413,4 +416,27 @@ model CurrencyExchangeRate {
 
   @@unique([orgId, fromCurrency, toCurrency])
   @@index([orgId])
+}
+
+/// Payment tracking for invoice payments
+model Payment {
+  id              String   @id @default(cuid())
+  orgId           String
+  invoiceId       String?
+  amount          Float
+  currency        String   @default("INR")
+  method          String   @default("upi") // upi, bank_transfer, cash, cheque, card, gateway
+  status          String   @default("pending") // pending, completed, failed, refunded
+  gatewayRef      String?  // Razorpay/Stripe payment ID
+  upiTransactionId String?
+  notes           String?
+  paidAt          DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  org     Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  invoice Invoice?     @relation(fields: [invoiceId], references: [id])
+
+  @@index([orgId])
+  @@index([invoiceId])
 }
