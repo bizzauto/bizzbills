@@ -119,6 +119,7 @@ model Organization {
   warehouses      Warehouse[]
   inventoryItems  InventoryItem[]
   stockMovements  StockMovement[]
+  parties         Party[]
 }
 
 /// Branch/location within an organization
@@ -561,6 +562,45 @@ model StockMovement {
   @@index([productId])
   @@index([warehouseId])
   @@index([createdAt])
+}
+
+/// Party — customer / vendor / other
+model Party {
+  id        String   @id @default(cuid())
+  orgId     String
+  type      String   @default("customer") // customer, vendor, other
+  name      String
+  gstin     String   @default("")
+  email     String   @default("")
+  phone     String   @default("")
+  creditLimit Float  @default(0)
+  outstandingBalance Float @default(0)
+  notes     String   @default("")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  org     Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  addresses PartyAddress[]
+
+  @@unique([orgId, name])
+  @@index([orgId])
+  @@index([orgId, type])
+}
+
+model PartyAddress {
+  id        String @id @default(cuid())
+  partyId   String
+  type      String @default("billing") // billing, shipping, both
+  address   String @default("")
+  city      String @default("")
+  state     String @default("")
+  pincode   String @default("")
+  isDefault Boolean @default(true)
+
+  party Party @relation(fields: [partyId], references: [id], onDelete: Cascade)
+
+  @@index([partyId])
 }
 
 /// Reminder configuration for overdue invoices
