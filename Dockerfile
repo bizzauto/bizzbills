@@ -3,11 +3,18 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-COPY package.json package-lock.json prisma.config.ts ./
-COPY prisma/schema.prisma ./prisma/
+# Copy package files and prisma schema
+COPY package.json package-lock.json ./
+COPY prisma ./prisma
+COPY prisma.config.ts ./
+
+# Install dependencies
 RUN npm ci
 
+# Copy source code
 COPY . .
+
+# Generate Prisma client and build
 RUN npx prisma generate && npm run build
 
 # ---- Production stage ----
@@ -21,15 +28,16 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
-# Copy built assets
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+# Copy built assets from builder
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy full node_modules — needed by prisma db push at startup
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+# Copy Prisma files for runtime migrations
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./prisma.config.ts
+COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
 
 USER nextjs
 
@@ -38,8 +46,5 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Auto-create tables on startup, then start server
-# Note: --accept-data-loss omitted intentionally. If a deploy fails due to
-# schema drift, run `npx prisma db push --accept-data-loss` manually after
-# verifying the diff. For zero-downtime, switch to `prisma migrate deploy`.
-CMD ["sh", "-c", "npx prisma db push 2>&1 && node server.js"]
+# Start server (prisma db push will run via startup script if needed)
+CMD ["node", "server.js"]
