@@ -1,19 +1,14 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { getSessionOrgId } from "@/lib/org";
 import { detectAnomalies } from "@/lib/ai/anomaly";
 import { suggestHsnForInvoice } from "@/lib/ai/gst";
 import { llmComplete, getApiKey } from "@/lib/ai/service";
 import { prisma } from "@/lib/db";
 import type { InvoiceDraft } from "@/lib/invoicing";
 
-async function getSessionOrgId(userId: string) {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { orgId: true },
-  });
-  return user?.orgId;
-}
+
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -75,3 +70,4 @@ Provide 3-5 short bullet points (one sentence each). Be specific and actionable.
     return NextResponse.json({ error: "Analysis failed" }, { status: 500 });
   }
 }
+

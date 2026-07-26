@@ -39,4 +39,7 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
 # Auto-create tables on startup, then start server
-CMD ["sh", "-c", "npx prisma db push --accept-data-loss 2>&1 && node server.js"]
+# Note: --accept-data-loss omitted intentionally. If a deploy fails due to
+# schema drift, run `npx prisma db push --accept-data-loss` manually after
+# verifying the diff. For zero-downtime, switch to `prisma migrate deploy`.
+CMD ["sh", "-c", "npx prisma db push 2>&1 && node server.js"]

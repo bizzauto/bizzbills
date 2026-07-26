@@ -227,8 +227,10 @@ model Invoice {
   creditNotes CreditNote[]
   debitNotes  DebitNote[]
 
+  @@unique([orgId, invoiceNumber])
   @@index([userId])
   @@index([orgId])
+  @@index([orgId, status])
   @@index([branchId])
 }
 

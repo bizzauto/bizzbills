@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { getSessionOrgId } from "@/lib/org";
 import { prisma } from "@/lib/db";
 
-function getSessionOrgId(userId: string) {
-  return prisma.user.findUnique({ where: { id: userId }, select: { orgId: true } }).then((u) => u?.orgId);
-}
+
 
 function calcNextRunDate(date: Date, freq: string, interval: number): Date {
   const d = new Date(date);
@@ -106,3 +105,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Failed to create recurring invoice" }, { status: 500 });
   }
 }
+

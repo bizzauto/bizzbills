@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { getSessionOrgId } from "@/lib/org";
 import { prisma } from "@/lib/db";
 
 function escapeCsv(value: string | number): string {
@@ -13,13 +14,7 @@ function escapeMarkdownTable(value: string | number): string {
   return String(value).replace(/\|/g, "\\|");
 }
 
-async function getSessionOrgId(userId: string) {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { orgId: true },
-  });
-  return user?.orgId;
-}
+
 
 export async function GET(
   request: Request,
@@ -120,3 +115,4 @@ ${data.lines.map((l) => `| ${escapeMarkdownTable(l.description)} | ${escapeMarkd
     },
   });
 }
+

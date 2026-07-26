@@ -1,6 +1,16 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
+const CRON_SECRET = process.env.CRON_SECRET;
+
+function authorize(request: Request) {
+  const auth = request.headers.get("authorization")?.replace("Bearer ", "");
+  if (!CRON_SECRET || auth !== CRON_SECRET) {
+    return false;
+  }
+  return true;
+}
+
 function calcNextRunDate(date: Date, freq: string, interval: number): Date {
   const d = new Date(date);
   switch (freq) {
@@ -13,7 +23,10 @@ function calcNextRunDate(date: Date, freq: string, interval: number): Date {
   return d;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  if (!authorize(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const results: string[] = [];
 
   // 1. Generate due recurring invoices
@@ -32,13 +45,16 @@ export async function GET() {
       continue;
     }
 
-    const count = await prisma.invoice.count({ where: { orgId: ri.orgId } });
-    const invoiceNumber = `INV-${String(count + 1).padStart(4, "0")}`;
     const firstUser = await prisma.user.findFirst({ where: { orgId: ri.orgId } });
 
-    const invoice = await prisma.invoice.create({
-      data: {
-        invoiceNumber,
+    // Atomic invoice creation inside a transaction to avoid duplicate invoice numbers
+    const { invoice, invoiceNumber } = await prisma.$transaction(async (tx) => {
+      const existingCount = await tx.invoice.count({ where: { orgId: ri.orgId } });
+      const invNum = `INV-${String(existingCount + 1).padStart(4, "0")}`;
+
+      const inv = await tx.invoice.create({
+        data: {
+          invoiceNumber: invNum,
         customerName: ri.customerName,
         customerGstin: ri.customerGstin ?? "",
         currency: ri.currency,
@@ -59,6 +75,8 @@ export async function GET() {
           })),
         },
       },
+      });
+      return { invoice: inv, invoiceNumber: invNum };
     });
 
     const existingIds: string[] = JSON.parse(ri.invoiceIds);

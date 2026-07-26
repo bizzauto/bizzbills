@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { getSessionOrgId } from "@/lib/org";
 import { prisma } from "@/lib/db";
 
-function getSessionOrgId(userId: string) {
-  return prisma.user.findUnique({ where: { id: userId }, select: { orgId: true } }).then((u) => u?.orgId);
-}
+
 
 export async function GET(
   _request: Request,
@@ -133,3 +132,4 @@ export async function DELETE(
   await prisma.recurringInvoice.delete({ where: { id } });
   return NextResponse.json({ deleted: true });
 }
+

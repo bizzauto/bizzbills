@@ -1,17 +1,12 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { getSessionOrgId } from "@/lib/org";
 import { suggestHsnForInvoice } from "@/lib/ai/gst";
 import { llmComplete, getApiKey } from "@/lib/ai/service";
 import { prisma } from "@/lib/db";
 
-async function getSessionOrgId(userId: string) {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { orgId: true },
-  });
-  return user?.orgId;
-}
+
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -67,3 +62,4 @@ Rules:
     return NextResponse.json({ error: "Failed to generate suggestions" }, { status: 500 });
   }
 }
+

@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { getSessionOrgId } from "@/lib/org";
 import { prisma } from "@/lib/db";
 
-function getSessionOrgId(userId: string) {
-  return prisma.user.findUnique({ where: { id: userId }, select: { orgId: true } }).then((u) => u?.orgId);
-}
+
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -54,3 +53,4 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Failed to update reminder settings" }, { status: 500 });
   }
 }
+

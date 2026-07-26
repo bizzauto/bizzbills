@@ -1,18 +1,13 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { getSessionOrgId } from "@/lib/org";
 import { prisma } from "@/lib/db";
 import { Prisma } from "@prisma/client";
 import { calculateInvoiceSummary, sanitizeInvoiceDraft, type InvoiceDraft } from "@/lib/invoicing";
 import { snapshotFromInvoice, diffSnapshots } from "@/lib/diff";
 
-async function getSessionOrgId(userId: string) {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { orgId: true },
-  });
-  return user?.orgId;
-}
+
 
 async function getAuthInvoice(id: string, userId: string) {
   const orgId = await getSessionOrgId(userId);
@@ -127,3 +122,4 @@ export async function PATCH(
     return NextResponse.json({ error: "Failed to update invoice" }, { status: 500 });
   }
 }
+

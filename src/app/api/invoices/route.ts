@@ -1,20 +1,13 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { getSessionOrg } from "@/lib/org";
 import { prisma } from "@/lib/db";
 import { type AccountType } from "@prisma/client";
 import { calculateInvoiceSummary, sanitizeInvoiceDraft, type InvoiceDraft } from "@/lib/invoicing";
 import { snapshotFromInvoice } from "@/lib/diff";
 
-async function getSessionOrg() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return null;
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { orgId: true },
-  });
-  return { orgId: user?.orgId, userId: session.user.id };
-}
+
 
 async function findAccount(orgId: string, types: AccountType[], preferredCode?: string) {
   const accounts = await prisma.chartOfAccount.findMany({

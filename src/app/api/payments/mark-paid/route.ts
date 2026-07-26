@@ -1,15 +1,10 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { getSessionOrgId } from "@/lib/org";
 import { prisma } from "@/lib/db";
 
-async function getSessionOrgId(userId: string) {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { orgId: true },
-  });
-  return user?.orgId;
-}
+
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -69,3 +64,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Failed to mark invoice as paid" }, { status: 500 });
   }
 }
+

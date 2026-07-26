@@ -1,17 +1,12 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { getSessionOrgId } from "@/lib/org";
 import { prisma } from "@/lib/db";
 import { Prisma } from "@prisma/client";
 import { snapshotFromInvoice, diffSnapshots } from "@/lib/diff";
 
-async function getSessionOrgId(userId: string) {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { orgId: true },
-  });
-  return user?.orgId;
-}
+
 
 function orgWhere(id: string, userId: string, orgId?: string) {
   const where: { id: string; userId?: string; orgId?: string } = { id };
@@ -120,3 +115,4 @@ export async function POST(
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
+

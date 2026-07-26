@@ -1,16 +1,11 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { getSessionOrgId } from "@/lib/org";
 import { prisma } from "@/lib/db";
 import type { AccountType } from "@prisma/client";
 
-async function getSessionOrgId(userId: string) {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { orgId: true },
-  });
-  return user?.orgId;
-}
+
 
 async function findAccount(orgId: string, types: AccountType[], preferredCode?: string) {
   let account = preferredCode
@@ -157,3 +152,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Failed to create credit note" }, { status: 500 });
   }
 }
+

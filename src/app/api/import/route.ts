@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { getSessionOrgId } from "@/lib/org";
 import { prisma } from "@/lib/db";
 
-function getSessionOrgId(userId: string) {
-  return prisma.user.findUnique({ where: { id: userId }, select: { orgId: true } }).then((u) => u?.orgId);
-}
+
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -14,6 +13,14 @@ export async function POST(request: Request) {
   if (!orgId) return NextResponse.json({ error: "No organization" }, { status: 400 });
 
   const { entity, rows } = await request.json();
+
+  if (!entity || !Array.isArray(rows)) {
+    return NextResponse.json({ error: "Invalid payload: entity and rows[] required" }, { status: 400 });
+  }
+  if (rows.length > 5000) {
+    return NextResponse.json({ error: "Maximum 5,000 rows per import" }, { status: 400 });
+  }
+
   let created = 0;
 
   if (entity === "products") {
@@ -49,3 +56,4 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ created, entity });
 }
+

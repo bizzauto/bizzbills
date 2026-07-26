@@ -1,23 +1,16 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { getSessionOrg } from "@/lib/org";
 import { prisma } from "@/lib/db";
 
-async function getSessionOrg() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return null;
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { orgId: true },
-  });
-  return user?.orgId;
-}
+
 
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const orgId = await getSessionOrg();
+  const { orgId } = (await getSessionOrg()) ?? {};
   if (!orgId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -46,7 +39,7 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const orgId = await getSessionOrg();
+  const { orgId } = (await getSessionOrg()) ?? {};
   if (!orgId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
