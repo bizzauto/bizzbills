@@ -120,6 +120,7 @@ model Organization {
   inventoryItems  InventoryItem[]
   stockMovements  StockMovement[]
   parties         Party[]
+  orders          Order[]
 }
 
 /// Branch/location within an organization
@@ -562,6 +563,52 @@ model StockMovement {
   @@index([productId])
   @@index([warehouseId])
   @@index([createdAt])
+}
+
+/// Order — sales order, purchase order, quotation, delivery challan
+model Order {
+  id             String   @id @default(cuid())
+  orgId          String
+  orderNumber    String
+  orderType      String   @default("sales_order") // sales_order, purchase_order, quotation, delivery_challan
+  status         String   @default("draft") // draft, pending, approved, delivered, completed, cancelled
+  partyId        String?
+  partyName      String   @default("")
+  partyGstin     String   @default("")
+  currency       String   @default("INR")
+  orderDate      DateTime
+  deliveryDate   DateTime?
+  subtotal       Float    @default(0)
+  taxTotal       Float    @default(0)
+  total          Float    @default(0)
+  notes          String   @default("")
+  convertedToInvoiceId String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  lines OrderLine[]
+
+  @@unique([orgId, orderNumber])
+  @@index([orgId])
+  @@index([orgId, orderType])
+  @@index([orgId, status])
+}
+
+model OrderLine {
+  id          String @id @default(cuid())
+  description String
+  quantity    Float
+  unitPrice   Float
+  taxRate     Float  @default(0)
+  hsnCode     String @default("")
+  productId   String? // optional link to product master
+
+  orderId String
+  order   Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
 }
 
 /// Party — customer / vendor / other

@@ -75,6 +75,9 @@ export default function RootLayout({
                     <Link href="/debit-notes" className="transition hover:text-white">
                       Debit Notes
                     </Link>
+                    <Link href="/orders" className="transition hover:text-white">
+                      Orders
+                    </Link>
                     <Link href="/parties" className="transition hover:text-white">
                       Parties
                     </Link>
