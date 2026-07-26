@@ -121,6 +121,8 @@ model Organization {
   stockMovements  StockMovement[]
   parties         Party[]
   orders          Order[]
+  bankAccounts    BankAccount[]
+  paymentReceipts PaymentReceipt[]
 }
 
 /// Branch/location within an organization
@@ -609,6 +611,44 @@ model OrderLine {
   order   Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
+}
+
+/// Bank account for reconciliation
+model BankAccount {
+  id        String   @id @default(cuid())
+  orgId     String
+  name      String
+  accountNumber String @default("")
+  bankName  String   @default("")
+  ifscCode  String   @default("")
+  branch    String   @default("")
+  type      String   @default("savings") // savings, current, credit_card, loan
+  openingBalance Float @default(0)
+  currentBalance Float @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, name])
+  @@index([orgId])
+}
+
+/// Payment receipt for printing
+model PaymentReceipt {
+  id          String   @id @default(cuid())
+  orgId       String
+  receiptNumber String
+  paymentId   String
+  receiptDate DateTime
+  notes       String   @default("")
+  createdAt   DateTime @default(now())
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, receiptNumber])
+  @@index([orgId])
 }
 
 /// Party — customer / vendor / other

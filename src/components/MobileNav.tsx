@@ -60,6 +60,9 @@ export function MobileNav() {
               <MobileLink href="/payments" onClick={() => setOpen(false)}>
                 Payments
               </MobileLink>
+              <MobileLink href="/banking" onClick={() => setOpen(false)}>
+                Banking
+              </MobileLink>
               <MobileLink href="/credit-notes" onClick={() => setOpen(false)}>
                 Credit Notes
               </MobileLink>

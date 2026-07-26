@@ -69,6 +69,9 @@ export default function RootLayout({
                     <Link href="/payments" className="transition hover:text-white">
                       Payments
                     </Link>
+                    <Link href="/banking" className="transition hover:text-white">
+                      Banking
+                    </Link>
                     <Link href="/credit-notes" className="transition hover:text-white">
                       Credit Notes
                     </Link>
