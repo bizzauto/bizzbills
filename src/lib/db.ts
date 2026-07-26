@@ -1,6 +1,5 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaLibSql } from "@prisma/adapter-libsql";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -11,16 +10,12 @@ function createPrismaClient() {
   if (!url) {
     throw new Error(
       "DATABASE_URL is not set. Configure it in .env or Coolify environment variables.\n" +
-      "Local (sqlite/libsql): file:./dev.db\n" +
-      "Supabase: postgresql://user:password@host:5432/database?schema=public",
+      "Supabase/PostgreSQL: postgresql://user:password@host:5432/database?schema=public",
     );
   }
 
-  const isPostgres = url.startsWith("postgresql://") || url.startsWith("postgres://");
-  const adapter = isPostgres
-    ? new PrismaPg({ connectionString: url })
-    : new PrismaLibSql({ url });
-
+  // Production uses PostgreSQL only
+  const adapter = new PrismaPg({ connectionString: url });
   return new PrismaClient({ adapter });
 }
 
