@@ -11,6 +11,7 @@ import type { DiffChange } from "@/lib/diff";
 type LineItem = {
   id: string;
   description: string;
+  hsnCode: string;
   quantity: number;
   unitPrice: number;
   taxRate: number;
@@ -212,28 +213,30 @@ export default function InvoiceDetailPage() {
 
           <div className="mt-4 overflow-x-auto rounded-xl border border-white/10">
             <table className="min-w-[640px] text-sm sm:min-w-full">
-              <thead className="bg-slate-800/80 text-left text-slate-300">
-                <tr>
-                  <th className="p-3">Item</th>
-                  <th className="p-3">Qty</th>
-                  <th className="p-3">Price</th>
-                  <th className="p-3">GST</th>
-                  <th className="p-3">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {invoice.lines.map((line) => {
-                  const lineTotal = line.quantity * line.unitPrice * (1 + line.taxRate / 100);
-                  return (
-                    <tr key={line.id} className="border-t border-white/10 bg-slate-900/50">
-                      <td className="p-3 text-white">{line.description}</td>
-                      <td className="p-3 text-slate-300">{line.quantity}</td>
-                      <td className="p-3 text-slate-300">₹{line.unitPrice.toLocaleString()}</td>
-                      <td className="p-3 text-slate-300">{line.taxRate}%</td>
-                      <td className="p-3 font-medium text-white">₹{lineTotal.toLocaleString()}</td>
-                    </tr>
-                  );
-                })}
+<thead className="bg-slate-800/80 text-left text-slate-300">
+                  <tr>
+                    <th className="p-3">Item</th>
+                    <th className="p-3">HSN</th>
+                    <th className="p-3">Qty</th>
+                    <th className="p-3">Price</th>
+                    <th className="p-3">GST</th>
+                    <th className="p-3">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {invoice.lines.map((line) => {
+                    const lineTotal = line.quantity * line.unitPrice * (1 + line.taxRate / 100);
+                    return (
+                      <tr key={line.id} className="border-t border-white/10 bg-slate-900/50">
+                        <td className="p-3 text-white">{line.description}</td>
+                        <td className="p-3 text-slate-300 font-mono text-xs">{line.hsnCode || "—"}</td>
+                        <td className="p-3 text-slate-300">{line.quantity}</td>
+                        <td className="p-3 text-slate-300">₹{line.unitPrice.toLocaleString()}</td>
+                        <td className="p-3 text-slate-300">{line.taxRate}%</td>
+                        <td className="p-3 font-medium text-white">₹{lineTotal.toLocaleString()}</td>
+                      </tr>
+                    );
+                  })}
               </tbody>
             </table>
           </div>

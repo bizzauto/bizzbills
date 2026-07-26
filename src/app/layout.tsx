@@ -54,10 +54,13 @@ export default function RootLayout({
                   <Link href="/accounting/chart-of-accounts" className="transition hover:text-white">
                     Accounting
                   </Link>
-                  <Link href="/accounting/reports" className="transition hover:text-white">
-                    Reports
-                  </Link>
-                  <Link href="/settings" className="transition hover:text-white">
+<Link href="/accounting/reports" className="transition hover:text-white">
+                      Reports
+                    </Link>
+                    <Link href="/gst" className="transition hover:text-white">
+                      GST
+                    </Link>
+                    <Link href="/settings" className="transition hover:text-white">
                     AI Settings
                   </Link>
                 </div>

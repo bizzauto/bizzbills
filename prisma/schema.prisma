@@ -104,6 +104,9 @@ model Organization {
   chartOfAccounts ChartOfAccount[]
   journalEntries  JournalEntry[]
   ledgers         Ledger[]
+  gstRates        GstRate[]
+  ewayBills       EwayBill[]
+  hsnSacCodes     HsnSacCode[]
 }
 
 /// Branch/location within an organization
@@ -198,6 +201,7 @@ model Invoice {
   org      Organization?    @relation(fields: [orgId], references: [id])
   branchId String?
   branch   Branch?          @relation(fields: [branchId], references: [id])
+  ewayBillId String?
   lines    InvoiceLine[]
   versions InvoiceVersion[]
 
@@ -212,6 +216,7 @@ model InvoiceLine {
   quantity    Float
   unitPrice   Float
   taxRate     Float  @default(0)
+  hsnCode     String  @default("")
 
   invoiceId String
   invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
@@ -313,4 +318,66 @@ model Ledger {
   @@index([orgId])
   @@index([accountId])
   @@index([orgId, accountId, entryDate])
+}
+
+/// GST compliance models
+
+/// Configurable GST rates for the organization
+model GstRate {
+  id        String   @id @default(cuid())
+  orgId     String
+  name      String
+  rate      Float
+  type      String   @default("sgst")
+  state     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, name])
+  @@index([orgId])
+}
+
+/// E-Way Bill (Electronic Way Bill) for GST transit
+model EwayBill {
+  id            String   @id @default(cuid())
+  orgId         String
+  invoiceId     String?  @unique
+  ewbNumber     String   @unique
+  ewbDate       DateTime
+  fromAddress   String
+  toAddress     String
+  transportMode String   @default("road")
+  vehicleNumber String?
+  distance      Float    @default(0)
+  status        String   @default("generated")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+}
+
+/// HSN/SAC code catalog for GST classification
+model HsnSacCode {
+  id          String   @id @default(cuid())
+  orgId       String
+  code        String
+  description String
+  type        String   @default("hsn")
+  taxRate     Float
+  chapter     String?
+  heading     String?
+  subheading  String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, code])
+  @@index([orgId])
+  @@index([orgId, type])
 }

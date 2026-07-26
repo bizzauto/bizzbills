@@ -4,6 +4,7 @@ export type InvoiceLine = {
   quantity: number;
   unitPrice: number;
   taxRate: number;
+  hsnCode: string;
 };
 
 export type InvoiceDraft = {

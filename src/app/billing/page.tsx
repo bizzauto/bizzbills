@@ -19,7 +19,7 @@ const emptyDraft: InvoiceDraft = {
   invoiceNumber: "",
   dueDate: new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0],
   lines: [
-    { id: "1", description: "", quantity: 1, unitPrice: 0, taxRate: 18 },
+    { id: "1", description: "", quantity: 1, unitPrice: 0, taxRate: 18, hsnCode: "" },
   ],
 };
 
@@ -96,7 +96,7 @@ export default function BillingPage() {
           ? {
               ...line,
               [field]:
-                field === "description"
+                field === "description" || field === "hsnCode"
                   ? (value as string)
                   : value === "" || value === undefined
                     ? 0
@@ -114,7 +114,7 @@ export default function BillingPage() {
       ...prev,
       lines: [
         ...prev.lines,
-        { id: newId, description: "", quantity: 1, unitPrice: 0, taxRate: 18 },
+        { id: newId, description: "", quantity: 1, unitPrice: 0, taxRate: 18, hsnCode: "" },
       ],
     }));
   }
@@ -322,6 +322,7 @@ export default function BillingPage() {
                 <thead className="bg-slate-800/80 text-left text-slate-300">
                   <tr>
                     <th className="p-3">Item</th>
+                    <th className="p-3">HSN</th>
                     <th className="p-3">Qty</th>
                     <th className="p-3">Price</th>
                     <th className="p-3">GST %</th>
@@ -367,6 +368,19 @@ export default function BillingPage() {
                               ))}
                             </div>
                           )}
+                        </td>
+                        <td className="p-2">
+                          <input
+                            value={
+                              draftLines.find((l) => l.id === line.id)
+                                ?.hsnCode ?? ""
+                            }
+                            onChange={(e) =>
+                              updateLine(line.id, "hsnCode", e.target.value)
+                            }
+                            placeholder="HSN code"
+                            className="w-20 rounded-lg bg-slate-900 px-2 py-1 text-white outline-none ring-0 placeholder:text-slate-500"
+                          />
                         </td>
                         <td className="p-2">
                           <input

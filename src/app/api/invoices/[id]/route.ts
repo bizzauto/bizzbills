@@ -93,6 +93,7 @@ export async function PATCH(
           lines: {
             create: clean.lines.map((line) => ({
               description: line.description,
+              hsnCode: line.hsnCode,
               quantity: line.quantity,
               unitPrice: line.unitPrice,
               taxRate: line.taxRate,

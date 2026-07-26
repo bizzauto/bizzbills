@@ -53,6 +53,7 @@ export async function GET(
 
   const lines = invoice.lines.map((l) => ({
     description: l.description,
+    hsnCode: l.hsnCode,
     quantity: l.quantity,
     unitPrice: l.unitPrice,
     taxRate: l.taxRate,
@@ -63,6 +64,7 @@ export async function GET(
     invoiceNumber: invoice.invoiceNumber,
     customerName: invoice.customerName,
     customerGstin: invoice.customerGstin,
+    customerEwayBill: invoice.ewayBillId ?? null,
     currency: invoice.currency,
     dueDate: invoice.dueDate,
     status: invoice.status,
@@ -78,9 +80,9 @@ export async function GET(
   }
 
   if (format === "csv") {
-    let csv = "description,quantity,unitPrice,taxRate,lineTotal\n";
+    let csv = "description,hsnCode,quantity,unitPrice,taxRate,lineTotal\n";
     for (const line of data.lines) {
-      csv += `${escapeCsv(line.description)},${line.quantity},${line.unitPrice},${line.taxRate},${line.lineTotal.toFixed(2)}\n`;
+      csv += `${escapeCsv(line.description)},${escapeCsv(line.hsnCode)},${line.quantity},${line.unitPrice},${line.taxRate},${line.lineTotal.toFixed(2)}\n`;
     }
     csv += `,,,,"${data.subtotal.toFixed(2)}"\n`;
     csv += `,,,,"${data.taxTotal.toFixed(2)}"\n`;
@@ -102,13 +104,13 @@ export async function GET(
 **Status:** ${data.status}
 **Version:** ${data.version}
 
-| Item | Qty | Unit Price | GST | Total |
-|------|-----|-----------|-----|-------|
-${data.lines.map((l) => `| ${escapeMarkdownTable(l.description)} | ${l.quantity} | ${l.unitPrice} | ${l.taxRate}% | ${l.lineTotal.toFixed(2)} |`).join("\n")}
+| Item | HSN | Qty | Unit Price | GST | Total |
+|------|-----|-----|-----------|-----|-------|
+${data.lines.map((l) => `| ${escapeMarkdownTable(l.description)} | ${escapeMarkdownTable(l.hsnCode)} | ${l.quantity} | ${l.unitPrice} | ${l.taxRate}% | ${l.lineTotal.toFixed(2)} |`).join("\n")}
 
-| | | | **Subtotal** | ${data.subtotal.toFixed(2)} |
-| | | | **Tax** | ${data.taxTotal.toFixed(2)} |
-| | | | **Total** | ${data.total.toFixed(2)} |
+| | | | | **Subtotal** | ${data.subtotal.toFixed(2)} |
+| | | | | **Tax** | ${data.taxTotal.toFixed(2)} |
+| | | | | **Total** | ${data.total.toFixed(2)} |
 `;
 
   return new Response(markdown, {
