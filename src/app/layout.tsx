@@ -84,6 +84,9 @@ export default function RootLayout({
                     <Link href="/parties" className="transition hover:text-white">
                       Parties
                     </Link>
+                    <Link href="/payroll" className="transition hover:text-white">
+                      Payroll
+                    </Link>
                     <Link href="/inventory" className="transition hover:text-white">
                       Inventory
                     </Link>
@@ -92,6 +95,9 @@ export default function RootLayout({
                     </Link>
                     <Link href="/currency" className="transition hover:text-white">
                       Currency
+                    </Link>
+                    <Link href="/activity" className="transition hover:text-white">
+                      Activity
                     </Link>
                     <Link href="/settings" className="transition hover:text-white">
                       Settings

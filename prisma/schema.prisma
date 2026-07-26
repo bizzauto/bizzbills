@@ -123,6 +123,9 @@ model Organization {
   orders          Order[]
   bankAccounts    BankAccount[]
   paymentReceipts PaymentReceipt[]
+  activityLogs    ActivityLog[]
+  employees       Employee[]
+  payrollRuns     PayrollRun[]
 }
 
 /// Branch/location within an organization
@@ -688,6 +691,71 @@ model PartyAddress {
   party Party @relation(fields: [partyId], references: [id], onDelete: Cascade)
 
   @@index([partyId])
+}
+
+/// Employee for payroll
+model Employee {
+  id            String   @id @default(cuid())
+  orgId         String
+  code          String   // employee code
+  name          String
+  email         String?
+  phone         String?
+  department    String   @default("")
+  designation   String   @default("")
+  doj           DateTime? // date of joining
+  salary        Float    @default(0)
+  bankName      String   @default("")
+  accountNumber String   @default("")
+  ifscCode      String   @default("")
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  payrollRuns     PayrollRun[]
+
+  @@unique([orgId, code])
+  @@index([orgId])
+}
+
+/// Payroll run records
+model PayrollRun {
+  id          String   @id @default(cuid())
+  orgId       String
+  month       Int      // 1-12
+  year        Int
+  employeeId  String
+  grossPay    Float
+  deductions  Float    @default(0)
+  netPay      Float
+  status      String   @default("draft") // draft, paid, cancelled
+  paidAt      DateTime?
+  createdAt   DateTime @default(now())
+
+  org      Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  employee Employee     @relation(fields: [employeeId], references: [id])
+
+  @@unique([orgId, employeeId, month, year])
+  @@index([orgId, month, year])
+}
+
+/// Activity log for audit trail
+model ActivityLog {
+  id        String   @id @default(cuid())
+  orgId     String
+  userId    String?
+  action    String   // create, update, delete, login, export
+  entity    String   // invoice, payment, product, party, etc.
+  entityId  String?
+  details   String   @default("") // JSON metadata
+  createdAt DateTime @default(now())
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+  @@index([orgId, createdAt])
+  @@index([orgId, entity])
 }
 
 /// Reminder configuration for overdue invoices

@@ -75,6 +75,9 @@ export function MobileNav() {
               <MobileLink href="/parties" onClick={() => setOpen(false)}>
                 Parties
               </MobileLink>
+              <MobileLink href="/payroll" onClick={() => setOpen(false)}>
+                Payroll
+              </MobileLink>
               <MobileLink href="/inventory" onClick={() => setOpen(false)}>
                 Inventory
               </MobileLink>
@@ -83,6 +86,9 @@ export function MobileNav() {
               </MobileLink>
               <MobileLink href="/currency" onClick={() => setOpen(false)}>
                 Currency
+              </MobileLink>
+              <MobileLink href="/activity" onClick={() => setOpen(false)}>
+                Activity
               </MobileLink>
               <MobileLink href="/settings" onClick={() => setOpen(false)}>
                 Settings
