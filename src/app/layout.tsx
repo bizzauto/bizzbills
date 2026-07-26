@@ -75,6 +75,9 @@ export default function RootLayout({
                     <Link href="/debit-notes" className="transition hover:text-white">
                       Debit Notes
                     </Link>
+                    <Link href="/inventory" className="transition hover:text-white">
+                      Inventory
+                    </Link>
                     <Link href="/recurring-invoices" className="transition hover:text-white">
                       Recurring
                     </Link>

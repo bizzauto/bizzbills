@@ -115,6 +115,10 @@ model Organization {
   debitNotes      DebitNote[]
   recurringInvoices RecurringInvoice[]
   reminderSetting ReminderSetting?
+  products        Product[]
+  warehouses      Warehouse[]
+  inventoryItems  InventoryItem[]
+  stockMovements  StockMovement[]
 }
 
 /// Branch/location within an organization
@@ -466,6 +470,97 @@ model RecurringInvoiceLine {
   recurringInvoice   RecurringInvoice @relation(fields: [recurringInvoiceId], references: [id], onDelete: Cascade)
 
   @@index([recurringInvoiceId])
+}
+
+/// Product master catalog for inventory
+model Product {
+  id          String   @id @default(cuid())
+  orgId       String
+  name        String
+  description String   @default("")
+  sku         String   @default("")
+  hsnCode     String   @default("")
+  unit        String   @default("pcs") // pcs, kg, meter, box, etc.
+  sellingPrice Float   @default(0)
+  purchasePrice Float  @default(0)
+  taxRate     Float    @default(0)
+  category    String   @default("")
+  brand       String   @default("")
+  image       String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  org        Organization    @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  inventory  InventoryItem[]
+  movements  StockMovement[]
+
+  @@unique([orgId, sku])
+  @@index([orgId])
+  @@index([orgId, category])
+}
+
+/// Warehouse / storage location
+model Warehouse {
+  id        String   @id @default(cuid())
+  orgId     String
+  name      String
+  address   String   @default("")
+  city      String   @default("")
+  state     String   @default("")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  org       Organization    @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  inventory InventoryItem[]
+  stockMovements StockMovement[]
+
+  @@unique([orgId, name])
+  @@index([orgId])
+}
+
+/// Stock level per product per warehouse
+model InventoryItem {
+  id          String   @id @default(cuid())
+  orgId       String
+  productId   String
+  warehouseId String
+  quantity    Float    @default(0)
+  minStock    Float    @default(0) // low-stock threshold
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  product   Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  warehouse Warehouse    @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, productId, warehouseId])
+  @@index([orgId])
+  @@index([productId])
+  @@index([warehouseId])
+}
+
+/// Stock movement log (in/out/transfer/adjustment)
+model StockMovement {
+  id          String   @id @default(cuid())
+  orgId       String
+  productId   String
+  warehouseId String
+  type        String   @default("in") // in, out, transfer, adjustment
+  quantity    Float
+  reference   String   @default("") // invoice number, order number, etc.
+  notes       String   @default("")
+  createdAt   DateTime @default(now())
+
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  product   Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  warehouse Warehouse    @relation(fields: [warehouseId], references: [id])
+
+  @@index([orgId])
+  @@index([productId])
+  @@index([warehouseId])
+  @@index([createdAt])
 }
 
 /// Reminder configuration for overdue invoices
