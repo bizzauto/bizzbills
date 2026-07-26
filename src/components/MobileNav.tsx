@@ -63,6 +63,9 @@ export function MobileNav() {
               <MobileLink href="/debit-notes" onClick={() => setOpen(false)}>
                 Debit Notes
               </MobileLink>
+              <MobileLink href="/recurring-invoices" onClick={() => setOpen(false)}>
+                Recurring
+              </MobileLink>
               <MobileLink href="/currency" onClick={() => setOpen(false)}>
                 Currency
               </MobileLink>

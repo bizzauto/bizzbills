@@ -113,6 +113,8 @@ model Organization {
   payments        Payment[]
   creditNotes     CreditNote[]
   debitNotes      DebitNote[]
+  recurringInvoices RecurringInvoice[]
+  reminderSetting ReminderSetting?
 }
 
 /// Branch/location within an organization
@@ -422,7 +424,62 @@ model CurrencyExchangeRate {
   @@index([orgId])
 }
 
-/// Payment tracking for invoice payments
+/// Recurring invoice — auto-generate invoices on a schedule
+model RecurringInvoice {
+  id              String   @id @default(cuid())
+  orgId           String
+  customerName    String
+  customerGstin   String   @default("")
+  currency        String   @default("INR")
+  frequency       String   @default("monthly") // daily, weekly, monthly, quarterly, yearly
+  interval        Int      @default(1)
+  startDate       DateTime
+  endDate         DateTime?
+  nextRunDate     DateTime
+  lastRunAt       DateTime?
+  status          String   @default("active") // active, paused, completed, cancelled
+  subtotal        Float    @default(0)
+  taxTotal        Float    @default(0)
+  total           Float    @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  lines       RecurringInvoiceLine[]
+  invoiceIds  String @default("[]") // JSON array of generated invoice IDs
+
+  @@index([orgId])
+  @@index([orgId, status])
+  @@index([nextRunDate])
+}
+
+model RecurringInvoiceLine {
+  id          String @id @default(cuid())
+  description String
+  quantity    Float
+  unitPrice   Float
+  taxRate     Float  @default(0)
+  hsnCode     String @default("")
+
+  recurringInvoiceId String
+  recurringInvoice   RecurringInvoice @relation(fields: [recurringInvoiceId], references: [id], onDelete: Cascade)
+
+  @@index([recurringInvoiceId])
+}
+
+/// Reminder configuration for overdue invoices
+model ReminderSetting {
+  id               String   @id @default(cuid())
+  orgId            String   @unique
+  enabled          Boolean  @default(true)
+  daysBefore       Int      @default(3)
+  sendToCustomer   Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+}
 model Payment {
   id              String   @id @default(cuid())
   orgId           String
