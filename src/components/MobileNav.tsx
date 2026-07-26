@@ -45,8 +45,11 @@ export function MobileNav() {
               <MobileLink href="/accounting/chart-of-accounts" onClick={() => setOpen(false)}>
                 Accounting
               </MobileLink>
-              <MobileLink href="/accounting/reports" onClick={() => setOpen(false)}>
+              <MobileLink href="/reports" onClick={() => setOpen(false)}>
                 Reports
+              </MobileLink>
+              <MobileLink href="/accounting/reports" onClick={() => setOpen(false)}>
+                Fin. Reports
               </MobileLink>
               <MobileLink href="/gst" onClick={() => setOpen(false)}>
                 GST
