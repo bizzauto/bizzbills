@@ -18,7 +18,7 @@ const footerLinks = {
 
 export function Footer() {
   return (
-    <footer className="border-t border-white/10 bg-slate-950/80">
+    <footer className="border-t" style={{ borderColor: "var(--card-border)", background: "var(--nav-bg)" }}>
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid gap-8 md:grid-cols-4">
           {/* Brand */}
@@ -27,9 +27,9 @@ export function Footer() {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-500 text-sm font-bold text-slate-950">
                 B
               </div>
-              <span className="text-lg font-semibold text-white">BizzBills</span>
+              <span className="text-lg font-semibold" style={{ color: "var(--foreground)" }}>BizzBills</span>
             </Link>
-            <p className="mt-3 text-sm leading-6 text-slate-400">
+            <p className="mt-3 text-sm leading-6" style={{ color: "var(--muted)" }}>
               AI-native invoicing, GST, inventory, and payments platform for modern Indian businesses.
             </p>
           </div>
@@ -37,11 +37,11 @@ export function Footer() {
           {/* Links */}
           {Object.entries(footerLinks).map(([title, links]) => (
             <div key={title}>
-              <h3 className="text-sm font-semibold text-white">{title}</h3>
+              <h3 className="text-sm font-semibold" style={{ color: "var(--foreground)" }}>{title}</h3>
               <ul className="mt-3 space-y-2">
                 {links.map((link) => (
                   <li key={link.href}>
-                    <Link href={link.href} className="text-sm text-slate-400 transition hover:text-white">
+                    <Link href={link.href} className="text-sm transition" style={{ color: "var(--muted)" }}>
                       {link.label}
                     </Link>
                   </li>
@@ -51,7 +51,7 @@ export function Footer() {
           ))}
         </div>
 
-        <div className="mt-10 border-t border-white/10 pt-6 text-center text-xs text-slate-500">
+        <div className="mt-10 border-t pt-6 text-center text-xs" style={{ borderColor: "var(--card-border)", color: "var(--muted)" }}>
           &copy; {new Date().getFullYear()} BizzBills. All rights reserved. Built for Indian businesses.
         </div>
       </div>

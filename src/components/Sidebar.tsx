@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { useOrg } from "@/components/OrgProvider";
+import { useTheme } from "@/components/ThemeProvider";
 import { useState, useCallback } from "react";
 
 /* ── Icons (lucide-style, inline) ── */
@@ -282,6 +283,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const { data: session, status } = useSession();
   const { currentOrgName } = useOrg();
+  const { theme, toggleTheme } = useTheme();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
@@ -312,7 +314,8 @@ export function Sidebar() {
       {/* ── Mobile hamburger ── */}
       <button
         onClick={() => setMobileOpen(true)}
-        className="fixed left-4 top-4 z-50 flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-slate-900/80 text-slate-300 backdrop-blur md:hidden"
+        className="fixed left-4 top-4 z-50 flex h-10 w-10 items-center justify-center rounded-xl border backdrop-blur md:hidden"
+        style={{ borderColor: "var(--card-border)", background: "var(--nav-bg)", color: "var(--muted)" }}
         aria-label="Open sidebar"
       >
         <Icons.menu />
@@ -330,23 +333,25 @@ export function Sidebar() {
       <aside
         className={`
           fixed inset-y-0 left-0 z-50 flex flex-col
-          border-r border-white/[0.06] bg-slate-950/90 backdrop-blur-xl
+          border-r backdrop-blur-xl
           transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]
           ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
           md:translate-x-0 md:static
           ${collapsed ? "md:w-[68px]" : "md:w-[240px]"}
         `}
+        style={{ borderColor: "var(--card-border)", background: "var(--sidebar-bg)" }}
       >
         {/* ── Logo area ── */}
-        <div className="flex h-14 shrink-0 items-center border-b border-white/[0.06] px-3">
+        <div className="flex h-14 shrink-0 items-center border-b px-3" style={{ borderColor: "var(--card-border)" }}>
           <Link href="/" className="flex items-center gap-2.5 overflow-hidden" onClick={handleNav}>
             <span className="shrink-0"><Icons.logo /></span>
             <span
               className={`
-                whitespace-nowrap text-sm font-semibold tracking-tight text-white
+                whitespace-nowrap text-sm font-semibold tracking-tight
                 transition-opacity duration-200
                 ${collapsed ? "md:opacity-0 md:w-0" : "opacity-100"}
               `}
+              style={{ color: "var(--foreground)" }}
             >
               BizzBills
             </span>
@@ -355,7 +360,8 @@ export function Sidebar() {
           {/* Collapse toggle (desktop only) */}
           <button
             onClick={() => setCollapsed((c) => !c)}
-            className="ml-auto hidden h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-white/5 hover:text-slate-300 transition md:flex"
+            className="ml-auto hidden h-7 w-7 shrink-0 items-center justify-center rounded-lg transition md:flex"
+            style={{ color: "var(--muted)" }}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {collapsed ? <Icons.collapseRight /> : <Icons.collapseLeft />}
@@ -364,7 +370,8 @@ export function Sidebar() {
           {/* Close (mobile only) */}
           <button
             onClick={() => setMobileOpen(false)}
-            className="ml-auto flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 hover:bg-white/5 hover:text-slate-300 transition md:hidden"
+            className="ml-auto flex h-7 w-7 items-center justify-center rounded-lg transition md:hidden"
+            style={{ color: "var(--muted)" }}
             aria-label="Close sidebar"
           >
             <Icons.x />
@@ -380,9 +387,10 @@ export function Sidebar() {
                 onClick={() => toggleGroup(group.title)}
                 className={`
                   group flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium
-                  uppercase tracking-wider text-slate-500 hover:text-slate-300 transition
+                  uppercase tracking-wider transition
                   ${collapsed ? "md:justify-center md:px-0" : ""}
                 `}
+                style={{ color: "var(--muted)" }}
                 title={collapsed ? group.title : undefined}
               >
                 {collapsed ? (
@@ -416,13 +424,13 @@ export function Sidebar() {
                         className={`
                           group/link flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm font-medium transition-all duration-150
                           ${active
-                            ? "bg-cyan-500/10 text-cyan-300 shadow-[inset_0_0_0_1px_rgba(34,211,238,0.12)]"
-                            : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-200"
+                            ? "bg-cyan-500/10 text-cyan-600 shadow-[inset_0_0_0_1px_rgba(34,211,238,0.12)] dark:text-cyan-300"
+                            : "text-slate-600 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-white/[0.04] dark:hover:text-slate-200"
                           }
                           ${collapsed ? "md:justify-center md:px-0" : ""}
                         `}
                       >
-                        <span className={`shrink-0 ${active ? "text-cyan-400" : "text-slate-500"}`}>
+                        <span className={`shrink-0 ${active ? "text-cyan-500 dark:text-cyan-400" : "text-slate-400 dark:text-slate-500"}`}>
                           {Icons[item.icon]()}
                         </span>
                         <span
@@ -447,6 +455,20 @@ export function Sidebar() {
 
         {/* ── Bottom: org + user ── */}
         <div className="shrink-0 border-t border-white/[0.06] px-2 py-3">
+          {/* Theme toggle */}
+          <button
+            onClick={toggleTheme}
+            className={`
+              mb-2 flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-medium
+              text-slate-400 hover:text-slate-200 hover:bg-white/[0.04] transition
+              ${collapsed ? "md:justify-center md:px-0" : ""}
+            `}
+            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            <span className="shrink-0 text-sm">{theme === "dark" ? "☀️" : "🌙"}</span>
+            {!collapsed && <span>{theme === "dark" ? "Light mode" : "Dark mode"}</span>}
+          </button>
+
           {/* Org badge */}
           {currentOrgName && (
             <div
@@ -455,10 +477,10 @@ export function Sidebar() {
                 ${collapsed ? "md:justify-center" : ""}
               `}
             >
-              <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-400" />
+              <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-500 dark:bg-emerald-400" />
               <span
                 className={`
-                  truncate text-xs font-medium text-emerald-300
+                  truncate text-xs font-medium text-emerald-700 dark:text-emerald-300
                   ${collapsed ? "md:sr-only" : ""}
                 `}
               >
@@ -470,21 +492,21 @@ export function Sidebar() {
           {/* User section */}
           {status === "loading" ? (
             <div className={`flex items-center gap-2 px-2 py-1.5 ${collapsed ? "md:justify-center" : ""}`}>
-              <div className="h-7 w-7 shrink-0 animate-pulse rounded-full bg-slate-800" />
+              <div className="h-7 w-7 shrink-0 animate-pulse rounded-full" style={{ background: "var(--badge-bg)" }} />
             </div>
           ) : session?.user ? (
             <div className="group/user relative">
               <div
                 className={`
-                  flex items-center gap-2 rounded-lg px-2 py-1.5 transition hover:bg-white/[0.04] cursor-pointer
+                  flex items-center gap-2 rounded-lg px-2 py-1.5 transition cursor-pointer
                   ${collapsed ? "md:justify-center" : ""}
                 `}
               >
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-cyan-500/20 text-xs font-semibold text-cyan-300">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-cyan-500/20 text-xs font-semibold text-cyan-700 dark:text-cyan-300">
                   {(session.user.name ?? session.user.email ?? "U").charAt(0).toUpperCase()}
                 </div>
                 <div className={`min-w-0 ${collapsed ? "md:sr-only" : ""}`}>
-                  <p className="truncate text-sm font-medium text-slate-200">
+                  <p className="truncate text-sm font-medium" style={{ color: "var(--foreground)" }}>
                     {session.user.name ?? session.user.email}
                   </p>
                 </div>
@@ -494,7 +516,7 @@ export function Sidebar() {
                 <div className="absolute bottom-full left-0 right-0 mb-1 hidden group-hover/user:block">
                   <button
                     onClick={() => signOut({ callbackUrl: "/" })}
-                    className="w-full rounded-lg bg-slate-800 px-3 py-2 text-left text-xs font-medium text-red-400 transition hover:bg-red-500/10"
+                    className="w-full rounded-lg px-3 py-2 text-left text-xs font-medium text-red-500 dark:text-red-400 transition"
                   >
                     Sign out
                   </button>
@@ -502,13 +524,13 @@ export function Sidebar() {
               )}
               {collapsed && (
                 <div className="absolute left-full top-1/2 z-50 ml-2 hidden -translate-y-1/2 group-hover/user:block">
-                  <div className="w-48 rounded-xl border border-white/10 bg-slate-900 p-3 shadow-2xl shadow-black/40 backdrop-blur-xl">
-                    <p className="mb-2 truncate text-sm font-medium text-slate-200">
+                  <div className="w-48 rounded-xl border p-3 shadow-2xl backdrop-blur-xl" style={{ borderColor: "var(--card-border)", background: "var(--card)" }}>
+                    <p className="mb-2 truncate text-sm font-medium" style={{ color: "var(--foreground)" }}>
                       {session.user.name ?? session.user.email}
                     </p>
                     <button
                       onClick={() => signOut({ callbackUrl: "/" })}
-                      className="w-full rounded-lg px-3 py-1.5 text-left text-xs font-medium text-red-400 transition hover:bg-red-500/10"
+                      className="w-full rounded-lg px-3 py-1.5 text-left text-xs font-medium text-red-500 dark:text-red-400 transition"
                     >
                       Sign out
                     </button>
