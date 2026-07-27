@@ -1,11 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/AuthProvider";
-import { AuthNav } from "@/components/AuthNav";
-import { MobileNav } from "@/components/MobileNav";
-import { OrgSwitcher } from "@/components/OrgSwitcher";
+import { Sidebar } from "@/components/Sidebar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,7 +16,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "BizzBills | AI-Native Invoicing Platform",
-  description: "Production-ready invoicing, GST, inventory, and payments platform for modern businesses.",
+  description:
+    "Production-ready invoicing, GST, inventory, and payments platform for modern businesses.",
 };
 
 export default function RootLayout({
@@ -34,85 +32,13 @@ export default function RootLayout({
     >
       <body className="min-h-full bg-slate-950 text-slate-100">
         <AuthProvider>
-          <div className="mx-auto flex min-h-screen max-w-7xl flex-col px-4 py-4 sm:px-6 lg:px-8">
-            <header className="sticky top-4 z-20 mb-8 rounded-full border border-white/10 bg-slate-900/70 px-4 py-3 shadow-2xl shadow-black/30 backdrop-blur">
-              <nav className="flex items-center justify-between gap-4">
-                <Link href="/" className="text-lg font-semibold tracking-tight text-white">
-                  BizzBills
-                </Link>
-
-                <OrgSwitcher />
-
-                {/* Desktop nav */}
-                <div className="hidden items-center gap-6 text-sm text-slate-300 md:flex">
-                  <Link href="/dashboard" className="transition hover:text-white">
-                    Dashboard
-                  </Link>
-                  <Link href="/billing" className="transition hover:text-white">
-                    Billing
-                  </Link>
-                  <Link href="/accounting/chart-of-accounts" className="transition hover:text-white">
-                    Accounting
-                  </Link>
-<Link href="/reports" className="transition hover:text-white">
-                      Reports
-                    </Link>
-                    <Link href="/accounting/reports" className="transition hover:text-white">
-                      Fin. Reports
-                    </Link>
-                                        <Link href="/gst" className="transition hover:text-white">
-                      GST
-                    </Link>
-                    <Link href="/ai" className="transition hover:text-white">
-                      AI
-                    </Link>
-                    <Link href="/payments" className="transition hover:text-white">
-                      Payments
-                    </Link>
-                    <Link href="/banking" className="transition hover:text-white">
-                      Banking
-                    </Link>
-                    <Link href="/credit-notes" className="transition hover:text-white">
-                      Credit Notes
-                    </Link>
-                    <Link href="/debit-notes" className="transition hover:text-white">
-                      Debit Notes
-                    </Link>
-                    <Link href="/orders" className="transition hover:text-white">
-                      Orders
-                    </Link>
-                    <Link href="/parties" className="transition hover:text-white">
-                      Parties
-                    </Link>
-                    <Link href="/payroll" className="transition hover:text-white">
-                      Payroll
-                    </Link>
-                    <Link href="/inventory" className="transition hover:text-white">
-                      Inventory
-                    </Link>
-                    <Link href="/recurring-invoices" className="transition hover:text-white">
-                      Recurring
-                    </Link>
-                    <Link href="/currency" className="transition hover:text-white">
-                      Currency
-                    </Link>
-                    <Link href="/activity" className="transition hover:text-white">
-                      Activity
-                    </Link>
-                    <Link href="/settings" className="transition hover:text-white">
-                      Settings
-                    </Link>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <div className="hidden md:block">
-                    <AuthNav />
-                  </div>
-                  <MobileNav />
-                </div>
-              </nav>
-            </header>
-            {children}
+          <div className="flex min-h-screen">
+            <Sidebar />
+            <main className="flex-1 overflow-x-auto transition-all duration-300 md:pl-0">
+              <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 pt-16 md:pt-6">
+                {children}
+              </div>
+            </main>
           </div>
         </AuthProvider>
       </body>
