@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
+import { PublicLayout } from "@/components/PublicLayout";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -41,7 +42,8 @@ await signIn("credentials", { email, password, redirect: false });
   }
 
   return (
-    <main className="flex flex-1 items-center justify-center pb-10">
+    <PublicLayout>
+    <main className="flex flex-1 items-center justify-center py-20">
       <div className="w-full max-w-md rounded-[2rem] border border-white/10 bg-slate-900/70 p-8 shadow-2xl shadow-black/20 backdrop-blur">
         <div className="mb-6 text-center">
           <p className="text-sm uppercase tracking-[0.25em] text-cyan-300">Get started</p>
@@ -108,5 +110,6 @@ await signIn("credentials", { email, password, redirect: false });
         </p>
       </div>
     </main>
+    </PublicLayout>
   );
 }

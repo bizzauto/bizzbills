@@ -875,3 +875,43 @@ model DebitNoteLine {
 
   @@index([debitNoteId])
 }
+
+model ProformaInvoice {
+  id              String   @id @default(cuid())
+  proformaNumber  String
+  customerName    String
+  customerGstin   String   @default("")
+  currency        String   @default("INR")
+  validUntil      String   @default("")
+  status          String   @default("draft")
+  subtotal        Float    @default(0)
+  taxTotal        Float    @default(0)
+  total           Float    @default(0)
+  notes           String   @default("")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orgId  String?
+  org    Organization? @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  lines ProformaInvoiceLine[]
+
+  @@unique([orgId, proformaNumber])
+  @@index([orgId])
+  @@index([userId])
+}
+
+model ProformaInvoiceLine {
+  id                String  @id @default(cuid())
+  description       String
+  quantity          Float
+  unitPrice         Float
+  taxRate           Float   @default(0)
+  hsnCode           String  @default("")
+  proformaInvoiceId String
+  proformaInvoice   ProformaInvoice @relation(fields: [proformaInvoiceId], references: [id], onDelete: Cascade)
+
+  @@index([proformaInvoiceId])
+}

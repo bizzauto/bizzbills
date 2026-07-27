@@ -4,6 +4,7 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { PublicLayout } from "@/components/PublicLayout";
 
 export default function SignInPage() {
   const router = useRouter();
@@ -33,7 +34,8 @@ export default function SignInPage() {
   }
 
   return (
-    <main className="flex flex-1 items-center justify-center pb-10">
+    <PublicLayout>
+    <main className="flex flex-1 items-center justify-center py-20">
       <div className="w-full max-w-md rounded-[2rem] border border-white/10 bg-slate-900/70 p-8 shadow-2xl shadow-black/20 backdrop-blur">
         <div className="mb-6 text-center">
           <p className="text-sm uppercase tracking-[0.25em] text-cyan-300">Welcome back</p>
@@ -80,7 +82,13 @@ export default function SignInPage() {
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-slate-400">
+        <div className="mt-4 text-center">
+          <Link href="/auth/forgot-password" className="text-sm text-cyan-400 hover:text-cyan-300">
+            Forgot password?
+          </Link>
+        </div>
+
+        <p className="mt-4 text-center text-sm text-slate-400">
           Don&apos;t have an account?{" "}
           <Link href="/auth/register" className="font-medium text-cyan-300 hover:text-cyan-200">
             Create one
@@ -88,5 +96,6 @@ export default function SignInPage() {
         </p>
       </div>
     </main>
+    </PublicLayout>
   );
 }

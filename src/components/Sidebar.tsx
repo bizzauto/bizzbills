@@ -191,8 +191,17 @@ const MENU_GROUPS: MenuGroup[] = [
     items: [
       { label: "Billing", href: "/billing", icon: "billing" },
       { label: "Recurring", href: "/recurring-invoices", icon: "recurring" },
+      { label: "Proforma Invoices", href: "/proforma-invoices", icon: "billing" },
       { label: "Credit Notes", href: "/credit-notes", icon: "creditNote" },
       { label: "Debit Notes", href: "/debit-notes", icon: "debitNote" },
+    ],
+  },
+  {
+    title: "Trade Documents",
+    items: [
+      { label: "Quotations", href: "/quotations", icon: "billing" },
+      { label: "Delivery Challans", href: "/delivery-challan", icon: "billing" },
+      { label: "Orders", href: "/orders", icon: "billing" },
     ],
   },
   {
@@ -226,7 +235,6 @@ const MENU_GROUPS: MenuGroup[] = [
   {
     title: "Trade",
     items: [
-      { label: "Orders", href: "/orders", icon: "orders" },
       { label: "Parties", href: "/parties", icon: "parties" },
     ],
   },
@@ -263,6 +271,7 @@ const MENU_GROUPS: MenuGroup[] = [
   {
     title: "System",
     items: [
+      { label: "Profile", href: "/settings/profile", icon: "settings" },
       { label: "Settings", href: "/settings", icon: "settings" },
     ],
   },
