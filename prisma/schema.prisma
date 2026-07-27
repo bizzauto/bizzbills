@@ -68,6 +68,7 @@ model User {
   sessions    Session[]
   invoices    Invoice[]
   tenantUsers TenantUser[]
+  proformaInvoices ProformaInvoice[]
 }
 
 model VerificationToken {
@@ -126,6 +127,7 @@ model Organization {
   activityLogs    ActivityLog[]
   employees       Employee[]
   payrollRuns     PayrollRun[]
+  proformaInvoices ProformaInvoice[]
 }
 
 /// Branch/location within an organization
