@@ -24,7 +24,8 @@ npm install
 
 # Set up environment
 cp .env.example .env
-# Edit .env — set your DATABASE_URL and NEXTAUTH_SECRET
+# Edit .env — set your DATABASE_URL (Supabase Postgres) and NEXTAUTH_SECRET
+# NOTE: local SQLite dev is not used in production/Coolify.
 
 # Create the database tables
 npx prisma generate

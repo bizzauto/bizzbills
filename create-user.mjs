@@ -2,7 +2,10 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import crypto from "node:crypto";
 
-const url = "postgresql://supabase_admin:3RY07i5nk2qLT39DMnf2VW5I0DZuR436@supabase-db-ls3ehizkv5guirww9wlazwrv:5432/postgres";
+const url = process.env.DATABASE_URL;
+if (!url) {
+  throw new Error("DATABASE_URL is required");
+}
 const adapter = new PrismaPg({ connectionString: url });
 const prisma = new PrismaClient({ adapter });
 

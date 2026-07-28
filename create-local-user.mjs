@@ -8,12 +8,16 @@ config(); // Load .env file
 
 const DATABASE_URL = process.env.DATABASE_URL || "file:./dev.db";
 
-// Use libsql adapter for SQLite
+// Use libsql adapter for SQLite/local dev only
 const adapter = new PrismaLibSql({
   url: DATABASE_URL,
 });
 
 const prisma = new PrismaClient({ adapter });
+
+if (!DATABASE_URL.startsWith("file:")) {
+  throw new Error("create-local-user.mjs is intended for SQLite local dev only. Use create-user.mjs for PostgreSQL/Supabase.");
+}
 
 const email = "sandydarekar01@gmail.com";
 const password = "sandydarekar01@123";
