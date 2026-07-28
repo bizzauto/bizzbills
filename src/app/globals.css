@@ -148,3 +148,21 @@ html.light ::selection {
 .l-badge {
   background: var(--badge-bg);
 }
+
+/* Toast animation */
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-up {
+  animation: slide-up 0.25s ease-out;
+}
+
+/* Print styles */
+@media print {
+  .no-print { display: none !important; }
+  body { background: white !important; color: black !important; }
+  .print-only { display: block !important; }
+}
+
+.print-only { display: none; }

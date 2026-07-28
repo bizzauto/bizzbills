@@ -69,6 +69,7 @@ model User {
   invoices    Invoice[]
   tenantUsers TenantUser[]
   proformaInvoices ProformaInvoice[]
+  expenses         Expense[]
 }
 
 model VerificationToken {
@@ -128,6 +129,7 @@ model Organization {
   employees       Employee[]
   payrollRuns     PayrollRun[]
   proformaInvoices ProformaInvoice[]
+  expenses         Expense[]
 }
 
 /// Branch/location within an organization
@@ -916,4 +918,27 @@ model ProformaInvoiceLine {
   proformaInvoice   ProformaInvoice @relation(fields: [proformaInvoiceId], references: [id], onDelete: Cascade)
 
   @@index([proformaInvoiceId])
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  description String
+  amount      Float
+  category    String   @default("other")
+  date        String
+  paymentMethod String  @default("cash")
+  notes       String   @default("")
+  isRecurring Boolean  @default(false)
+  recurringId String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId String
+  user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orgId  String?
+  org    Organization? @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+  @@index([userId])
+  @@index([category])
 }

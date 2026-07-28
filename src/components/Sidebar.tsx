@@ -230,6 +230,7 @@ const MENU_GROUPS: MenuGroup[] = [
     title: "Payments & Banking",
     items: [
       { label: "Payments", href: "/payments", icon: "payments" },
+      { label: "Expenses", href: "/expenses", icon: "payments" },
       { label: "Banking", href: "/banking", icon: "banking" },
     ],
   },
