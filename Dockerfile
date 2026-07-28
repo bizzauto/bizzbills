@@ -43,6 +43,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modul
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./prisma.config.ts
 
+# Install Prisma adapter dependencies missing from standalone build
+RUN npm install postgres-array postgres-bytea postgres-date postgres-interval postgres-range 2>/dev/null || true
+
 USER nextjs
 
 EXPOSE 3000
