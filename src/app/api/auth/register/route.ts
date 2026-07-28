@@ -61,7 +61,8 @@ export async function POST(request: Request) {
       { id: user.id, email: user.email, name: user.name, orgId: org.id, role: "ORG_ADMIN" },
       { status: 201 },
     );
-  } catch {
+  } catch (error) {
+    console.error("Registration error:", error);
     return NextResponse.json(
       { error: "Registration failed. Please try again." },
       { status: 500 },
