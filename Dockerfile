@@ -43,8 +43,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modul
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./prisma.config.ts
 
-# Copy adapter deps (missing in standalone build)
-RUN cp -r /app/node_modules/postgres-array /app/node_modules/postgres-bytea /app/node_modules/postgres-date /app/node_modules/postgres-interval ./node_modules/ 2>/dev/null || true
+# postgres-* packages are now direct deps — included by standalone build
 
 USER nextjs
 
