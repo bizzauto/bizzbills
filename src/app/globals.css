@@ -389,6 +389,49 @@ button, a, input, select, textarea {
   transition: all 0.2s ease;
 }
 
+/* ── Light-mode-aware text / bg / border utilities ── */
+.text-default { color: var(--foreground); }
+.text-muted { color: var(--muted); }
+.text-accent { color: var(--accent); }
+.text-accent-light { color: var(--accent); filter: brightness(1.4); }
+.text-success { color: var(--success); }
+.text-warning { color: var(--warning); }
+.text-danger { color: var(--danger); }
+
+/* on-accent text (dark on accent bg) */
+.text-on-accent { color: #020617; }
+html.light .text-on-accent { color: #f8fafc; }
+
+.bg-default { background: var(--card); }
+.bg-surface { background: var(--card); }
+.bg-surface-darker { background: var(--input-bg); }
+.bg-accent-subtle { background: var(--accent-subtle); }
+.bg-badge { background: var(--badge-bg); }
+
+.border-default { border-color: var(--card-border); }
+
+/* Status backgrounds */
+.bg-success { background: var(--success-bg); }
+.bg-warning { background: var(--warning-bg); }
+.bg-error { background: var(--danger-bg); }
+.bg-info { background: var(--info-bg); }
+
+/* Hover brighten — lightens on hover (works in both modes) */
+.hover-brighten { transition: background 0.15s ease; }
+.hover-brighten:hover { background: var(--card-hover); }
+
+/* Row / list item */
+.list-item {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  transition: all 0.15s ease;
+}
+.list-item:hover {
+  background: var(--card-hover);
+}
+
 /* Toast animation */
 @keyframes slide-up {
   from { opacity: 0; transform: translateY(16px); }

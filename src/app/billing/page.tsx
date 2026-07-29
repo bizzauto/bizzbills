@@ -264,27 +264,27 @@ export default function BillingPage() {
 
   return (
     <main className="flex flex-1 flex-col gap-6 pb-10">
-      <section className="rounded-[2rem] border border-white/10 bg-slate-900/70 p-6 shadow-2xl shadow-black/20 backdrop-blur">
+      <section className="section-card">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-sm uppercase tracking-[0.25em] text-cyan-300">
+            <p className="text-sm uppercase tracking-[0.25em] text-accent-light">
               Billing workspace
             </p>
-            <h1 className="mt-2 text-3xl font-semibold text-white">
+            <h1 className="mt-2 text-3xl font-semibold text-default">
               Create, validate, and send invoices at production speed.
             </h1>
           </div>
           <div className="flex flex-wrap gap-3">
             <button
               onClick={resetForm}
-              className="rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10"
+              className="btn-secondary text-sm font-semibold"
             >
               New invoice
             </button>
             <button
               onClick={handleSave}
               disabled={!summary.isValid || saving}
-              className="rounded-full bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:opacity-50"
+              className="btn-primary"
             >
               {saving ? "Saving…" : saved ? "Saved ✓" : "Save invoice"}
             </button>
@@ -293,18 +293,18 @@ export default function BillingPage() {
       </section>
 
       {/* Template Selector */}
-      <section className="rounded-[1.5rem] border border-white/10 bg-slate-900/70 p-4 backdrop-blur sm:p-6">
+      <section className="section-card">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <p className="text-xs uppercase tracking-wider text-slate-400">Invoice Template</p>
-            <h2 className="text-lg font-semibold text-white mt-0.5">Choose a layout for this invoice</h2>
+            <p className="section-label">Invoice Template</p>
+            <h2 className="text-lg font-semibold text-default mt-0.5">Choose a layout for this invoice</h2>
           </div>
           <button
             onClick={() => setShowPreview((p) => !p)}
             className={`rounded-full border px-4 py-1.5 text-xs font-semibold transition ${
               showPreview
-                ? "border-cyan-400/40 bg-cyan-500/20 text-cyan-300"
-                : "border-white/10 text-slate-300 hover:bg-white/5"
+                ? "border-default bg-accent-subtle text-accent-light"
+                : "border-default text-muted hover-brighten"
             }`}
           >
             {showPreview ? "Hide Preview" : "Live Preview"}
@@ -314,19 +314,19 @@ export default function BillingPage() {
       </section>
 
       {showPreview && (
-        <section className="rounded-[1.5rem] border border-white/10 bg-slate-900/70 p-4 backdrop-blur sm:p-6 overflow-hidden">
+        <section className="section-card overflow-hidden">
           <div className="flex items-center justify-between mb-4">
-            <p className="text-xs uppercase tracking-wider text-slate-400">
-              Preview — <span className="text-cyan-300 font-semibold">{selectedTemplate}</span>
+            <p className="section-label">
+              Preview — <span className="text-accent-light font-semibold">{selectedTemplate}</span>
             </p>
             <button
               onClick={() => window.print()}
-              className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-300 hover:bg-white/5 transition"
+              className="rounded-full border border-default px-3 py-1 text-xs text-muted hover-brighten transition"
             >
               🖨 Print Preview
             </button>
           </div>
-          <div className="rounded-xl border border-white/10 bg-white overflow-hidden max-h-[600px] overflow-y-auto">
+          <div className="rounded-xl border border-default bg-white overflow-hidden max-h-[600px] overflow-y-auto">
             <InvoiceTemplate template={selectedTemplate} data={templateData} />
           </div>
         </section>
@@ -334,68 +334,68 @@ export default function BillingPage() {
 
       <section className="grid gap-6 md:grid-cols-1 lg:grid-cols-1 xl:grid-cols-[1.2fr_0.8fr]">
         {/* Invoice form */}
-        <div className="rounded-[1.5rem] border border-white/10 bg-slate-900/70 p-4 backdrop-blur sm:p-6">
+        <div className="section-card">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-400">Invoice draft</p>
-              <h2 className="text-xl font-semibold text-white">
+              <p className="text-muted text-sm">Invoice draft</p>
+              <h2 className="text-xl font-semibold text-default">
                 #{sanitizedDraft.invoiceNumber || "New"}
               </h2>
             </div>
             <span
               className={`rounded-full px-3 py-1 text-sm ${
                 summary.isValid
-                  ? "bg-emerald-500/15 text-emerald-300"
-                  : "bg-amber-500/15 text-amber-300"
+                  ? "bg-success text-success"
+                  : "bg-warning text-warning"
               }`}
             >
               {summary.isValid ? "Valid" : "Needs review"}
             </span>
           </div>
 
-          <div className="mt-6 space-y-4 rounded-[1.25rem] border border-white/10 bg-slate-950/70 p-4">
+          <div className="mt-6 space-y-4 section-card p-4">
             <div className="grid gap-4 md:grid-cols-2">
-              <label className="text-sm text-slate-300">
-                <span className="mb-1 block text-slate-400">Customer</span>
+              <label className="text-sm text-muted">
+                <span className="mb-1 block text-muted">Customer</span>
                 <input
                   value={draft.customerName}
                   onChange={(e) => updateField("customerName", e.target.value)}
                   placeholder="Customer name"
-                  className="w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-white outline-none ring-0 placeholder:text-slate-500"
+                  className="input"
                 />
               </label>
-              <label className="text-sm text-slate-300">
-                <span className="mb-1 block text-slate-400">Invoice #</span>
+              <label className="text-sm text-muted">
+                <span className="mb-1 block text-muted">Invoice #</span>
                 <input
                   value={draft.invoiceNumber}
                   onChange={(e) => updateField("invoiceNumber", e.target.value)}
                   placeholder="INV-0001"
-                  className="w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-white outline-none ring-0 placeholder:text-slate-500"
+                  className="input"
                 />
               </label>
-              <label className="text-sm text-slate-300">
-                <span className="mb-1 block text-slate-400">GSTIN</span>
+              <label className="text-sm text-muted">
+                <span className="mb-1 block text-muted">GSTIN</span>
                 <input
                   value={draft.customerGstin}
                   onChange={(e) => updateField("customerGstin", e.target.value)}
                   placeholder="27AABCU9603R1ZX"
-                  className="w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-white outline-none ring-0 placeholder:text-slate-500"
+                  className="input"
                 />
               </label>
-              <label className="text-sm text-slate-300">
-                <span className="mb-1 block text-slate-400">Due date</span>
+              <label className="text-sm text-muted">
+                <span className="mb-1 block text-muted">Due date</span>
                 <input
                   type="date"
                   value={draft.dueDate}
                   onChange={(e) => updateField("dueDate", e.target.value)}
-                  className="w-full rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-white outline-none ring-0"
+                  className="input"
                 />
               </label>
             </div>
 
-            <div className="-mx-4 overflow-x-auto rounded-xl border border-white/10 sm:mx-0">
+            <div className="-mx-4 overflow-x-auto rounded-xl border border-default sm:mx-0">
               <table className="min-w-[640px] text-sm sm:min-w-full">
-                <thead className="bg-slate-800/80 text-left text-slate-300">
+                <thead className="bg-surface-darker text-left text-muted">
                   <tr>
                     <th className="p-3">Item</th>
                     <th className="p-3">HSN</th>
@@ -418,7 +418,7 @@ export default function BillingPage() {
                     return (
                       <tr
                         key={line.id}
-                        className="border-t border-white/10 bg-slate-900/50"
+                        className="border-t border-default bg-surface"
                       >
                         <td className="p-2">
                           <input
@@ -430,14 +430,14 @@ export default function BillingPage() {
                               updateLine(line.id, "description", e.target.value)
                             }
                             placeholder="Item description"
-                            className="w-full rounded-lg bg-slate-900 px-2 py-1 text-white outline-none ring-0 placeholder:text-slate-500"
+                            className="w-full rounded-lg bg-surface-darker px-2 py-1 text-default outline-none ring-0 placeholder:text-muted"
                           />
                           {hsnHints.length > 0 && (
                             <div className="mt-1 flex flex-wrap gap-1">
                               {hsnHints.map((h) => (
                                 <span
                                   key={h.hsnCode}
-                                  className="inline-block rounded-full bg-cyan-500/10 px-2 py-0.5 text-[10px] text-cyan-200"
+                                  className="inline-block rounded-full bg-accent-subtle px-2 py-0.5 text-[10px] text-accent-light"
                                 >
                                   HSN {h.hsnCode} · {h.taxRate}%
                                 </span>
@@ -455,7 +455,7 @@ export default function BillingPage() {
                               updateLine(line.id, "hsnCode", e.target.value)
                             }
                             placeholder="HSN code"
-                            className="w-20 rounded-lg bg-slate-900 px-2 py-1 text-white outline-none ring-0 placeholder:text-slate-500"
+                            className="w-20 rounded-lg bg-surface-darker px-2 py-1 text-default outline-none ring-0 placeholder:text-muted"
                           />
                         </td>
                         <td className="p-2">
@@ -469,7 +469,7 @@ export default function BillingPage() {
                             onChange={(e) =>
                               updateLine(line.id, "quantity", e.target.value)
                             }
-                            className="w-16 rounded-lg bg-slate-900 px-2 py-1 text-center text-white outline-none ring-0"
+                            className="w-16 rounded-lg bg-surface-darker px-2 py-1 text-center text-default outline-none ring-0"
                           />
                         </td>
                         <td className="p-2">
@@ -483,7 +483,7 @@ export default function BillingPage() {
                             onChange={(e) =>
                               updateLine(line.id, "unitPrice", e.target.value)
                             }
-                            className="w-24 rounded-lg bg-slate-900 px-2 py-1 text-right text-white outline-none ring-0"
+                            className="w-24 rounded-lg bg-surface-darker px-2 py-1 text-right text-default outline-none ring-0"
                           />
                         </td>
                         <td className="p-2">
@@ -498,16 +498,16 @@ export default function BillingPage() {
                             onChange={(e) =>
                               updateLine(line.id, "taxRate", e.target.value)
                             }
-                            className="w-16 rounded-lg bg-slate-900 px-2 py-1 text-center text-white outline-none ring-0"
+                            className="w-16 rounded-lg bg-surface-darker px-2 py-1 text-center text-default outline-none ring-0"
                           />
                         </td>
-                        <td className="p-3 font-medium text-white">
+                        <td className="p-3 font-medium text-default">
                           {formatAmount(lineTotal, draft.currency)}
                         </td>
                         <td className="p-2">
                           <button
                             onClick={() => removeLine(line.id)}
-                            className="text-xs text-red-400 hover:text-red-300"
+                            className="text-xs text-danger"
                             disabled={draft.lines.length <= 1}
                           >
                             ✕
@@ -522,25 +522,25 @@ export default function BillingPage() {
 
             <button
               onClick={addLine}
-              className="text-sm text-cyan-300 hover:text-cyan-200"
+              className="text-sm text-accent-light"
             >
               + Add line item
             </button>
 
-            <div className="space-y-2 rounded-xl bg-slate-900/80 p-3 text-sm">
-              <div className="flex items-center justify-between text-slate-300">
+            <div className="space-y-2 rounded-xl bg-surface-darker p-3 text-sm">
+              <div className="flex items-center justify-between text-muted">
                 <span>Subtotal</span>
-                <span className="font-semibold text-white">
+                <span className="font-semibold text-default">
                   {formatAmount(summary.subtotal, draft.currency)}
                 </span>
               </div>
-              <div className="flex items-center justify-between text-slate-300">
+              <div className="flex items-center justify-between text-muted">
                 <span>Tax</span>
-                <span className="font-semibold text-white">
+                <span className="font-semibold text-default">
                   {formatAmount(summary.taxTotal, draft.currency)}
                 </span>
               </div>
-              <div className="flex items-center justify-between border-t border-white/10 pt-2 text-white">
+              <div className="flex items-center justify-between border-t border-default pt-2 text-default">
                 <span>Total</span>
                 <span className="font-semibold">
                   {formatAmount(summary.total, draft.currency)}
@@ -549,19 +549,19 @@ export default function BillingPage() {
             </div>
 
             {summary.warnings.length > 0 && (
-              <div className="rounded-xl border border-amber-400/20 bg-amber-500/10 p-3 text-sm text-amber-200">
+              <div className="rounded-xl border border-default bg-warning p-3 text-sm text-warning">
                 {summary.warnings.join(" • ")}
               </div>
             )}
 
             {error && (
-              <div className="rounded-xl border border-red-400/20 bg-red-500/10 p-3 text-sm text-red-200">
+              <div className="rounded-xl border border-default bg-error p-3 text-sm text-danger">
                 {error}
               </div>
             )}
 
             {saved && (
-              <div className="rounded-xl border border-emerald-400/20 bg-emerald-500/10 p-3 text-sm text-emerald-200">
+              <div className="rounded-xl border border-default bg-success p-3 text-sm text-success">
                 Invoice saved successfully! View it in the{" "}
                 <Link href="/dashboard" className="underline">
                   dashboard
@@ -574,8 +574,8 @@ export default function BillingPage() {
 
         {/* AI assist side panel */}
         <div className="space-y-6">
-          <div className="rounded-[1.5rem] border border-white/10 bg-slate-900/70 p-6 backdrop-blur">
-            <h2 className="text-xl font-semibold text-white">AI assist</h2>
+          <div className="section-card">
+            <h2 className="text-xl font-semibold text-default">AI assist</h2>
 
             {/* Quick action buttons */}
             <div className="mt-4 flex flex-wrap gap-2">
@@ -586,8 +586,8 @@ export default function BillingPage() {
                   onClick={() => handleQuickAction(action)}
                   className={`rounded-full border px-3 py-1 text-sm transition ${
                     action.loading
-                      ? "border-cyan-400/40 bg-cyan-500/20 text-cyan-300"
-                      : "border-cyan-400/20 bg-cyan-500/10 text-cyan-200 hover:bg-cyan-500/20"
+                      ? "border-default bg-accent-subtle text-accent-light"
+                      : "border-default bg-accent-subtle text-accent-light hover-brighten"
                   }`}
                 >
                   {action.loading ? "Processing…" : action.label}
@@ -598,16 +598,14 @@ export default function BillingPage() {
             {/* HSN suggestions */}
             {aiSuggestions.length > 0 && (
               <div className="mt-4 space-y-2">
-                <p className="text-xs uppercase tracking-wider text-slate-400">
-                  HSN suggestions
-                </p>
+                <p className="section-label">HSN suggestions</p>
                 {aiSuggestions.slice(0, 3).map((s) => (
                   <div
                     key={s.title}
-                    className="rounded-xl border border-cyan-400/20 bg-cyan-500/10 p-3 text-sm text-cyan-200"
+                    className="rounded-xl border border-default bg-accent-subtle p-3 text-sm text-accent-light"
                   >
-                    <span className="font-medium text-white">{s.title}</span>
-                    <p className="mt-0.5 text-slate-300">{s.description}</p>
+                    <span className="font-medium text-default">{s.title}</span>
+                    <p className="mt-0.5 text-muted">{s.description}</p>
                   </div>
                 ))}
               </div>
@@ -616,21 +614,19 @@ export default function BillingPage() {
             {/* Anomaly flags */}
             {anomalies.length > 0 && (
               <div className="mt-4 space-y-2">
-                <p className="text-xs uppercase tracking-wider text-slate-400">
-                  Flags ({anomalies.length})
-                </p>
+                <p className="section-label">Flags ({anomalies.length})</p>
                 {anomalies.map((flag) => (
                   <div
                     key={flag.field}
                     className={`rounded-xl border p-3 text-sm ${
                       flag.severity === "critical"
-                        ? "border-red-400/20 bg-red-500/10 text-red-200"
+                        ? "border-default bg-error text-danger"
                         : flag.severity === "warning"
-                          ? "border-amber-400/20 bg-amber-500/10 text-amber-200"
-                          : "border-slate-400/20 bg-slate-500/10 text-slate-200"
+                          ? "border-default bg-warning text-warning"
+                          : "border-default bg-badge text-muted"
                     }`}
                   >
-                    <p className="font-medium text-white">{flag.message}</p>
+                    <p className="font-medium text-default">{flag.message}</p>
                     <p className="mt-0.5 text-xs opacity-80">{flag.suggestion}</p>
                   </div>
                 ))}
@@ -639,7 +635,7 @@ export default function BillingPage() {
 
             {/* Empty state */}
             {aiSuggestions.length === 0 && anomalies.length === 0 && (
-              <div className="mt-4 rounded-2xl border border-white/10 bg-slate-950/70 p-4 text-sm leading-6 text-slate-400">
+              <div className="mt-4 section-card p-4 text-sm leading-6 text-muted">
                 Start typing line items and the AI assistant will suggest HSN
                 codes, flag anomalies, and help draft your invoice.
               </div>
@@ -647,16 +643,16 @@ export default function BillingPage() {
           </div>
 
           {/* Next actions */}
-          <div className="rounded-[1.5rem] border border-white/10 bg-slate-900/70 p-6 backdrop-blur">
-            <h2 className="text-xl font-semibold text-white">Next actions</h2>
-            <div className="mt-4 space-y-3 text-sm text-slate-300">
-              <button className="w-full rounded-xl border border-white/10 bg-slate-950/70 p-3 text-left transition hover:bg-slate-900/70">
+          <div className="section-card">
+            <h2 className="text-xl font-semibold text-default">Next actions</h2>
+            <div className="mt-4 space-y-3 text-sm text-muted">
+              <button className="w-full rounded-xl border border-default bg-surface-darker p-3 text-left transition hover-brighten">
                 Send e-invoice draft
               </button>
-              <button className="w-full rounded-xl border border-white/10 bg-slate-950/70 p-3 text-left transition hover:bg-slate-900/70">
+              <button className="w-full rounded-xl border border-default bg-surface-darker p-3 text-left transition hover-brighten">
                 Schedule reminder for 2 days
               </button>
-              <button className="w-full rounded-xl border border-white/10 bg-slate-950/70 p-3 text-left transition hover:bg-slate-900/70">
+              <button className="w-full rounded-xl border border-default bg-surface-darker p-3 text-left transition hover-brighten">
                 Save as recurring billing template
               </button>
             </div>

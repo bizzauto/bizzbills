@@ -102,8 +102,15 @@ export default function DashboardPage() {
     return Object.entries(cust).sort(([, a], [, b]) => b - a).slice(0, 5);
   }, [invoices]);
 
-  const chartTextColor = "#94a3b8";
-  const chartGridColor = "rgba(255,255,255,0.05)";
+  const [chartTextColor, setChartTextColor] = useState("#94a3b8");
+  const [chartGridColor, setChartGridColor] = useState("rgba(255,255,255,0.05)");
+
+  // Update chart colors on theme change
+  useEffect(() => {
+    const isLight = document.documentElement.classList.contains("light");
+    setChartTextColor(isLight ? "#64748b" : "#94a3b8");
+    setChartGridColor(isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.05)");
+  }, []);
 
   const lineOptions = {
     responsive: true,
@@ -123,17 +130,17 @@ export default function DashboardPage() {
       <section className="section-card">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-sm uppercase tracking-[0.25em] text-cyan-300">Executive dashboard</p>
-            <h1 className="mt-2 text-3xl font-semibold text-white">
+            <p className="text-sm uppercase tracking-[0.25em] text-accent-light">Executive dashboard</p>
+            <h1 className="mt-2 text-3xl font-semibold text-default">
               Welcome back{session?.user?.name ? `, ${session.user.name}` : ""}.
             </h1>
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={() => setSearchOpen(true)} className="flex items-center gap-2 rounded-full border border-white/10 bg-slate-800/80 px-4 py-2 text-sm text-slate-400 transition hover:border-white/20 hover:text-white">
+            <button onClick={() => setSearchOpen(true)} className="flex items-center gap-2 rounded-full border border-default bg-surface-darker px-4 py-2 text-sm text-muted transition hover:border-default hover:text-default">
               <span className="text-xs">🔍</span> Search&hellip;
-              <kbd className="ml-1 rounded border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px]">⌘K</kbd>
+              <kbd className="ml-1 rounded border border-default bg-badge px-1.5 py-0.5 text-[10px]">⌘K</kbd>
             </button>
-            <div className="rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-2 text-sm text-cyan-200">
+            <div className="rounded-full border border-default bg-accent-subtle px-3 py-2 text-sm text-accent-light">
               {invoices.length} invoice{invoices.length !== 1 ? "s" : ""}
             </div>
           </div>
@@ -155,8 +162,8 @@ export default function DashboardPage() {
           <span className="kpi-value kpi-accent-red">{formatAmount(totals.overdue, currentOrgCurrency)}</span>
         </div>
         <div className="kpi-card">
-          <span className="kpi-label">Paid / Total</span>
-          <span className="kpi-value kpi-accent-emerald">{totals.paid} <span className="text-sm font-normal text-slate-400">/ {invoices.length}</span></span>
+            <span className="kpi-label">Paid / Total</span>
+          <span className="kpi-value kpi-accent-emerald">{totals.paid} <span className="text-sm font-normal text-muted">/ {invoices.length}</span></span>
         </div>
       </section>
 
@@ -166,7 +173,7 @@ export default function DashboardPage() {
           <Link
             key={dt.href}
             href={dt.href}
-            className="flex flex-col items-center gap-1.5 rounded-xl border border-white/10 bg-slate-900/50 px-2 py-3 text-center transition hover:bg-slate-800/70 hover:border-white/20"
+            className="flex flex-col items-center gap-1.5 rounded-xl border border-default bg-default px-2 py-3 text-center transition hover:bg-surface-darker"
           >
             <span
               className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold"
@@ -174,7 +181,7 @@ export default function DashboardPage() {
             >
               {dt.label.charAt(0)}
             </span>
-            <span className="text-[11px] font-medium text-slate-300 leading-tight">{dt.label}</span>
+            <span className="text-[11px] font-medium text-muted leading-tight">{dt.label}</span>
           </Link>
         ))}
       </section>
@@ -184,7 +191,7 @@ export default function DashboardPage() {
         <section className="grid gap-6 lg:grid-cols-3">
           {/* Revenue Trend */}
           <div className="section-card lg:col-span-2">
-            <h2 className="text-lg font-semibold text-white mb-4">Revenue Trend</h2>
+            <h2 className="text-lg font-semibold text-default mb-4">Revenue Trend</h2>
             <div className="h-[250px]">
               <Line
                 data={{
@@ -207,7 +214,7 @@ export default function DashboardPage() {
 
           {/* Status Breakdown */}
           <div className="section-card">
-            <h2 className="text-lg font-semibold text-white mb-4">Status Breakdown</h2>
+            <h2 className="text-lg font-semibold text-default mb-4">Status Breakdown</h2>
             <div className="h-[200px] flex items-center justify-center">
               <Doughnut
                 data={{
@@ -240,15 +247,15 @@ export default function DashboardPage() {
       <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
         {/* Recent Invoices */}
         <div className="section-card">
-          <h2 className="text-xl font-semibold text-white">Recent invoices</h2>
+          <h2 className="text-xl font-semibold text-default">Recent invoices</h2>
           {loading ? (
             <div className="mt-4 space-y-3">
-              {[1, 2, 3].map((i) => <div key={i} className="h-14 animate-pulse rounded-xl bg-slate-800" />)}
+              {[1, 2, 3].map((i) => <div key={i} className="h-14 animate-pulse rounded-xl bg-surface-darker" />)}
             </div>
           ) : invoices.length === 0 ? (
-            <div className="mt-4 rounded-xl border border-white/10 bg-slate-950/70 p-6 text-center text-sm text-slate-400">
+            <div className="mt-4 rounded-xl border border-default bg-surface-darker p-6 text-center text-sm text-muted">
               No invoices yet.{" "}
-              <a href="/billing" className="text-cyan-300 hover:text-cyan-200">Create your first invoice</a>
+              <a href="/billing" className="text-accent-light hover:text-accent">Create your first invoice</a>
             </div>
           ) : (
             <div className="mt-4 space-y-2">
@@ -256,14 +263,14 @@ export default function DashboardPage() {
                 <Link
                   key={inv.id}
                   href={`/invoices/${inv.id}`}
-                  className="flex items-center justify-between rounded-xl border border-white/10 bg-slate-950/70 p-3 transition hover:bg-slate-900/70"
+                  className="flex items-center justify-between rounded-xl border border-default bg-surface-darker p-3 transition hover-brighten"
                 >
                   <div>
-                    <p className="text-sm font-medium text-white">{inv.customerName}</p>
-                    <p className="text-xs text-slate-400">#{inv.invoiceNumber}</p>
+                    <p className="text-sm font-medium text-default">{inv.customerName}</p>
+                    <p className="text-xs text-muted">#{inv.invoiceNumber}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-semibold text-white">{formatAmount(inv.total, currentOrgCurrency)}</p>
+                    <p className="text-sm font-semibold text-default">{formatAmount(inv.total, currentOrgCurrency)}</p>
                     <span className={`badge-${inv.status === "paid" ? "success" : inv.status === "overdue" ? "danger" : inv.status === "draft" ? "default" : "info"} text-xs`}>
                       {inv.status}
                     </span>
@@ -276,24 +283,24 @@ export default function DashboardPage() {
 
         {/* Top Customers */}
         <div className="section-card">
-          <h2 className="text-xl font-semibold text-white">Top Customers</h2>
+          <h2 className="text-xl font-semibold text-default">Top Customers</h2>
           {topCustomers.length === 0 ? (
-            <div className="mt-4 rounded-xl border border-white/10 bg-slate-950/70 p-6 text-center text-sm text-slate-400">No customer data yet.</div>
+            <div className="mt-4 rounded-xl border border-default bg-surface-darker p-6 text-center text-sm text-muted">No customer data yet.</div>
           ) : (
             <div className="mt-4 space-y-2">
               {topCustomers.map(([name, total], i) => (
-                <div key={name} className="flex items-center justify-between rounded-xl border border-white/10 bg-slate-950/70 p-3">
+                <div key={name} className="flex items-center justify-between rounded-xl border border-default bg-surface-darker p-3">
                   <div className="flex items-center gap-3">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-cyan-500/15 text-xs font-semibold text-cyan-300">{i + 1}</span>
-                    <span className="text-sm font-medium text-white">{name}</span>
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent-subtle text-xs font-semibold text-accent-light">{i + 1}</span>
+                    <span className="text-sm font-medium text-default">{name}</span>
                   </div>
-                  <span className="text-sm font-semibold text-white">{formatAmount(total, currentOrgCurrency)}</span>
+                  <span className="text-sm font-semibold text-default">{formatAmount(total, currentOrgCurrency)}</span>
                 </div>
               ))}
             </div>
           )}
 
-          <div className="mt-4 rounded-xl border border-cyan-400/20 bg-cyan-500/10 p-3 text-sm text-cyan-200">
+          <div className="mt-4 rounded-xl border border-default bg-accent-subtle p-3 text-sm text-accent-light">
             <span className="mr-1">🤖</span> AI: Best payment follow-up window is tomorrow morning.
           </div>
         </div>
