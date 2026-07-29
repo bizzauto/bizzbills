@@ -43,8 +43,12 @@ COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modul
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./prisma.config.ts
 
-# Ensure Prisma adapter dependencies exist for standalone build
-RUN npm install --no-save --no-audit --no-fund postgres-array postgres-bytea postgres-date postgres-interval 2>&1 | tail -1
+# Copy Prisma adapter dependencies from builder (already installed via npm ci)
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/postgres-array ./node_modules/postgres-array
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/postgres-bytea ./node_modules/postgres-bytea
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/postgres-date ./node_modules/postgres-date
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/postgres-interval ./node_modules/postgres-interval
+# Note: postgres-range is optional and skipped if not found
 
 USER nextjs
 
