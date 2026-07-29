@@ -8,19 +8,19 @@ export function AuthNav() {
 
   if (status === "loading") {
     return (
-      <div className="h-8 w-20 animate-pulse rounded-full bg-slate-800" />
+       <div className="h-8 w-20 animate-pulse rounded-full bg-surface-darker" />
     );
   }
 
   if (session?.user) {
     return (
       <div className="flex items-center gap-3">
-        <span className="hidden text-sm text-slate-300 sm:inline">
+         <span className="hidden text-sm text-muted sm:inline">
           {session.user.name ?? session.user.email}
         </span>
         <button
           onClick={() => signOut({ callbackUrl: "/" })}
-          className="rounded-full border border-white/15 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
+           className="rounded-full border border-default px-4 py-2 text-sm font-medium text-default transition hover-brighten"
         >
           Sign out
         </button>

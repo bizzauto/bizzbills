@@ -18,7 +18,7 @@ export function OrgSwitcher() {
     <div className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 rounded-full border border-white/15 px-3 py-1.5 text-sm text-white transition hover:bg-white/10"
+        className="flex items-center gap-2 rounded-full border border-default px-3 py-1.5 text-sm text-default transition hover-brighten"
       >
         <span className="h-2 w-2 rounded-full bg-emerald-400" />
         <span className="hidden sm:inline">{currentOrgName || "No organization"}</span>
@@ -39,8 +39,8 @@ export function OrgSwitcher() {
             className="fixed inset-0 z-30 bg-black/40"
             onClick={() => setOpen(false)}
           />
-          <div className="absolute right-0 top-full z-40 mt-2 w-64 rounded-2xl border border-white/10 bg-slate-900/95 p-2 shadow-2xl shadow-black/30 backdrop-blur">
-            <p className="px-3 py-2 text-xs uppercase tracking-wider text-slate-400">
+          <div             className="absolute right-0 top-full z-40 mt-2 w-64 rounded-2xl border border-default bg-surface p-2 shadow-2xl shadow-black/30 backdrop-blur">
+            <p className="px-3 py-2 text-xs uppercase tracking-wider text-muted">
               Organizations
             </p>
             <div className="space-y-1">
@@ -54,7 +54,7 @@ export function OrgSwitcher() {
                   className={`w-full rounded-xl px-3 py-2 text-left text-sm transition ${
                     org.id === currentOrgId
                       ? "bg-cyan-500/15 text-cyan-200"
-                      : "text-slate-300 hover:bg-white/5"
+                      : "text-muted hover-brighten"
                   }`}
                 >
                   {org.name}
@@ -64,18 +64,18 @@ export function OrgSwitcher() {
 
             {isAdmin && (
               <>
-                <hr className="my-2 border-white/10" />
+                <hr className="my-2 border-default"
                 <Link
                   href="/organization/settings"
                   onClick={() => setOpen(false)}
-                  className="block rounded-xl px-3 py-2 text-sm text-slate-300 transition hover:bg-white/5"
+                  className="block rounded-xl px-3 py-2 text-sm text-muted transition hover-brighten"
                 >
                   Organization Settings
                 </Link>
                 <Link
                   href="/organization/users"
                   onClick={() => setOpen(false)}
-                  className="block rounded-xl px-3 py-2 text-sm text-slate-300 transition hover:bg-white/5"
+                  className="block rounded-xl px-3 py-2 text-sm text-muted transition hover-brighten"
                 >
                   Manage Users
                 </Link>

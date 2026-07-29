@@ -29,23 +29,23 @@ export default function QuotationsListPage() {
       <section className="section-card">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.25em] text-cyan-300">Trade Documents</p>
-            <h1 className="mt-2 text-3xl font-semibold text-white">Quotations</h1>
+            <p className="text-xs uppercase tracking-[0.25em] text-accent-light">Trade Documents</p>
+            <h1 className="mt-2 text-3xl font-semibold text-default">Quotations</h1>
           </div>
           <Link href="/quotations/new" className="btn-primary">+ New Quotation</Link>
         </div>
       </section>
 
-      <div className="rounded-[1.5rem] border border-white/10 bg-slate-900/70 backdrop-blur overflow-hidden">
+      <div className="section-card overflow-hidden">
         {loading ? (
-          <div className="p-6 text-sm text-slate-500">Loading…</div>
+          <div className="p-6 text-sm text-muted">Loading…</div>
         ) : orders.length === 0 ? (
-          <div className="p-6 text-sm text-slate-500">No quotations yet.</div>
+          <div className="p-6 text-sm text-muted">No quotations yet.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-white/10 text-slate-400">
+                <tr className="border-b border-default text-muted">
                   <th className="p-3 font-medium">#</th>
                   <th className="p-3 font-medium">Party</th>
                   <th className="p-3 font-medium">Date</th>
@@ -55,13 +55,13 @@ export default function QuotationsListPage() {
               </thead>
               <tbody>
                 {orders.map((o) => (
-                  <tr key={o.id} className="border-t border-white/5 hover:bg-white/5">
-                    <td className="p-3 text-white font-mono">
-                      <Link href={`/quotations/${o.id}`} className="hover:text-cyan-300">{o.orderNumber}</Link>
+                  <tr key={o.id} className="border-t border-default hover-brighten">
+                    <td className="p-3 text-default font-mono">
+                      <Link href={`/quotations/${o.id}`} className="hover:text-accent-light">{o.orderNumber}</Link>
                     </td>
-                    <td className="p-3 text-slate-300">{o.partyName}</td>
-                    <td className="p-3 text-xs text-slate-500">{new Date(o.orderDate).toLocaleDateString()}</td>
-                    <td className="p-3 text-right text-white font-medium">{formatAmount(o.total, currentOrgCurrency)}</td>
+                    <td className="p-3 text-muted">{o.partyName}</td>
+                    <td className="p-3 text-xs text-muted">{new Date(o.orderDate).toLocaleDateString()}</td>
+                    <td className="p-3 text-right text-default font-medium">{formatAmount(o.total, currentOrgCurrency)}</td>
                     <td className="p-3">
                       <span className={STATUS_BADGE[o.status] || "badge-default"}>{o.status}</span>
                     </td>

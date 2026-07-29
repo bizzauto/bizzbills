@@ -44,38 +44,38 @@ await signIn("credentials", { email, password, redirect: false });
   return (
     <PublicLayout>
     <main className="flex flex-1 items-center justify-center py-20">
-      <div className="w-full max-w-md rounded-[2rem] border border-white/10 bg-slate-900/70 p-8 shadow-2xl shadow-black/20 backdrop-blur">
+      <div className="w-full max-w-md rounded-[2rem] section-card p-8 shadow-2xl shadow-black/20">
         <div className="mb-6 text-center">
-          <p className="text-sm uppercase tracking-[0.25em] text-cyan-300">Get started</p>
-          <h1 className="mt-2 text-2xl font-semibold text-white">Create your account</h1>
+          <p className="text-sm uppercase tracking-[0.25em] text-accent-light">Get started</p>
+          <h1 className="mt-2 text-2xl font-semibold text-default">Create your account</h1>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <label className="block text-sm text-slate-300">
-            <span className="mb-1 block text-slate-400">Name</span>
+          <label className="block text-sm text-muted">
+            <span className="mb-1 block text-muted">Name</span>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Your name"
-              className="w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-white outline-none ring-0 placeholder:text-slate-500 focus:border-cyan-500/50"
+              className="input"
             />
           </label>
 
-          <label className="block text-sm text-slate-300">
-            <span className="mb-1 block text-slate-400">Email</span>
+          <label className="block text-sm text-muted">
+            <span className="mb-1 block text-muted">Email</span>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
               required
-              className="w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-white outline-none ring-0 placeholder:text-slate-500 focus:border-cyan-500/50"
+              className="input"
             />
           </label>
 
-          <label className="block text-sm text-slate-300">
-            <span className="mb-1 block text-slate-400">Password</span>
+          <label className="block text-sm text-muted">
+            <span className="mb-1 block text-muted">Password</span>
             <input
               type="password"
               value={password}
@@ -83,7 +83,7 @@ await signIn("credentials", { email, password, redirect: false });
               placeholder="At least 8 characters"
               required
               minLength={8}
-              className="w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-white outline-none ring-0 placeholder:text-slate-500 focus:border-cyan-500/50"
+              className="input"
             />
           </label>
 
@@ -102,9 +102,9 @@ await signIn("credentials", { email, password, redirect: false });
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-slate-400">
+        <p className="mt-6 text-center text-sm text-muted">
           Already have an account?{" "}
-          <Link href="/auth/signin" className="font-medium text-cyan-300 hover:text-cyan-200">
+          <Link href="/auth/signin" className="font-medium text-accent-light hover:text-accent">
             Sign in
           </Link>
         </p>

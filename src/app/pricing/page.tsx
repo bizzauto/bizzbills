@@ -62,9 +62,9 @@ export default function PricingPage() {
     <PublicLayout>
       <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
         <div className="text-center">
-          <p className="text-sm uppercase tracking-[0.25em] text-cyan-300">Pricing</p>
-          <h1 className="mt-3 text-4xl font-bold text-white sm:text-5xl">Simple, transparent pricing</h1>
-          <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-400">
+          <p className="text-sm uppercase tracking-[0.25em] text-accent-light">Pricing</p>
+          <h1 className="mt-3 text-4xl font-bold text-default sm:text-5xl">Simple, transparent pricing</h1>
+          <p className="mx-auto mt-4 max-w-2xl text-lg text-muted">
             Start free. Upgrade as you grow. No hidden fees.
           </p>
         </div>
@@ -75,8 +75,8 @@ export default function PricingPage() {
               key={plan.name}
               className={`relative rounded-2xl border p-8 ${
                 plan.highlighted
-                  ? "border-cyan-400/40 bg-slate-900/90 shadow-2xl shadow-cyan-950/30"
-                  : "border-white/10 bg-slate-900/70"
+                  ? "border-cyan-400/40 bg-surface-darker shadow-2xl shadow-cyan-950/30"
+                  : "border-default bg-surface"
               }`}
             >
               {plan.highlighted && (
@@ -84,15 +84,15 @@ export default function PricingPage() {
                   Most Popular
                 </span>
               )}
-              <h3 className="text-xl font-semibold text-white">{plan.name}</h3>
+              <h3 className="text-xl font-semibold text-default">{plan.name}</h3>
               <div className="mt-4 flex items-baseline gap-1">
-                <span className="text-4xl font-bold text-white">{plan.price}</span>
-                {plan.period && <span className="text-sm text-slate-400">{plan.period}</span>}
+                <span className="text-4xl font-bold text-default">{plan.price}</span>
+                {plan.period && <span className="text-sm text-muted">{plan.period}</span>}
               </div>
-              <p className="mt-3 text-sm text-slate-400">{plan.description}</p>
+              <p className="mt-3 text-sm text-muted">{plan.description}</p>
               <ul className="mt-6 space-y-3">
                 {plan.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm text-slate-300">
+                  <li key={f} className="flex items-start gap-2 text-sm text-muted">
                     <span className="mt-0.5 text-emerald-400">✓</span>
                     {f}
                   </li>
@@ -103,7 +103,7 @@ export default function PricingPage() {
                 className={`mt-8 block rounded-full py-3 text-center text-sm font-semibold transition ${
                   plan.highlighted
                     ? "bg-cyan-500 text-slate-950 hover:bg-cyan-400"
-                    : "border border-white/15 text-white hover:bg-white/10"
+                    : "border border-default text-default hover-brighten"
                 }`}
               >
                 {plan.cta}

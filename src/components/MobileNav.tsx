@@ -12,7 +12,7 @@ export function MobileNav() {
     <div className="md:hidden">
       <button
         onClick={() => setOpen(!open)}
-        className="flex h-8 w-8 items-center justify-center rounded-full border border-white/15 text-white transition hover:bg-white/10"
+        className="flex h-8 w-8 items-center justify-center rounded-full border border-default text-default transition hover-brighten"
         aria-label={open ? "Close menu" : "Open menu"}
       >
         {open ? (
@@ -34,7 +34,7 @@ export function MobileNav() {
             onClick={() => setOpen(false)}
           />
           {/* Menu panel */}
-          <div className="absolute left-4 right-4 top-20 z-40 rounded-2xl border border-white/10 bg-slate-900/95 p-4 shadow-2xl shadow-black/30 backdrop-blur">
+           <div className="absolute left-4 right-4 top-20 z-40 rounded-2xl border border-default bg-surface p-4 shadow-2xl shadow-black/30 backdrop-blur">
             <div className="space-y-1">
               <MobileLink href="/dashboard" onClick={() => setOpen(false)}>
                 Dashboard
@@ -94,15 +94,15 @@ export function MobileNav() {
                 Settings
               </MobileLink>
             </div>
-            <hr className="my-3 border-white/10" />
+            <hr className="my-3 border-default"
             {session?.user ? (
               <div className="space-y-2">
-                <p className="px-3 text-sm text-slate-400">
+                <p className="px-3 text-sm text-muted">
                   {session.user.name ?? session.user.email}
                 </p>
                 <button
                   onClick={() => { setOpen(false); signOut({ callbackUrl: "/" }); }}
-                  className="w-full rounded-xl border border-white/10 px-3 py-2 text-left text-sm text-white transition hover:bg-white/10"
+                  className="w-full rounded-xl border border-default px-3 py-2 text-left text-sm text-default transition hover-brighten"
                 >
                   Sign out
                 </button>
@@ -136,7 +136,7 @@ function MobileLink({
     <Link
       href={href}
       onClick={onClick}
-      className="block rounded-xl px-3 py-2 text-sm text-slate-300 transition hover:bg-white/10 hover:text-white"
+      className="block rounded-xl px-3 py-2 text-sm text-muted transition hover-brighten"
     >
       {children}
     </Link>

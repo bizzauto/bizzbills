@@ -29,23 +29,23 @@ export default function ProformaInvoiceListPage() {
       <section className="section-card">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.25em] text-cyan-300">Billing</p>
-            <h1 className="mt-2 text-3xl font-semibold text-white">Proforma Invoices</h1>
+            <p className="text-xs uppercase tracking-[0.25em] text-accent-light">Billing</p>
+            <h1 className="mt-2 text-3xl font-semibold text-default">Proforma Invoices</h1>
           </div>
           <Link href="/proforma-invoices/new" className="btn-primary">+ New Proforma</Link>
         </div>
       </section>
 
-      <div className="rounded-[1.5rem] border border-white/10 bg-slate-900/70 backdrop-blur overflow-hidden">
+      <div className="section-card overflow-hidden">
         {loading ? (
-          <div className="p-6 text-sm text-slate-500">Loading…</div>
+          <div className="p-6 text-sm text-muted">Loading…</div>
         ) : invoices.length === 0 ? (
-          <div className="p-6 text-sm text-slate-500">No proforma invoices yet.</div>
+          <div className="p-6 text-sm text-muted">No proforma invoices yet.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-white/10 text-slate-400">
+                <tr className="border-b border-default text-muted">
                   <th className="p-3 font-medium">#</th>
                   <th className="p-3 font-medium">Customer</th>
                   <th className="p-3 font-medium">Created</th>
@@ -55,13 +55,13 @@ export default function ProformaInvoiceListPage() {
               </thead>
               <tbody>
                 {invoices.map((inv) => (
-                  <tr key={inv.id} className="border-t border-white/5 hover:bg-white/5">
-                    <td className="p-3 text-white font-mono">
-                      <Link href={`/proforma-invoices/${inv.id}`} className="hover:text-cyan-300">{inv.proformaNumber}</Link>
+                  <tr key={inv.id} className="border-t border-default hover-brighten">
+                    <td className="p-3 text-default font-mono">
+                      <Link href={`/proforma-invoices/${inv.id}`} className="hover:text-accent-light">{inv.proformaNumber}</Link>
                     </td>
-                    <td className="p-3 text-slate-300">{inv.customerName}</td>
-                    <td className="p-3 text-xs text-slate-500">{new Date(inv.createdAt).toLocaleDateString()}</td>
-                    <td className="p-3 text-right text-white font-medium">{formatAmount(inv.total, currentOrgCurrency)}</td>
+                    <td className="p-3 text-muted">{inv.customerName}</td>
+                    <td className="p-3 text-xs text-muted">{new Date(inv.createdAt).toLocaleDateString()}</td>
+                    <td className="p-3 text-right text-default font-medium">{formatAmount(inv.total, currentOrgCurrency)}</td>
                     <td className="p-3">
                       <span className={STATUS_BADGE[inv.status] || "badge-default"}>{inv.status}</span>
                     </td>

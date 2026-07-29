@@ -39,26 +39,26 @@ export default function CreditNotesPage() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.25em]" style={{ color: "var(--doc-credit)" }}>Returns</p>
-            <h1 className="mt-2 text-3xl font-semibold text-white">Credit Notes</h1>
-            <p className="mt-1 text-sm text-slate-400">Sales returns and credit issued to customers</p>
+            <h1 className="mt-2 text-3xl font-semibold text-default">Credit Notes</h1>
+            <p className="mt-1 text-sm text-muted">Sales returns and credit issued to customers</p>
           </div>
           <Link href="/credit-notes/new" className="btn-primary">+ New Credit Note</Link>
         </div>
       </section>
 
-      <div className="rounded-[1.5rem] border border-white/10 bg-slate-900/70 p-6 backdrop-blur">
+      <div className="section-card overflow-hidden">
         {loading ? (
-          <p className="text-sm text-slate-500">Loading…</p>
+          <p className="text-sm text-muted">Loading…</p>
         ) : notes.length === 0 ? (
           <div className="py-8 text-center">
-            <p className="text-sm text-slate-400">No credit notes yet.</p>
-            <p className="mt-1 text-xs text-slate-500">Create a credit note from an invoice to process a sales return.</p>
+            <p className="text-sm text-muted">No credit notes yet.</p>
+            <p className="mt-1 text-xs text-muted">Create a credit note from an invoice to process a sales return.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-white/10 text-slate-400">
+                <tr className="border-b border-default text-muted">
                   <th className="p-3 font-medium">#</th>
                   <th className="p-3 font-medium">Customer</th>
                   <th className="p-3 font-medium">Amount</th>
@@ -70,17 +70,17 @@ export default function CreditNotesPage() {
               </thead>
               <tbody>
                 {notes.map((n) => (
-                  <tr key={n.id} className="border-t border-white/5 hover:bg-slate-950/50">
-                    <td className="p-3 font-semibold text-white">{n.creditNoteNumber}</td>
-                    <td className="p-3 text-slate-300">{n.customerName}</td>
-                    <td className="p-3 text-white">{formatAmount(n.total, n.currency)}</td>
-                    <td className="p-3 text-slate-400 capitalize">{n.reason}</td>
+                  <tr key={n.id} className="border-t border-default hover-brighten">
+                    <td className="p-3 font-semibold text-default">{n.creditNoteNumber}</td>
+                    <td className="p-3 text-muted">{n.customerName}</td>
+                    <td className="p-3 text-default">{formatAmount(n.total, n.currency)}</td>
+                    <td className="p-3 text-muted capitalize">{n.reason}</td>
                     <td className="p-3">
                       <span className={STATUS_BADGE[n.status] || "badge-default"}>{n.status}</span>
                     </td>
-                    <td className="p-3 text-xs text-slate-400">{new Date(n.date).toLocaleDateString()}</td>
+                    <td className="p-3 text-xs text-muted">{new Date(n.date).toLocaleDateString()}</td>
                     <td className="p-3">
-                      <Link href={`/credit-notes/${n.id}`} className="text-xs text-cyan-300 hover:text-cyan-200">View &rarr;</Link>
+                      <Link href={`/credit-notes/${n.id}`} className="text-xs text-accent-light hover:text-accent">View &rarr;</Link>
                     </td>
                   </tr>
                 ))}

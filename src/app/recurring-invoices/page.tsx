@@ -40,26 +40,26 @@ export default function RecurringInvoicesPage() {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.25em]" style={{ color: "var(--doc-recurring)" }}>Automation</p>
-            <h1 className="mt-2 text-3xl font-semibold text-white">Recurring Invoices</h1>
-            <p className="mt-1 text-sm text-slate-400">Automatically generate invoices on a schedule</p>
+            <h1 className="mt-2 text-3xl font-semibold text-default">Recurring Invoices</h1>
+            <p className="mt-1 text-sm text-muted">Automatically generate invoices on a schedule</p>
           </div>
           <Link href="/recurring-invoices/new" className="btn-primary">+ New Schedule</Link>
         </div>
       </section>
 
-      <div className="rounded-[1.5rem] border border-white/10 bg-slate-900/70 p-6 backdrop-blur">
+      <div className="section-card overflow-hidden">
         {loading ? (
-          <p className="text-sm text-slate-500">Loading…</p>
+          <p className="text-sm text-muted">Loading…</p>
         ) : items.length === 0 ? (
           <div className="py-8 text-center">
-            <p className="text-sm text-slate-400">No recurring invoices yet.</p>
-            <p className="mt-1 text-xs text-slate-500">Create a schedule to auto-generate invoices for repeat customers.</p>
+            <p className="text-sm text-muted">No recurring invoices yet.</p>
+            <p className="mt-1 text-xs text-muted">Create a schedule to auto-generate invoices for repeat customers.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-white/10 text-slate-400">
+                <tr className="border-b border-default text-muted">
                   <th className="p-3 font-medium">Customer</th>
                   <th className="p-3 font-medium">Schedule</th>
                   <th className="p-3 font-medium">Amount</th>
@@ -71,23 +71,23 @@ export default function RecurringInvoicesPage() {
               </thead>
               <tbody>
                 {items.map((ri) => (
-                  <tr key={ri.id} className="border-t border-white/5 hover:bg-slate-950/50">
-                    <td className="p-3 text-white">{ri.customerName}</td>
-                    <td className="p-3 text-slate-300 capitalize">
+                  <tr key={ri.id} className="border-t border-default hover-brighten">
+                    <td className="p-3 text-default">{ri.customerName}</td>
+                    <td className="p-3 text-muted capitalize">
                       Every {ri.interval > 1 ? `${ri.interval} ${ri.frequency}s` : ri.frequency}
                     </td>
-                    <td className="p-3 text-white">{formatAmount(ri.total, ri.currency)}</td>
+                    <td className="p-3 text-default">{formatAmount(ri.total, ri.currency)}</td>
                     <td className="p-3">
                       <span className={STATUS_BADGE[ri.status] || "badge-default"}>{ri.status}</span>
                     </td>
-                    <td className="p-3 text-xs text-slate-400">
+                    <td className="p-3 text-xs text-muted">
                       {new Date(ri.nextRunDate).toLocaleDateString()}
                     </td>
-                    <td className="p-3 text-xs text-slate-500">
+                    <td className="p-3 text-xs text-muted">
                       {ri.lastRunAt ? new Date(ri.lastRunAt).toLocaleDateString() : "\u2014"}
                     </td>
                     <td className="p-3">
-                      <Link href={`/recurring-invoices/${ri.id}`} className="text-xs text-cyan-300 hover:text-cyan-200">View &rarr;</Link>
+                      <Link href={`/recurring-invoices/${ri.id}`} className="text-xs text-accent-light hover:text-accent">View &rarr;</Link>
                     </td>
                   </tr>
                 ))}

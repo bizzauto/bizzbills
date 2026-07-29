@@ -48,12 +48,12 @@ export default function AiDashboard() {
 
   return (
     <main className="flex flex-1 flex-col gap-6 pb-10">
-      <section className="rounded-[2rem] border border-white/10 bg-slate-900/70 p-6 shadow-2xl shadow-black/20 backdrop-blur">
+      <section className="section-card">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p className="text-sm uppercase tracking-[0.25em] text-cyan-300">AI</p>
-            <h1 className="mt-2 text-3xl font-semibold text-white">AI Assistant</h1>
-          </div>
+           <div>
+            <p className="text-sm uppercase tracking-[0.25em] text-accent-light">AI</p>
+            <h1 className="mt-2 text-3xl font-semibold text-default">AI Assistant</h1>
+           </div>
           {status && (
             <div className={`flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium ${status.hasKey ? "bg-emerald-500/10 text-emerald-300" : "bg-amber-500/10 text-amber-300"}`}>
               <span className={`h-2 w-2 rounded-full ${status.hasKey ? "bg-emerald-400" : "bg-amber-400"}`} />
@@ -64,7 +64,7 @@ export default function AiDashboard() {
       </section>
 
       {status && !status.hasKey && (
-        <div className="rounded-[1.5rem] border border-amber-400/20 bg-amber-500/10 p-4 backdrop-blur">
+        <div className="section-card">
           <p className="text-sm text-amber-200">
             <Link href="/settings" className="underline hover:text-amber-100">Configure an AI provider</Link> to unlock LLM-powered features like smart drafting and intelligent analysis.
           </p>

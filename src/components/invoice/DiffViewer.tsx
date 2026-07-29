@@ -20,13 +20,13 @@ function formatValue(value: unknown): string {
 }
 
 export function DiffViewer({ changes }: { changes: DiffChange[] }) {
-  if (changes.length === 0) {
-    return (
-      <div className="rounded-xl border border-white/10 bg-slate-950/70 p-4 text-sm text-slate-400">
-        No changes in this version.
-      </div>
-    );
-  }
+if (changes.length === 0) {
+      return (
+        <div className="section-card text-sm text-muted">
+          No changes in this version.
+        </div>
+      );
+    }
 
   return (
     <div className="space-y-2">

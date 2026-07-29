@@ -31,27 +31,27 @@ export default function Home() {
         <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-28 lg:px-8 lg:py-36">
           <div className="grid gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
             <div className="space-y-8">
-              <span className="inline-flex rounded-full border border-cyan-400/30 bg-cyan-400/10 px-4 py-1.5 text-sm font-medium text-cyan-300">
+              <span className="inline-flex rounded-full border border-cyan-400/30 bg-cyan-400/10 px-4 py-1.5 text-sm font-medium text-accent-light">
                 AI-native finance operating system
               </span>
-              <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">
+              <h1 className="text-4xl font-bold tracking-tight text-default sm:text-5xl lg:text-6xl">
                 Invoicing, GST &amp; accounting{" "}
                 <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
                   built for India
                 </span>
               </h1>
-              <p className="max-w-xl text-lg leading-8 text-slate-300">
+              <p className="max-w-xl text-lg leading-8 text-muted">
                 BizzBills brings together billing, GST compliance, inventory, CRM, payments, and AI automation — designed for modern businesses that cannot afford sloppy workflows.
               </p>
               <div className="flex flex-wrap gap-4">
                 <Link href="/auth/register" className="rounded-full bg-cyan-500 px-8 py-3.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400">
                   Start Free Trial
                 </Link>
-                <Link href="/pricing" className="rounded-full border border-white/15 px-8 py-3.5 text-sm font-semibold text-white transition hover:bg-white/10">
+                <Link href="/pricing" className="rounded-full border border-default px-8 py-3.5 text-sm font-semibold text-default transition hover-brighten">
                   View Pricing
                 </Link>
               </div>
-              <div className="flex flex-wrap gap-6 text-sm text-slate-400">
+              <div className="flex flex-wrap gap-6 text-sm text-muted">
                 <span className="flex items-center gap-1.5">✓ 7-day free trial</span>
                 <span className="flex items-center gap-1.5">✓ No credit card required</span>
                 <span className="flex items-center gap-1.5">✓ Setup in 5 minutes</span>
@@ -59,26 +59,26 @@ export default function Home() {
             </div>
 
             {/* Dashboard preview card */}
-            <div className="rounded-[1.5rem] border border-cyan-400/20 bg-slate-950/80 p-6 shadow-2xl shadow-cyan-950/30">
+            <div className="rounded-[1.5rem] border border-cyan-400/20 bg-surface-darker p-6 shadow-2xl shadow-cyan-950/30">
               <div className="mb-4 flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-slate-400">Today&apos;s cash position</p>
-                  <p className="text-2xl font-bold text-white">₹18,40,000</p>
+                  <p className="text-sm text-muted">Today&apos;s cash position</p>
+                  <p className="text-2xl font-bold text-default">₹18,40,000</p>
                 </div>
                 <span className="rounded-full bg-emerald-500/15 px-3 py-1 text-sm text-emerald-300">+12.4%</span>
               </div>
-              <div className="space-y-3 rounded-2xl border border-white/10 bg-slate-900/70 p-4">
-                <div className="flex items-center justify-between text-sm text-slate-300">
-                  <span>Pending collections</span><span className="font-semibold text-white">₹4,80,000</span>
+              <div className="space-y-3 rounded-2xl border border-default bg-surface p-4">
+                <div className="flex items-center justify-between text-sm text-muted">
+                  <span>Pending collections</span><span className="font-semibold text-default">₹4,80,000</span>
                 </div>
-                <div className="flex items-center justify-between text-sm text-slate-300">
+                <div className="flex items-center justify-between text-sm text-muted">
                   <span>Inventory reorder risk</span><span className="font-semibold text-amber-300">6 items</span>
                 </div>
-                <div className="flex items-center justify-between text-sm text-slate-300">
+                <div className="flex items-center justify-between text-sm text-muted">
                   <span>GST filing readiness</span><span className="font-semibold text-emerald-300">Ready</span>
                 </div>
               </div>
-              <div className="mt-4 rounded-xl border border-cyan-400/20 bg-cyan-500/10 p-3 text-sm text-cyan-200">
+              <div className="mt-4 rounded-xl border border-cyan-400/20 bg-accent-subtle p-3 text-sm text-accent-light">
                 🤖 AI: Best payment follow-up window is tomorrow morning.
               </div>
             </div>
@@ -87,12 +87,12 @@ export default function Home() {
       </section>
 
       {/* Stats */}
-      <section className="border-y border-white/10 bg-slate-950/50">
+      <section className="border-y border-default bg-surface-darker">
         <div className="mx-auto grid max-w-7xl grid-cols-2 gap-6 px-4 py-10 sm:px-6 md:grid-cols-4 lg:px-8">
           {stats.map((s) => (
             <div key={s.label} className="text-center">
-              <p className="text-3xl font-bold text-white">{s.value}</p>
-              <p className="mt-1 text-sm text-slate-400">{s.label}</p>
+              <p className="text-3xl font-bold text-default">{s.value}</p>
+              <p className="mt-1 text-sm text-muted">{s.label}</p>
             </div>
           ))}
         </div>
@@ -101,35 +101,35 @@ export default function Home() {
       {/* Features */}
       <section id="features" className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
         <div className="text-center">
-          <p className="text-sm uppercase tracking-[0.25em] text-cyan-300">Features</p>
-          <h2 className="mt-3 text-3xl font-bold text-white sm:text-4xl">Everything you need</h2>
-          <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-400">One platform. All the tools. Zero complexity.</p>
+          <p className="text-sm uppercase tracking-[0.25em] text-accent-light">Features</p>
+          <h2 className="mt-3 text-3xl font-bold text-default sm:text-4xl">Everything you need</h2>
+          <p className="mx-auto mt-4 max-w-2xl text-lg text-muted">One platform. All the tools. Zero complexity.</p>
         </div>
         <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {features.map((f) => (
-            <div key={f.title} className="rounded-2xl border border-white/10 bg-slate-900/70 p-6 backdrop-blur transition hover:border-cyan-400/30">
+            <div key={f.title} className="rounded-2xl border border-default bg-surface p-6 backdrop-blur transition hover:border-cyan-400/30">
               <span className="text-2xl">{f.icon}</span>
-              <h3 className="mt-3 text-lg font-semibold text-white">{f.title}</h3>
-              <p className="mt-2 text-sm leading-6 text-slate-400">{f.text}</p>
+              <h3 className="mt-3 text-lg font-semibold text-default">{f.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-muted">{f.text}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* Testimonials */}
-      <section className="border-y border-white/10 bg-slate-950/50">
+      <section className="border-y border-default bg-surface-darker">
         <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
           <div className="text-center">
-            <p className="text-sm uppercase tracking-[0.25em] text-cyan-300">Testimonials</p>
-            <h2 className="mt-3 text-3xl font-bold text-white">Trusted by businesses across India</h2>
+            <p className="text-sm uppercase tracking-[0.25em] text-accent-light">Testimonials</p>
+            <h2 className="mt-3 text-3xl font-bold text-default">Trusted by businesses across India</h2>
           </div>
           <div className="mt-14 grid gap-6 md:grid-cols-3">
             {testimonials.map((t) => (
-              <div key={t.name} className="rounded-2xl border border-white/10 bg-slate-900/70 p-6 backdrop-blur">
-                <p className="text-sm leading-6 text-slate-300">&ldquo;{t.text}&rdquo;</p>
+              <div key={t.name} className="rounded-2xl border border-default bg-surface p-6 backdrop-blur">
+                <p className="text-sm leading-6 text-muted">&ldquo;{t.text}&rdquo;</p>
                 <div className="mt-4">
-                  <p className="text-sm font-semibold text-white">{t.name}</p>
-                  <p className="text-xs text-slate-400">{t.role}</p>
+                  <p className="text-sm font-semibold text-default">{t.name}</p>
+                  <p className="text-xs text-muted">{t.role}</p>
                 </div>
               </div>
             ))}
@@ -139,16 +139,16 @@ export default function Home() {
 
       {/* CTA */}
       <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
-        <div className="rounded-[2rem] border border-cyan-400/20 bg-gradient-to-br from-cyan-500/10 to-slate-900/80 p-10 text-center backdrop-blur sm:p-14">
-          <h2 className="text-3xl font-bold text-white sm:text-4xl">Ready to simplify your billing?</h2>
-          <p className="mx-auto mt-4 max-w-xl text-lg text-slate-300">
+        <div className="rounded-[2rem] border border-cyan-400/20 bg-gradient-to-br from-cyan-500/10 to-surface-darker/80 p-10 text-center backdrop-blur sm:p-14">
+          <h2 className="text-3xl font-bold text-default sm:text-4xl">Ready to simplify your billing?</h2>
+          <p className="mx-auto mt-4 max-w-xl text-lg text-muted">
             Join 10,000+ businesses using BizzBills to manage invoicing, GST, and payments.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
             <Link href="/auth/register" className="rounded-full bg-cyan-500 px-8 py-3.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400">
               Start Free Trial
             </Link>
-            <Link href="/contact" className="rounded-full border border-white/15 px-8 py-3.5 text-sm font-semibold text-white transition hover:bg-white/10">
+            <Link href="/contact" className="rounded-full border border-default px-8 py-3.5 text-sm font-semibold text-default transition hover-brighten">
               Talk to Sales
             </Link>
           </div>

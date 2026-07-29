@@ -16,13 +16,13 @@ export function VersionTimeline({
   currentVersion: number;
   onSelectVersion?: (versionId: string) => void;
 }) {
-  if (versions.length === 0) {
-    return (
-      <div className="rounded-xl border border-white/10 bg-slate-950/70 p-4 text-sm text-slate-400">
-        No version history yet.
-      </div>
-    );
-  }
+if (versions.length === 0) {
+      return (
+        <div className="section-card text-sm text-muted">
+          No version history yet.
+        </div>
+      );
+    }
 
   return (
     <div className="space-y-0">
@@ -48,14 +48,14 @@ export function VersionTimeline({
 
             {/* Content */}
             <div className="min-w-0 flex-1">
-              <button
-                type="button"
-                onClick={() => onSelectVersion?.(v.id)}
-                className={`w-full rounded-xl border p-3 text-left text-sm transition ${
-                  isCurrent
-                    ? "border-cyan-500/30 bg-cyan-500/10"
-                    : "border-white/10 bg-slate-950/70 hover:bg-slate-900/70"
-                }`}
+               <button
+                 type="button"
+                 onClick={() => onSelectVersion?.(v.id)}
+                 className={`w-full rounded-xl border p-3 text-left text-sm transition ${
+                   isCurrent
+                     ? "border-cyan-500/30 bg-cyan-500/10"
+                     : "border-default bg-surface-darker hover-brighten"
+                 }`}
               >
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-white">
