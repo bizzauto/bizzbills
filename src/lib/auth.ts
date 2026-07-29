@@ -24,7 +24,7 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials?.password) return null;
 
         const ip = (req as Request)?.headers?.get?.("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-        const rl = rateLimit({ key: `signin:${credentials.email}:${ip}`, limit: 5 });
+        const rl = rateLimit({ key: `signin:${credentials.email}`, limit: 20 });
         if (!rl.allowed) return null;
 
         const user = await prisma.user.findUnique({
