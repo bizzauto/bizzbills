@@ -16,6 +16,10 @@ type CreditNoteSummary = {
   invoice: { invoiceNumber: string } | null;
 };
 
+const STATUS_BADGE: Record<string, string> = {
+  issued: "badge-success", void: "badge-danger",
+};
+
 export default function CreditNotesPage() {
   const [notes, setNotes] = useState<CreditNoteSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,19 +35,14 @@ export default function CreditNotesPage() {
 
   return (
     <main className="flex flex-1 flex-col gap-6 pb-10">
-      <section className="rounded-[2rem] border border-white/10 bg-slate-900/70 p-6 shadow-2xl shadow-black/20 backdrop-blur">
+      <section className="section-card">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-sm uppercase tracking-[0.25em] text-cyan-300">Returns</p>
+            <p className="text-xs uppercase tracking-[0.25em]" style={{ color: "var(--doc-credit)" }}>Returns</p>
             <h1 className="mt-2 text-3xl font-semibold text-white">Credit Notes</h1>
             <p className="mt-1 text-sm text-slate-400">Sales returns and credit issued to customers</p>
           </div>
-          <Link
-            href="/credit-notes/new"
-            className="rounded-full bg-cyan-500 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400"
-          >
-            + New Credit Note
-          </Link>
+          <Link href="/credit-notes/new" className="btn-primary">+ New Credit Note</Link>
         </div>
       </section>
 
@@ -77,15 +76,11 @@ export default function CreditNotesPage() {
                     <td className="p-3 text-white">{formatAmount(n.total, n.currency)}</td>
                     <td className="p-3 text-slate-400 capitalize">{n.reason}</td>
                     <td className="p-3">
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                        n.status === "issued" ? "bg-emerald-500/10 text-emerald-300" :
-                        n.status === "void" ? "bg-red-500/10 text-red-300" :
-                        "bg-slate-500/10 text-slate-300"
-                      }`}>{n.status}</span>
+                      <span className={STATUS_BADGE[n.status] || "badge-default"}>{n.status}</span>
                     </td>
                     <td className="p-3 text-xs text-slate-400">{new Date(n.date).toLocaleDateString()}</td>
                     <td className="p-3">
-                      <Link href={`/credit-notes/${n.id}`} className="text-xs text-cyan-300 hover:text-cyan-200">View →</Link>
+                      <Link href={`/credit-notes/${n.id}`} className="text-xs text-cyan-300 hover:text-cyan-200">View &rarr;</Link>
                     </td>
                   </tr>
                 ))}

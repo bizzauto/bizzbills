@@ -25,6 +25,18 @@ type InvoiceSummary = {
   createdAt: string;
 };
 
+// Document type routes with colors
+const DOC_TYPES = [
+  { label: "Invoices", href: "/invoices", color: "var(--doc-invoice)", bg: "rgba(99,102,241,0.12)" },
+  { label: "Proforma", href: "/proforma-invoices", color: "var(--doc-proforma)", bg: "rgba(168,85,247,0.12)" },
+  { label: "Quotations", href: "/quotations", color: "var(--doc-quotation)", bg: "rgba(59,130,246,0.12)" },
+  { label: "Challans", href: "/delivery-challan", color: "var(--doc-challan)", bg: "rgba(245,158,11,0.12)" },
+  { label: "Credit Notes", href: "/credit-notes", color: "var(--doc-credit)", bg: "rgba(16,185,129,0.12)" },
+  { label: "Debit Notes", href: "/debit-notes", color: "var(--doc-debit)", bg: "rgba(239,68,68,0.12)" },
+  { label: "Recurring", href: "/recurring-invoices", color: "var(--doc-recurring)", bg: "rgba(236,72,153,0.12)" },
+  { label: "Orders", href: "/orders", color: "var(--doc-order)", bg: "rgba(244,63,94,0.12)" },
+];
+
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -77,7 +89,10 @@ export default function DashboardPage() {
       months[key] = (months[key] || 0) + inv.total;
     });
     const sorted = Object.entries(months).sort(([a], [b]) => a.localeCompare(b)).slice(-6);
-    return { labels: sorted.map(([k]) => { const [y, m] = k.split("-"); return `${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][parseInt(m)-1]} ${y}`; }), data: sorted.map(([, v]) => v) };
+    return {
+      labels: sorted.map(([k]) => { const [y, m] = k.split("-"); return `${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][parseInt(m)-1]} ${y}`; }),
+      data: sorted.map(([, v]) => v),
+    };
   }, [invoices]);
 
   // Top customers
@@ -87,12 +102,25 @@ export default function DashboardPage() {
     return Object.entries(cust).sort(([, a], [, b]) => b - a).slice(0, 5);
   }, [invoices]);
 
+  const chartTextColor = "#94a3b8";
+  const chartGridColor = "rgba(255,255,255,0.05)";
+
+  const lineOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { color: chartGridColor }, ticks: { color: chartTextColor } },
+      y: { grid: { color: chartGridColor }, ticks: { color: chartTextColor } },
+    },
+  };
+
   return (
     <main className="flex flex-1 flex-col gap-6 pb-10">
       <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
 
       {/* Header */}
-      <section className="rounded-[2rem] border border-white/10 bg-slate-900/70 p-6 shadow-2xl shadow-black/20 backdrop-blur">
+      <section className="section-card">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-sm uppercase tracking-[0.25em] text-cyan-300">Executive dashboard</p>
@@ -102,7 +130,8 @@ export default function DashboardPage() {
           </div>
           <div className="flex items-center gap-3">
             <button onClick={() => setSearchOpen(true)} className="flex items-center gap-2 rounded-full border border-white/10 bg-slate-800/80 px-4 py-2 text-sm text-slate-400 transition hover:border-white/20 hover:text-white">
-              🔍 Search… <kbd className="ml-2 rounded border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px]">⌘K</kbd>
+              <span className="text-xs">🔍</span> Search&hellip;
+              <kbd className="ml-1 rounded border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px]">⌘K</kbd>
             </button>
             <div className="rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-2 text-sm text-cyan-200">
               {invoices.length} invoice{invoices.length !== 1 ? "s" : ""}
@@ -113,16 +142,40 @@ export default function DashboardPage() {
 
       {/* KPI Cards */}
       <section className="grid gap-4 md:grid-cols-4">
-        {[
-          { label: "Total Revenue", value: formatAmount(totals.revenue, currentOrgCurrency), color: "text-white" },
-          { label: "Collections", value: formatAmount(totals.sent, currentOrgCurrency), color: "text-white" },
-          { label: "Overdue", value: formatAmount(totals.overdue, currentOrgCurrency), color: "text-amber-300" },
-          { label: "Paid / Total", value: `${totals.paid} / ${invoices.length}`, color: "text-emerald-300" },
-        ].map((kpi) => (
-          <div key={kpi.label} className="rounded-[1.25rem] border border-white/10 bg-slate-900/70 p-5 backdrop-blur">
-            <p className="text-sm text-slate-400">{kpi.label}</p>
-            <p className={`mt-2 text-2xl font-semibold ${kpi.color}`}>{kpi.value}</p>
-          </div>
+        <div className="kpi-card">
+          <span className="kpi-label">Total Revenue</span>
+          <span className="kpi-value kpi-accent-cyan">{formatAmount(totals.revenue, currentOrgCurrency)}</span>
+        </div>
+        <div className="kpi-card">
+          <span className="kpi-label">Outstanding</span>
+          <span className="kpi-value kpi-accent-amber">{formatAmount(totals.sent, currentOrgCurrency)}</span>
+        </div>
+        <div className="kpi-card">
+          <span className="kpi-label">Overdue</span>
+          <span className="kpi-value kpi-accent-red">{formatAmount(totals.overdue, currentOrgCurrency)}</span>
+        </div>
+        <div className="kpi-card">
+          <span className="kpi-label">Paid / Total</span>
+          <span className="kpi-value kpi-accent-emerald">{totals.paid} <span className="text-sm font-normal text-slate-400">/ {invoices.length}</span></span>
+        </div>
+      </section>
+
+      {/* Document Type Quick Nav */}
+      <section className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
+        {DOC_TYPES.map((dt) => (
+          <Link
+            key={dt.href}
+            href={dt.href}
+            className="flex flex-col items-center gap-1.5 rounded-xl border border-white/10 bg-slate-900/50 px-2 py-3 text-center transition hover:bg-slate-800/70 hover:border-white/20"
+          >
+            <span
+              className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold"
+              style={{ color: dt.color, background: dt.bg }}
+            >
+              {dt.label.charAt(0)}
+            </span>
+            <span className="text-[11px] font-medium text-slate-300 leading-tight">{dt.label}</span>
+          </Link>
         ))}
       </section>
 
@@ -130,37 +183,54 @@ export default function DashboardPage() {
       {invoices.length > 0 && (
         <section className="grid gap-6 lg:grid-cols-3">
           {/* Revenue Trend */}
-          <div className="rounded-[1.5rem] border border-white/10 bg-slate-900/70 p-6 backdrop-blur lg:col-span-2">
+          <div className="section-card lg:col-span-2">
             <h2 className="text-lg font-semibold text-white mb-4">Revenue Trend</h2>
             <div className="h-[250px]">
-              <Line data={{
-                labels: monthlyData.labels.length ? monthlyData.labels : ["No data"],
-                datasets: [{ label: "Revenue", data: monthlyData.data.length ? monthlyData.data : [0],
-                  borderColor: "#06b6d4", backgroundColor: "rgba(6,182,212,0.1)", fill: true, tension: 0.4, pointRadius: 4, pointBackgroundColor: "#06b6d4" }],
-              }} options={{
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                  x: { grid: { color: "rgba(255,255,255,0.05)" }, ticks: { color: "#94a3b8" } },
-                  y: { grid: { color: "rgba(255,255,255,0.05)" }, ticks: { color: "#94a3b8" } },
-                },
-              }} />
+              <Line
+                data={{
+                  labels: monthlyData.labels.length ? monthlyData.labels : ["No data"],
+                  datasets: [{
+                    label: "Revenue",
+                    data: monthlyData.data.length ? monthlyData.data : [0],
+                    borderColor: "#06b6d4",
+                    backgroundColor: "rgba(6,182,212,0.1)",
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointBackgroundColor: "#06b6d4",
+                  }],
+                }}
+                options={lineOptions}
+              />
             </div>
           </div>
 
           {/* Status Breakdown */}
-          <div className="rounded-[1.5rem] border border-white/10 bg-slate-900/70 p-6 backdrop-blur">
+          <div className="section-card">
             <h2 className="text-lg font-semibold text-white mb-4">Status Breakdown</h2>
             <div className="h-[200px] flex items-center justify-center">
-              <Doughnut data={{
-                labels: Object.keys(statusCounts),
-                datasets: [{ data: Object.values(statusCounts),
-                  backgroundColor: ["#64748b", "#f59e0b", "#06b6d4", "#10b981", "#ef4444"],
-                  borderWidth: 0, borderRadius: 4 }],
-              }} options={{
-                responsive: true, maintainAspectRatio: false, cutout: "65%",
-                plugins: { legend: { position: "bottom", labels: { color: "#94a3b8", padding: 12, usePointStyle: true, pointStyleWidth: 8 } } },
-              }} />
+              <Doughnut
+                data={{
+                  labels: Object.keys(statusCounts),
+                  datasets: [{
+                    data: Object.values(statusCounts),
+                    backgroundColor: ["#64748b", "#f59e0b", "#06b6d4", "#10b981", "#ef4444"],
+                    borderWidth: 0,
+                    borderRadius: 4,
+                  }],
+                }}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  cutout: "65%",
+                  plugins: {
+                    legend: {
+                      position: "bottom",
+                      labels: { color: "#94a3b8", padding: 12, usePointStyle: true, pointStyleWidth: 8 },
+                    },
+                  },
+                }}
+              />
             </div>
           </div>
         </section>
@@ -169,25 +239,34 @@ export default function DashboardPage() {
       {/* Bottom Grid */}
       <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
         {/* Recent Invoices */}
-        <div className="rounded-[1.5rem] border border-white/10 bg-slate-900/70 p-6 backdrop-blur">
+        <div className="section-card">
           <h2 className="text-xl font-semibold text-white">Recent invoices</h2>
           {loading ? (
-            <div className="mt-4 space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-14 animate-pulse rounded-xl bg-slate-800" />)}</div>
+            <div className="mt-4 space-y-3">
+              {[1, 2, 3].map((i) => <div key={i} className="h-14 animate-pulse rounded-xl bg-slate-800" />)}
+            </div>
           ) : invoices.length === 0 ? (
             <div className="mt-4 rounded-xl border border-white/10 bg-slate-950/70 p-6 text-center text-sm text-slate-400">
-              No invoices yet. <a href="/billing" className="text-cyan-300 hover:text-cyan-200">Create your first invoice</a>
+              No invoices yet.{" "}
+              <a href="/billing" className="text-cyan-300 hover:text-cyan-200">Create your first invoice</a>
             </div>
           ) : (
             <div className="mt-4 space-y-2">
               {invoices.slice(0, 5).map((inv) => (
-                <Link key={inv.id} href={`/invoices/${inv.id}`} className="flex items-center justify-between rounded-xl border border-white/10 bg-slate-950/70 p-3 transition hover:bg-slate-900/70">
+                <Link
+                  key={inv.id}
+                  href={`/invoices/${inv.id}`}
+                  className="flex items-center justify-between rounded-xl border border-white/10 bg-slate-950/70 p-3 transition hover:bg-slate-900/70"
+                >
                   <div>
                     <p className="text-sm font-medium text-white">{inv.customerName}</p>
                     <p className="text-xs text-slate-400">#{inv.invoiceNumber}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-semibold text-white">{formatAmount(inv.total, currentOrgCurrency)}</p>
-                    <span className={`text-xs ${inv.status === "paid" ? "text-emerald-300" : inv.status === "overdue" ? "text-red-300" : "text-slate-400"}`}>{inv.status}</span>
+                    <span className={`badge-${inv.status === "paid" ? "success" : inv.status === "overdue" ? "danger" : inv.status === "draft" ? "default" : "info"} text-xs`}>
+                      {inv.status}
+                    </span>
                   </div>
                 </Link>
               ))}
@@ -196,7 +275,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Top Customers */}
-        <div className="rounded-[1.5rem] border border-white/10 bg-slate-900/70 p-6 backdrop-blur">
+        <div className="section-card">
           <h2 className="text-xl font-semibold text-white">Top Customers</h2>
           {topCustomers.length === 0 ? (
             <div className="mt-4 rounded-xl border border-white/10 bg-slate-950/70 p-6 text-center text-sm text-slate-400">No customer data yet.</div>
@@ -215,7 +294,7 @@ export default function DashboardPage() {
           )}
 
           <div className="mt-4 rounded-xl border border-cyan-400/20 bg-cyan-500/10 p-3 text-sm text-cyan-200">
-            🤖 AI: Best payment follow-up window is tomorrow morning.
+            <span className="mr-1">🤖</span> AI: Best payment follow-up window is tomorrow morning.
           </div>
         </div>
       </section>

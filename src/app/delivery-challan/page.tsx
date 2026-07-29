@@ -7,6 +7,11 @@ import { formatAmount } from "@/lib/currency";
 
 type Order = { id: string; orderNumber: string; status: string; partyName: string; total: number; orderDate: string };
 
+const STATUS_BADGE: Record<string, string> = {
+  draft: "badge-default", pending: "badge-warning", approved: "badge-info",
+  delivered: "badge-success", completed: "badge-success", cancelled: "badge-danger",
+};
+
 export default function DeliveryChallanListPage() {
   const { currentOrgCurrency } = useOrg();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -19,21 +24,15 @@ export default function DeliveryChallanListPage() {
       .catch(() => setLoading(false));
   }, []);
 
-  const statusColor: Record<string, string> = {
-    draft: "bg-slate-500/10 text-slate-300", pending: "bg-amber-500/10 text-amber-300",
-    approved: "bg-cyan-500/10 text-cyan-300", delivered: "bg-emerald-500/10 text-emerald-300",
-    completed: "bg-emerald-500/10 text-emerald-300", cancelled: "bg-red-500/10 text-red-300",
-  };
-
   return (
     <main className="flex flex-1 flex-col gap-6 pb-10">
-      <section className="rounded-[2rem] border border-white/10 bg-slate-900/70 p-6 shadow-2xl shadow-black/20 backdrop-blur">
+      <section className="section-card">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-sm uppercase tracking-[0.25em] text-cyan-300">Trade Documents</p>
+            <p className="text-xs uppercase tracking-[0.25em]" style={{ color: "var(--doc-challan)" }}>Trade Documents</p>
             <h1 className="mt-2 text-3xl font-semibold text-white">Delivery Challans</h1>
           </div>
-          <Link href="/delivery-challan/new" className="rounded-full bg-cyan-500 px-4 py-1.5 text-xs font-semibold text-slate-950 hover:bg-cyan-400">+ New Challan</Link>
+          <Link href="/delivery-challan/new" className="btn-primary">+ New Challan</Link>
         </div>
       </section>
 
@@ -45,18 +44,27 @@ export default function DeliveryChallanListPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead><tr className="border-b border-white/10 text-slate-400">
-                <th className="p-3 font-medium">#</th><th className="p-3 font-medium">Party</th><th className="p-3 font-medium">Date</th>
-                <th className="p-3 font-medium text-right">Total</th><th className="p-3 font-medium">Status</th>
-              </tr></thead>
+              <thead>
+                <tr className="border-b border-white/10 text-slate-400">
+                  <th className="p-3 font-medium">#</th>
+                  <th className="p-3 font-medium">Party</th>
+                  <th className="p-3 font-medium">Date</th>
+                  <th className="p-3 font-medium text-right">Total</th>
+                  <th className="p-3 font-medium">Status</th>
+                </tr>
+              </thead>
               <tbody>
                 {orders.map((o) => (
                   <tr key={o.id} className="border-t border-white/5 hover:bg-white/5">
-                    <td className="p-3 text-white font-mono"><Link href={`/delivery-challan/${o.id}`} className="hover:text-cyan-300">{o.orderNumber}</Link></td>
+                    <td className="p-3 text-white font-mono">
+                      <Link href={`/delivery-challan/${o.id}`} className="hover:text-cyan-300">{o.orderNumber}</Link>
+                    </td>
                     <td className="p-3 text-slate-300">{o.partyName}</td>
                     <td className="p-3 text-xs text-slate-500">{new Date(o.orderDate).toLocaleDateString()}</td>
                     <td className="p-3 text-right text-white font-medium">{formatAmount(o.total, currentOrgCurrency)}</td>
-                    <td className="p-3"><span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${statusColor[o.status] || "bg-slate-500/10 text-slate-300"}`}>{o.status}</span></td>
+                    <td className="p-3">
+                      <span className={STATUS_BADGE[o.status] || "badge-default"}>{o.status}</span>
+                    </td>
                   </tr>
                 ))}
               </tbody>

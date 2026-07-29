@@ -12,6 +12,12 @@ import { suggestHsn } from "@/lib/ai/gst";
 import { detectAnomalies } from "@/lib/ai/anomaly";
 import type { AiSuggestion, AnomalyFlag, HsnSuggestion } from "@/lib/ai/types";
 import Link from "next/link";
+import {
+  TemplateSelector,
+  InvoiceTemplate,
+  type TemplateId,
+  type TemplateData,
+} from "@/components/invoice/InvoiceTemplates";
 
 const emptyDraft: InvoiceDraft = {
   customerName: "",
@@ -35,6 +41,8 @@ export default function BillingPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>("classic");
+  const [showPreview, setShowPreview] = useState(false);
   const [quickActions, setQuickActions] = useState<QuickAction[]>([
     { label: "Generate invoice from voice", key: "voice" },
     { label: "Scan OCR document", key: "ocr" },
@@ -74,6 +82,33 @@ export default function BillingPage() {
     }
     return [];
   }, [sanitizedDraft]);
+
+  // Convert draft to TemplateData for live preview
+  const templateData = useMemo<TemplateData>(() => ({
+    number: sanitizedDraft.invoiceNumber || "INV-NEW",
+    title: "Tax Invoice",
+    customerName: sanitizedDraft.customerName || "(Customer Name)",
+    customerGstin: sanitizedDraft.customerGstin,
+    date: new Date().toLocaleDateString("en-IN"),
+    dueDate: sanitizedDraft.dueDate ? new Date(sanitizedDraft.dueDate).toLocaleDateString("en-IN") : undefined,
+    lines: sanitizedDraft.lines.map((l) => ({
+      description: l.description || "(Item)",
+      hsnCode: l.hsnCode,
+      quantity: l.quantity,
+      unitPrice: l.unitPrice,
+      taxRate: l.taxRate,
+    })),
+    subtotal: summary.subtotal,
+    taxTotal: summary.taxTotal,
+    total: summary.total,
+    currency: sanitizedDraft.currency,
+    notes: summary.warnings.length > 0 ? summary.warnings.join("; ") : undefined,
+    terms: "Payment due within 7 days. Thank you for your business.",
+    orgName: "BizzBills",
+    orgAddress: "Your Business Address",
+    orgGstin: "27AABCU9603R1ZX",
+    isPaid: false,
+  }), [sanitizedDraft, summary]);
 
   const draftLines = draft.lines; // stable ref for UI
 
@@ -256,6 +291,46 @@ export default function BillingPage() {
           </div>
         </div>
       </section>
+
+      {/* Template Selector */}
+      <section className="rounded-[1.5rem] border border-white/10 bg-slate-900/70 p-4 backdrop-blur sm:p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <p className="text-xs uppercase tracking-wider text-slate-400">Invoice Template</p>
+            <h2 className="text-lg font-semibold text-white mt-0.5">Choose a layout for this invoice</h2>
+          </div>
+          <button
+            onClick={() => setShowPreview((p) => !p)}
+            className={`rounded-full border px-4 py-1.5 text-xs font-semibold transition ${
+              showPreview
+                ? "border-cyan-400/40 bg-cyan-500/20 text-cyan-300"
+                : "border-white/10 text-slate-300 hover:bg-white/5"
+            }`}
+          >
+            {showPreview ? "Hide Preview" : "Live Preview"}
+          </button>
+        </div>
+        <TemplateSelector selected={selectedTemplate} onChange={setSelectedTemplate} />
+      </section>
+
+      {showPreview && (
+        <section className="rounded-[1.5rem] border border-white/10 bg-slate-900/70 p-4 backdrop-blur sm:p-6 overflow-hidden">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-xs uppercase tracking-wider text-slate-400">
+              Preview — <span className="text-cyan-300 font-semibold">{selectedTemplate}</span>
+            </p>
+            <button
+              onClick={() => window.print()}
+              className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-300 hover:bg-white/5 transition"
+            >
+              🖨 Print Preview
+            </button>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-white overflow-hidden max-h-[600px] overflow-y-auto">
+            <InvoiceTemplate template={selectedTemplate} data={templateData} />
+          </div>
+        </section>
+      )}
 
       <section className="grid gap-6 md:grid-cols-1 lg:grid-cols-1 xl:grid-cols-[1.2fr_0.8fr]">
         {/* Invoice form */}

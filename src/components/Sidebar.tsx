@@ -175,8 +175,20 @@ const Icons = {
   ),
 };
 
+/* ── Document type colors ── */
+const DOC_COLORS: Record<string, string> = {
+  "Billing": "#6366f1",
+  "Proforma": "#a855f7",
+  "Credit Notes": "#10b981",
+  "Debit Notes": "#ef4444",
+  "Recurring": "#ec4899",
+  "Quotations": "#3b82f6",
+  "Delivery Challans": "#f59e0b",
+  "Orders": "#f43f5e",
+};
+
 /* ── Menu configuration ── */
-type MenuItem = { label: string; href: string; icon: keyof typeof Icons; exact?: boolean };
+type MenuItem = { label: string; href: string; icon: keyof typeof Icons; exact?: boolean; accent?: string };
 type MenuGroup = { title: string; items: MenuItem[] };
 
 const MENU_GROUPS: MenuGroup[] = [
@@ -190,19 +202,19 @@ const MENU_GROUPS: MenuGroup[] = [
   {
     title: "Billing & Invoicing",
     items: [
-      { label: "Billing", href: "/billing", icon: "billing" },
-      { label: "Recurring", href: "/recurring-invoices", icon: "recurring" },
-      { label: "Proforma Invoices", href: "/proforma-invoices", icon: "billing" },
-      { label: "Credit Notes", href: "/credit-notes", icon: "creditNote" },
-      { label: "Debit Notes", href: "/debit-notes", icon: "debitNote" },
+      { label: "Billing", href: "/billing", icon: "billing", accent: DOC_COLORS["Billing"] },
+      { label: "Recurring", href: "/recurring-invoices", icon: "recurring", accent: DOC_COLORS["Recurring"] },
+      { label: "Proforma Invoices", href: "/proforma-invoices", icon: "billing", accent: DOC_COLORS["Proforma"] },
+      { label: "Credit Notes", href: "/credit-notes", icon: "creditNote", accent: DOC_COLORS["Credit Notes"] },
+      { label: "Debit Notes", href: "/debit-notes", icon: "debitNote", accent: DOC_COLORS["Debit Notes"] },
     ],
   },
   {
     title: "Trade Documents",
     items: [
-      { label: "Quotations", href: "/quotations", icon: "billing" },
-      { label: "Delivery Challans", href: "/delivery-challan", icon: "billing" },
-      { label: "Orders", href: "/orders", icon: "billing" },
+      { label: "Quotations", href: "/quotations", icon: "billing", accent: DOC_COLORS["Quotations"] },
+      { label: "Delivery Challans", href: "/delivery-challan", icon: "billing", accent: DOC_COLORS["Delivery Challans"] },
+      { label: "Orders", href: "/orders", icon: "orders", accent: DOC_COLORS["Orders"] },
     ],
   },
   {
@@ -416,6 +428,7 @@ export function Sidebar() {
                 <div className={`space-y-0.5 ${collapsed ? "md:px-0" : "px-0"}`}>
                   {group.items.map((item) => {
                     const active = isActive(pathname, item.href, item.exact);
+                    const accent = item.accent || "#22d3ee";
                     return (
                       <Link
                         key={item.href}
@@ -425,13 +438,17 @@ export function Sidebar() {
                         className={`
                           group/link flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm font-medium transition-all duration-150
                           ${active
-                            ? "bg-cyan-500/10 text-cyan-600 shadow-[inset_0_0_0_1px_rgba(34,211,238,0.12)] dark:text-cyan-300"
+                            ? "text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)]"
                             : "text-slate-600 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-white/[0.04] dark:hover:text-slate-200"
                           }
                           ${collapsed ? "md:justify-center md:px-0" : ""}
                         `}
+                        style={active ? { background: `${accent}18` } : undefined}
                       >
-                        <span className={`shrink-0 ${active ? "text-cyan-500 dark:text-cyan-400" : "text-slate-400 dark:text-slate-500"}`}>
+                        <span
+                          className="shrink-0"
+                          style={{ color: active ? accent : undefined }}
+                        >
                           {Icons[item.icon]()}
                         </span>
                         <span
@@ -439,11 +456,15 @@ export function Sidebar() {
                             truncate transition-opacity duration-200
                             ${collapsed ? "md:sr-only" : ""}
                           `}
+                          style={active ? { color: accent } : undefined}
                         >
                           {item.label}
                         </span>
                         {active && collapsed && (
-                          <span className="absolute right-0 top-1/2 hidden h-4 w-0.5 -translate-y-1/2 rounded-full bg-cyan-400 md:block" />
+                          <span
+                            className="absolute right-0 top-1/2 hidden h-4 w-0.5 -translate-y-1/2 rounded-full md:block"
+                            style={{ background: accent }}
+                          />
                         )}
                       </Link>
                     );

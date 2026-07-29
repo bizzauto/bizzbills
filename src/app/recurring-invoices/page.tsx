@@ -16,6 +16,11 @@ type RecurringSummary = {
   lastRunAt: string | null;
 };
 
+const STATUS_BADGE: Record<string, string> = {
+  active: "badge-success", paused: "badge-warning",
+  completed: "badge-info", cancelled: "badge-danger",
+};
+
 export default function RecurringInvoicesPage() {
   const [items, setItems] = useState<RecurringSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,21 +36,14 @@ export default function RecurringInvoicesPage() {
 
   return (
     <main className="flex flex-1 flex-col gap-6 pb-10">
-      <section className="rounded-[2rem] border border-white/10 bg-slate-900/70 p-6 shadow-2xl shadow-black/20 backdrop-blur">
+      <section className="section-card">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-sm uppercase tracking-[0.25em] text-cyan-300">Automation</p>
+            <p className="text-xs uppercase tracking-[0.25em]" style={{ color: "var(--doc-recurring)" }}>Automation</p>
             <h1 className="mt-2 text-3xl font-semibold text-white">Recurring Invoices</h1>
             <p className="mt-1 text-sm text-slate-400">Automatically generate invoices on a schedule</p>
           </div>
-          <div className="flex gap-2">
-            <Link
-              href="/recurring-invoices/new"
-              className="rounded-full bg-cyan-500 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400"
-            >
-              + New Schedule
-            </Link>
-          </div>
+          <Link href="/recurring-invoices/new" className="btn-primary">+ New Schedule</Link>
         </div>
       </section>
 
@@ -80,21 +78,16 @@ export default function RecurringInvoicesPage() {
                     </td>
                     <td className="p-3 text-white">{formatAmount(ri.total, ri.currency)}</td>
                     <td className="p-3">
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                        ri.status === "active" ? "bg-emerald-500/10 text-emerald-300" :
-                        ri.status === "paused" ? "bg-amber-500/10 text-amber-300" :
-                        ri.status === "completed" ? "bg-blue-500/10 text-blue-300" :
-                        "bg-red-500/10 text-red-300"
-                      }`}>{ri.status}</span>
+                      <span className={STATUS_BADGE[ri.status] || "badge-default"}>{ri.status}</span>
                     </td>
                     <td className="p-3 text-xs text-slate-400">
                       {new Date(ri.nextRunDate).toLocaleDateString()}
                     </td>
                     <td className="p-3 text-xs text-slate-500">
-                      {ri.lastRunAt ? new Date(ri.lastRunAt).toLocaleDateString() : "—"}
+                      {ri.lastRunAt ? new Date(ri.lastRunAt).toLocaleDateString() : "\u2014"}
                     </td>
                     <td className="p-3">
-                      <Link href={`/recurring-invoices/${ri.id}`} className="text-xs text-cyan-300 hover:text-cyan-200">View →</Link>
+                      <Link href={`/recurring-invoices/${ri.id}`} className="text-xs text-cyan-300 hover:text-cyan-200">View &rarr;</Link>
                     </td>
                   </tr>
                 ))}
