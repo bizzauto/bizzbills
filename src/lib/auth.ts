@@ -29,7 +29,6 @@ export const authOptions: NextAuthOptions = {
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
-          include: { org: true, tenantUsers: { include: { org: true } } },
         });
 
         if (!user || !user.passwordHash) return null;
@@ -43,10 +42,6 @@ export const authOptions: NextAuthOptions = {
         if (user.orgId) {
           orgId = user.orgId;
           role = user.role;
-        } else if (user.tenantUsers.length > 0) {
-          const primary = user.tenantUsers[0];
-          orgId = primary.orgId;
-          role = primary.role;
         }
 
         return {
