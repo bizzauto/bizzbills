@@ -14,13 +14,10 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Invalid body" }, { status: 400 });
   }
 
-  const { name, gstin, address, phone, email, currency } = body as {
-    name?: string;
-    gstin?: string;
-    address?: string;
-    phone?: string;
-    email?: string;
-    currency?: string;
+  const { name, slug, businessType, gstin, address, phone, email, currency, website, pan, upiId, bankName, accountName, accountNumber, ifscCode, onboardingCompleted } = body as {
+    name?: string; slug?: string; businessType?: string; gstin?: string; address?: string;
+    phone?: string; email?: string; currency?: string; website?: string; pan?: string;
+    upiId?: string; bankName?: string; accountName?: string; accountNumber?: string; ifscCode?: string; onboardingCompleted?: boolean;
   };
 
   const user = await prisma.user.findUnique({
@@ -37,11 +34,15 @@ export async function PUT(request: Request) {
 
   const updates: Record<string, unknown> = {};
   if (name !== undefined) updates.name = name;
+  if (slug !== undefined) updates.slug = slug;
   if (gstin !== undefined) updates.gstin = gstin;
   if (address !== undefined) updates.address = address;
   if (phone !== undefined) updates.phone = phone;
   if (email !== undefined) updates.email = email;
   if (currency !== undefined) updates.currency = currency;
+  if (website !== undefined) updates.website = website;
+  if (upiId !== undefined) updates.upiId = upiId;
+  if (onboardingCompleted !== undefined) updates.settings = JSON.stringify({ onboardingCompleted, businessType, pan, bankName, accountName, accountNumber, ifscCode });
 
   try {
     await prisma.organization.update({
@@ -72,6 +73,9 @@ export async function GET() {
     return NextResponse.json({ error: "No organization found" }, { status: 404 });
   }
 
+  let settings = {};
+  try { settings = JSON.parse(user.org.settings || "{}"); } catch {}
+
   return NextResponse.json({
     id: user.org.id,
     name: user.org.name,
@@ -81,6 +85,15 @@ export async function GET() {
     phone: user.org.phone,
     email: user.org.email,
     currency: user.org.currency,
+    website: user.org.website,
+    upiId: user.org.upiId,
     plan: user.org.plan,
+    onboardingCompleted: (settings as any).onboardingCompleted,
+    businessType: (settings as any).businessType,
+    pan: (settings as any).pan,
+    bankName: (settings as any).bankName,
+    accountName: (settings as any).accountName,
+    accountNumber: (settings as any).accountNumber,
+    ifscCode: (settings as any).ifscCode,
   });
 }
