@@ -1,3 +1,5 @@
+"use client";
+
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -5,6 +7,7 @@ import { AuthProvider } from "@/components/AuthProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ToastProvider } from "@/components/ToastProvider";
 import { Sidebar } from "@/components/Sidebar";
+import { usePathname } from "next/navigation";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,6 +38,9 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const pathname = usePathname();
+  const publicRoute = isPublicRoute(pathname);
+
   return (
     <html
       lang="en"
@@ -44,34 +50,22 @@ export default function RootLayout({
         <AuthProvider>
           <ThemeProvider>
             <ToastProvider>
-              <AppShell>{children}</AppShell>
+              {publicRoute ? (
+                <>{children}</>
+              ) : (
+                <div className="flex min-h-screen">
+                  <Sidebar />
+                  <main className="flex-1 overflow-x-auto transition-all duration-300 md:pl-0">
+                    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 pt-16 md:pt-6">
+                      {children}
+                    </div>
+                  </main>
+                </div>
+              )}
             </ToastProvider>
           </ThemeProvider>
         </AuthProvider>
       </body>
     </html>
-  );
-}
-
-import { headers } from "next/headers";
-
-async function AppShell({ children }: { children: React.ReactNode }) {
-  const headersList = await headers();
-  const pathname = headersList.get("x-nextjs-pathname") || "/";
-  const publicRoute = isPublicRoute(pathname);
-
-  if (publicRoute) {
-    return <>{children}</>;
-  }
-
-  return (
-    <div className="flex min-h-screen">
-      <Sidebar />
-      <main className="flex-1 overflow-x-auto transition-all duration-300 md:pl-0">
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 pt-16 md:pt-6">
-          {children}
-        </div>
-      </main>
-    </div>
   );
 }
