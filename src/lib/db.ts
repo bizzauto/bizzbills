@@ -21,8 +21,13 @@ function createPrismaClient() {
   return new PrismaClient({ adapter });
 }
 
-export const prisma = globalForPrisma.prisma ?? createPrismaClient();
+// Lazy initialization: only create the Prisma client when it is actually
+// accessed. This prevents adapter/provider mismatches during `next build`
+// when DATABASE_URL may point to a different provider than the schema.
+export const prisma =
+  globalForPrisma.prisma ??
+  (typeof window === "undefined" ? createPrismaClient() : undefined);
 
-if (process.env.NODE_ENV !== "production") {
+if (process.env.NODE_ENV !== "production" && prisma) {
   globalForPrisma.prisma = prisma;
 }
