@@ -1,11 +1,11 @@
 import { defineConfig } from "@prisma/config";
-import { PrismaLibSql } from "@prisma/adapter-libsql";
+import { PrismaPg } from "@prisma/adapter-pg";
 
 export default defineConfig({
   migrate: {
     adapter: (datasourceUrl: string) => {
-      return new PrismaLibSql({ url: datasourceUrl });
+      return new PrismaPg({ connectionString: datasourceUrl });
     },
   },
-  datasourceUrl: process.env.DATABASE_URL || "file:./dev.db",
+  datasourceUrl: process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/billinvoice",
 });
