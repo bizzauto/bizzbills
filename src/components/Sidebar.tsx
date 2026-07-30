@@ -173,6 +173,13 @@ const Icons = {
       <path d="M4 6l4 4 4-4" />
     </svg>
   ),
+  logout: () => (
+    <svg viewBox="0 0 16 16" fill="none" className="h-3.5 w-3.5" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 14H3.33A1.33 1.33 0 0 1 2 12.67V3.33A1.33 1.33 0 0 1 3.33 2H6" />
+      <path d="M10.67 11.33L14 8l-3.33-3.33" />
+      <path d="M14 8H6" />
+    </svg>
+  ),
 };
 
 /* ── Document type colors ── */
@@ -291,6 +298,15 @@ const MENU_GROUPS: MenuGroup[] = [
   },
 ];
 
+/* ── Admin-only menu ── */
+const ADMIN_GROUP: MenuGroup = {
+  title: "Admin",
+  items: [
+    { label: "Dashboard", href: "/admin", icon: "dashboard" },
+    { label: "User Management", href: "/admin/users", icon: "parties" },
+  ],
+};
+
 /* ── Sidebar component ── */
 export function Sidebar() {
   const pathname = usePathname();
@@ -299,10 +315,14 @@ export function Sidebar() {
   const { theme, toggleTheme } = useTheme();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const userRole = (session?.user as { role?: string })?.role;
+  const isSuperAdmin = userRole === "SUPER_ADMIN";
+  const allGroups = isSuperAdmin ? [...MENU_GROUPS, ADMIN_GROUP] : MENU_GROUPS;
+
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
     // Auto-expand the group containing current route
     const initial: Record<string, boolean> = {};
-    for (const group of MENU_GROUPS) {
+    for (const group of allGroups) {
       for (const item of group.items) {
         if (isActive(pathname, item.href, item.exact)) {
           initial[group.title] = true;
@@ -393,7 +413,7 @@ export function Sidebar() {
 
         {/* ── Scrollable menu ── */}
         <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-3 scrollbar-thin">
-          {MENU_GROUPS.map((group) => (
+          {allGroups.map((group) => (
             <div key={group.title} className="mb-1">
               {/* Group header (collapsed = dot only) */}
               <button
@@ -517,10 +537,11 @@ export function Sidebar() {
               <div className="h-7 w-7 shrink-0 animate-pulse rounded-full" style={{ background: "var(--badge-bg)" }} />
             </div>
           ) : session?.user ? (
-            <div className="group/user relative">
+            <div className="space-y-1">
+              {/* User info */}
               <div
                 className={`
-                  flex items-center gap-2 rounded-lg px-2 py-1.5 transition cursor-pointer
+                  flex items-center gap-2 rounded-lg px-2 py-1.5
                   ${collapsed ? "md:justify-center" : ""}
                 `}
               >
@@ -533,32 +554,23 @@ export function Sidebar() {
                   </p>
                 </div>
               </div>
-              {/* Sign out tooltip / dropdown */}
-              {!collapsed && (
-                <div className="absolute bottom-full left-0 right-0 mb-1 hidden group-hover/user:block">
-                  <button
-                    onClick={() => signOut({ callbackUrl: "/" })}
-                    className="w-full rounded-lg px-3 py-2 text-left text-xs font-medium text-danger transition"
-                  >
-                    Sign out
-                  </button>
-                </div>
-              )}
-              {collapsed && (
-                <div className="absolute left-full top-1/2 z-50 ml-2 hidden -translate-y-1/2 group-hover/user:block">
-                  <div className="w-48 rounded-xl border p-3 shadow-2xl backdrop-blur-xl" style={{ borderColor: "var(--card-border)", background: "var(--card)" }}>
-                    <p className="mb-2 truncate text-sm font-medium" style={{ color: "var(--foreground)" }}>
-                      {session.user.name ?? session.user.email}
-                    </p>
-                    <button
-                      onClick={() => signOut({ callbackUrl: "/" })}
-                      className="w-full rounded-lg px-3 py-1.5 text-left text-xs font-medium text-danger transition"
-                    >
-                      Sign out
-                    </button>
-                  </div>
-                </div>
-              )}
+              {/* Sign out button - always visible */}
+              <button
+                onClick={() => signOut({ callbackUrl: "/" })}
+                className={`
+                  flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-medium transition
+                  hover:bg-red-500/10
+                  ${collapsed ? "md:justify-center md:px-0" : ""}
+                `}
+                style={{ color: "#ef4444" }}
+              >
+                <svg viewBox="0 0 16 16" fill="none" className="h-3.5 w-3.5 shrink-0" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M6 14H3.33A1.33 1.33 0 0 1 2 12.67V3.33A1.33 1.33 0 0 1 3.33 2H6" />
+                  <path d="M10.67 11.33L14 8l-3.33-3.33" />
+                  <path d="M14 8H6" />
+                </svg>
+                {!collapsed && <span>Sign out</span>}
+              </button>
             </div>
           ) : (
             <Link

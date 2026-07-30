@@ -33,6 +33,7 @@ type DocumentData = {
   bankAccount?: string;
   bankIfsc?: string;
   upiId?: string;
+  accentColor?: string;
 };
 
 function toTemplateData(data: DocumentData): TemplateData {
@@ -65,6 +66,7 @@ function toTemplateData(data: DocumentData): TemplateData {
     bankAccount: data.bankAccount,
     bankIfsc: data.bankIfsc,
     upiId: data.upiId,
+    accentColor: data.accentColor,
     terms: "Thank you for your business.",
   };
 }

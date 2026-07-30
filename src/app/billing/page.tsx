@@ -42,6 +42,7 @@ export default function BillingPage() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>("classic");
+  const [accentColor, setAccentColor] = useState<string>("#06b6d4");
   const [showPreview, setShowPreview] = useState(false);
   const [quickActions, setQuickActions] = useState<QuickAction[]>([
     { label: "Generate invoice from voice", key: "voice" },
@@ -108,7 +109,8 @@ export default function BillingPage() {
     orgAddress: "Your Business Address",
     orgGstin: "27AABCU9603R1ZX",
     isPaid: false,
-  }), [sanitizedDraft, summary]);
+    accentColor,
+  }), [sanitizedDraft, summary, accentColor]);
 
   const draftLines = draft.lines; // stable ref for UI
 
@@ -310,7 +312,7 @@ export default function BillingPage() {
             {showPreview ? "Hide Preview" : "Live Preview"}
           </button>
         </div>
-        <TemplateSelector selected={selectedTemplate} onChange={setSelectedTemplate} />
+        <TemplateSelector selected={selectedTemplate} accentColor={accentColor} onChange={setSelectedTemplate} onColorChange={setAccentColor} />
       </section>
 
       {showPreview && (
