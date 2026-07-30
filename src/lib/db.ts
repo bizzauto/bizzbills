@@ -6,14 +6,7 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrismaClient() {
-  const url = process.env.DATABASE_URL;
-  if (!url) {
-    throw new Error(
-      "DATABASE_URL is not set. Configure it in .env or Coolify environment variables.\n" +
-      "SQLite (local): file:./dev.db\n" +
-      "Supabase/PostgreSQL: postgresql://user:password@host:5432/database?schema=public",
-    );
-  }
+  const url = process.env.DATABASE_URL || "file:./dev.db";
 
   if (url.startsWith("file:")) {
     // SQLite — use @prisma/adapter-libsql
