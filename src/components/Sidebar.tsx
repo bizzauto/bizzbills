@@ -294,6 +294,7 @@ const MENU_GROUPS: MenuGroup[] = [
     items: [
       { label: "Profile", href: "/settings/profile", icon: "settings" },
       { label: "Settings", href: "/settings", icon: "settings" },
+      { label: "Template", href: "/settings/template", icon: "settings" },
     ],
   },
 ];

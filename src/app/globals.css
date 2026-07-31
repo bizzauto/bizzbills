@@ -154,6 +154,12 @@ html.light ::selection {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(148, 163, 184, 0.25);
 }
+html.light ::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.2);
+}
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.35);
+}
 
 /* ── Focus ring ── */
 *:focus-visible {
@@ -185,6 +191,9 @@ button, a, input, select, textarea {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+}
+html.light .card-glass {
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
 }
 
 /* Input fields */
@@ -241,6 +250,9 @@ button, a, input, select, textarea {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
 }
+html.light .btn-primary:hover {
+  box-shadow: 0 4px 12px rgba(8, 145, 178, 0.2);
+}
 .btn-primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -265,6 +277,9 @@ button, a, input, select, textarea {
 .btn-secondary:hover {
   background: var(--badge-bg);
   border-color: rgba(255, 255, 255, 0.2);
+}
+html.light .btn-secondary:hover {
+  border-color: rgba(0, 0, 0, 0.15);
 }
 
 .btn-success {
@@ -371,6 +386,10 @@ button, a, input, select, textarea {
   transform: translateY(-2px);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
+html.light .kpi-card:hover {
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+}
 
 /* KPI accent borders */
 .kpi-accent-cyan { border-left: 3px solid var(--doc-invoice); }
@@ -430,6 +449,12 @@ html.light .text-on-accent { color: #f8fafc; }
 }
 .list-item:hover {
   background: var(--card-hover);
+}
+html.light .list-item {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+html.light .list-item:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 /* Toast animation */

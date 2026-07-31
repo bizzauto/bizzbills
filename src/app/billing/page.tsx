@@ -44,12 +44,37 @@ export default function BillingPage() {
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>("classic");
   const [accentColor, setAccentColor] = useState<string>("#06b6d4");
   const [showPreview, setShowPreview] = useState(false);
+  const [templateSettings, setTemplateSettings] = useState<{
+    invoiceTitle?: string;
+    footerNotes?: string;
+    orgName?: string;
+    orgAddress?: string;
+    orgGstin?: string;
+  } | null>(null);
   const [quickActions, setQuickActions] = useState<QuickAction[]>([
     { label: "Generate invoice from voice", key: "voice" },
     { label: "Scan OCR document", key: "ocr" },
     { label: "Suggest GST HSN", key: "hsn" },
     { label: "Auto-send reminder", key: "reminder" },
   ]);
+
+  // Load saved template settings from org
+  useEffect(() => {
+    fetch("/api/organization/settings")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.defaultTemplate) setSelectedTemplate(data.defaultTemplate);
+        if (data.defaultAccentColor) setAccentColor(data.defaultAccentColor);
+        setTemplateSettings({
+          invoiceTitle: data.invoiceTitle,
+          footerNotes: data.footerNotes,
+          orgName: data.name,
+          orgAddress: data.address,
+          orgGstin: data.gstin,
+        });
+      })
+      .catch(() => {});
+  }, []);
 
   const sanitizedDraft = useMemo(() => sanitizeInvoiceDraft(draft), [draft]);
   const summary = useMemo(() => calculateInvoiceSummary(sanitizedDraft), [sanitizedDraft]);
@@ -87,7 +112,7 @@ export default function BillingPage() {
   // Convert draft to TemplateData for live preview
   const templateData = useMemo<TemplateData>(() => ({
     number: sanitizedDraft.invoiceNumber || "INV-NEW",
-    title: "Tax Invoice",
+    title: templateSettings?.invoiceTitle || "Tax Invoice",
     customerName: sanitizedDraft.customerName || "(Customer Name)",
     customerGstin: sanitizedDraft.customerGstin,
     date: new Date().toLocaleDateString("en-IN"),
@@ -104,13 +129,13 @@ export default function BillingPage() {
     total: summary.total,
     currency: sanitizedDraft.currency,
     notes: summary.warnings.length > 0 ? summary.warnings.join("; ") : undefined,
-    terms: "Payment due within 7 days. Thank you for your business.",
-    orgName: "BizzBills",
-    orgAddress: "Your Business Address",
-    orgGstin: "27AABCU9603R1ZX",
+    terms: templateSettings?.footerNotes || "Payment due within 7 days. Thank you for your business.",
+    orgName: templateSettings?.orgName || "BizzBills",
+    orgAddress: templateSettings?.orgAddress || "Your Business Address",
+    orgGstin: templateSettings?.orgGstin || "27AABCU9603R1ZX",
     isPaid: false,
     accentColor,
-  }), [sanitizedDraft, summary, accentColor]);
+  }), [sanitizedDraft, summary, accentColor, templateSettings]);
 
   const draftLines = draft.lines; // stable ref for UI
 
