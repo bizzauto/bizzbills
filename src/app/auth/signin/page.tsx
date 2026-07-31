@@ -8,10 +8,11 @@ import { PublicLayout } from "@/components/PublicLayout";
 
 export default function SignInPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState<"email" | "phone">("email");
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -19,16 +20,16 @@ export default function SignInPage() {
     setError("");
 
     const result = await signIn("credentials", {
-      email,
+      email: identifier,
       password,
       redirect: false,
     });
 
     if (result?.error) {
-      setError("Invalid email or password");
+      setError("Invalid credentials. Please check and try again.");
       setLoading(false);
     } else {
-      router.push("/onboarding");
+      router.push("/dashboard");
       router.refresh();
     }
   }
@@ -42,14 +43,42 @@ export default function SignInPage() {
           <h1 className="mt-2 text-2xl font-semibold text-default">Sign in to BizzBills</h1>
         </div>
 
+        {/* Email / Phone toggle */}
+        <div className="mb-4 flex rounded-full border border-[var(--card-border)] bg-[var(--badge-bg)] p-1">
+          <button
+            type="button"
+            onClick={() => { setMode("email"); setIdentifier(""); setError(""); }}
+            className={`flex-1 rounded-full py-1.5 text-sm font-medium transition ${
+              mode === "email"
+                ? "bg-accent text-slate-900"
+                : "text-muted hover:text-default"
+            }`}
+          >
+            Email
+          </button>
+          <button
+            type="button"
+            onClick={() => { setMode("phone"); setIdentifier(""); setError(""); }}
+            className={`flex-1 rounded-full py-1.5 text-sm font-medium transition ${
+              mode === "phone"
+                ? "bg-accent text-slate-900"
+                : "text-muted hover:text-default"
+            }`}
+          >
+            Phone
+          </button>
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <label className="block text-sm text-muted">
-            <span className="mb-1 block text-muted">Email</span>
+            <span className="mb-1 block text-muted">
+              {mode === "email" ? "Email address" : "Phone number"}
+            </span>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              type={mode === "email" ? "email" : "tel"}
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              placeholder={mode === "email" ? "you@example.com" : "+91 98765 43210"}
               required
               className="input"
             />

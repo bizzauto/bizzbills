@@ -10,6 +10,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -23,7 +24,7 @@ export default function RegisterPage() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, phone: phone || undefined, password }),
       });
 
       if (!res.ok) {
@@ -70,6 +71,17 @@ await signIn("credentials", { email, password, redirect: false });
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
               required
+              className="input"
+            />
+          </label>
+
+          <label className="block text-sm text-muted">
+            <span className="mb-1 block text-muted">Phone (optional)</span>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="+91 98765 43210"
               className="input"
             />
           </label>

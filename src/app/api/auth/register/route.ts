@@ -11,7 +11,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Too many registration attempts. Try again later." }, { status: 429, headers: { "Retry-After": String(Math.ceil(rl.resetIn / 1000)) } });
     }
 
-    const { email, password, name } = await request.json();
+    const { email, password, name, phone } = await request.json();
 
     if (!email || !password) {
       return NextResponse.json(
@@ -26,6 +26,17 @@ export async function POST(request: Request) {
         { error: "A user with this email already exists" },
         { status: 409 },
       );
+    }
+
+    // Check if phone is already taken
+    if (phone) {
+      const existingPhone = await prisma.user.findFirst({ where: { phone } });
+      if (existingPhone) {
+        return NextResponse.json(
+          { error: "A user with this phone number already exists" },
+          { status: 409 },
+        );
+      }
     }
 
     const passwordHash = await hashPassword(password);
@@ -43,6 +54,7 @@ export async function POST(request: Request) {
       data: {
         email,
         name: name || email.split("@")[0],
+        phone: phone || null,
         passwordHash,
         orgId: org.id,
         role: "ORG_ADMIN",
