@@ -53,6 +53,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/node_modules/postgres-interval ./
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/prisma.config.ts ./prisma.config.ts
 COPY --from=builder --chown=nextjs:nodejs /app/entrypoint.sh ./entrypoint.sh
+# effect module needed by @prisma/config for prisma db push in entrypoint
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/effect ./node_modules/effect
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma/config ./node_modules/@prisma/config
 
 RUN chmod +x ./entrypoint.sh
 
