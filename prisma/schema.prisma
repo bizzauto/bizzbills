@@ -136,6 +136,22 @@ model Organization {
   discounts        Discount[]
   tdsEntries       TdsEntry[]
   budgets          Budget[]
+  rolePermissions  RolePermission[]
+}
+
+/// Granular role-based permissions — per-org, per-role
+model RolePermission {
+  id          String   @id @default(cuid())
+  orgId       String
+  role        String   // Role enum value as string
+  permission  String   // e.g. "invoices.create", "invoices.delete", "reports.view"
+  allowed     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, role, permission])
+  @@index([orgId])
 }
 
 /// Branch/location within an organization
