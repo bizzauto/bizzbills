@@ -8,7 +8,7 @@ const validDraft: InvoiceDraft = {
   currency: "INR",
   invoiceNumber: "INV-1001",
   dueDate: "2026-07-20",
-  lines: [{ id: "1", description: "Consulting", quantity: 1, unitPrice: 24000, taxRate: 18 }],
+  lines: [{ id: "1", description: "Consulting", quantity: 1, unitPrice: 24000, taxRate: 18, hsnCode: "" }],
 };
 
 describe("anomaly detection", () => {
@@ -37,7 +37,7 @@ describe("anomaly detection", () => {
   it("flags zero tax on professional services", () => {
     const draft = {
       ...validDraft,
-      lines: [{ id: "1", description: "Professional consulting", quantity: 1, unitPrice: 10000, taxRate: 0 }],
+      lines: [{ id: "1", description: "Professional consulting", quantity: 1, unitPrice: 10000, taxRate: 0, hsnCode: "" }],
     };
     const flags = detectAnomalies(draft);
     expect(flags.some((f) => f.message.includes("Zero tax"))).toBe(true);

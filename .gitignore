@@ -43,3 +43,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# temp / dev scripts
+tmp_*
+tmp-*.mjs
+tmp-*.js
+tmp-*.sh
+tmp-*.sql
+tmp-*.py
+
+# Claude
+.claude/

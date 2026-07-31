@@ -25,16 +25,26 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const orgId = await getSessionOrgId(session.user.id);
-  if (!orgId) return NextResponse.json({ error: "No organization" }, { status: 400 });
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const orgId = await getSessionOrgId(session.user.id);
+    if (!orgId) return NextResponse.json({ error: "No organization" }, { status: 400 });
 
-  const { lines, ...data } = await request.json();
-  const order = await prisma.order.create({
-    data: { ...data, orgId, lines: { create: lines || [] } },
-    include: { lines: true },
-  });
-  return NextResponse.json(order, { status: 201 });
+    const body = await request.json();
+    if (!body.orderNumber || !body.orderDate) {
+      return NextResponse.json({ error: "orderNumber and orderDate are required" }, { status: 400 });
+    }
+
+    const { lines, ...data } = body;
+    const order = await prisma.order.create({
+      data: { ...data, orgId, lines: { create: lines || [] } },
+      include: { lines: true },
+    });
+    return NextResponse.json(order, { status: 201 });
+  } catch (error) {
+    console.error("POST /api/orders error:", error);
+    return NextResponse.json({ error: "Failed to create order" }, { status: 500 });
+  }
 }
 

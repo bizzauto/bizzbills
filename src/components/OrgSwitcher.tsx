@@ -64,7 +64,7 @@ export function OrgSwitcher() {
 
             {isAdmin && (
               <>
-                <hr className="my-2 border-default"
+                <hr className="my-2 border-default" />
                 <Link
                   href="/organization/settings"
                   onClick={() => setOpen(false)}

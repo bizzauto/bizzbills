@@ -10,7 +10,7 @@ describe("invoice calculations", () => {
       invoiceNumber: "INV-1001",
       dueDate: "2026-07-20",
       lines: [
-        { id: "1", description: "Consulting", quantity: 1, unitPrice: 24000, taxRate: 18 },
+        { id: "1", description: "Consulting", quantity: 1, unitPrice: 24000, taxRate: 18, hsnCode: "" },
       ],
     };
 
@@ -31,7 +31,7 @@ describe("invoice calculations", () => {
       invoiceNumber: "  INV-1002  ",
       dueDate: "2026-07-20",
       lines: [
-        { id: "1", description: "  Service  ", quantity: "2" as unknown as number, unitPrice: "1200" as unknown as number, taxRate: "5" as unknown as number },
+        { id: "1", description: "  Service  ", quantity: "2" as unknown as number, unitPrice: "1200" as unknown as number, taxRate: "5" as unknown as number, hsnCode: "" },
       ],
     };
 

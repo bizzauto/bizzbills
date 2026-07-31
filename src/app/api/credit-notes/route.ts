@@ -92,34 +92,24 @@ export async function POST(request: Request) {
       include: { lines: true, invoice: { select: { invoiceNumber: true } } },
     });
 
-    // Auto-post journal entries for the credit note (reverse of invoice)
+    // Auto-post journal entries for the credit note (reversal of invoice)
     const revenueAccount = await findAccount(orgId, ["INCOME"], "REV");
     const receivableAccount = await findAccount(orgId, ["ASSET"], "AR");
-    const expenseAccount = await findAccount(orgId, ["EXPENSE"], "EXP");
     const taxAccount = await findAccount(orgId, ["LIABILITY"], "GST-PAY");
 
+    // Correct reversal: Debit Revenue, Debit GST Payable, Credit Accounts Receivable
     const jeLines: { accountId: string; debit: number; credit: number; description: string }[] = [];
 
-    // Reverse revenue (debit revenue account)
     if (revenueAccount) {
       jeLines.push({ accountId: revenueAccount.id, debit: subtotal, credit: 0, description: `Credit Note ${creditNoteNumber} - Revenue reversal` });
     }
 
-    // Reduce receivable (credit receivable account)
-    if (receivableAccount) {
-      jeLines.push({ accountId: receivableAccount.id, debit: 0, credit: total, description: `Credit Note ${creditNoteNumber} - Receivable reduction` });
+    if (taxAccount && taxTotal > 0) {
+      jeLines.push({ accountId: taxAccount.id, debit: taxTotal, credit: 0, description: `Credit Note ${creditNoteNumber} - GST reversal` });
     }
 
-    // Reverse expense lines
-    for (const line of cleanLines) {
-      const lineTotal = line.quantity * line.unitPrice;
-      const lineTax = (lineTotal * line.taxRate) / 100;
-      if (expenseAccount) {
-        jeLines.push({ accountId: expenseAccount.id, debit: 0, credit: lineTotal, description: `Credit Note ${creditNoteNumber} - ${line.description} reversal` });
-      }
-      if (lineTax > 0 && taxAccount) {
-        jeLines.push({ accountId: taxAccount.id, debit: lineTax, credit: 0, description: `GST ${line.taxRate}% on Credit Note ${creditNoteNumber}` });
-      }
+    if (receivableAccount) {
+      jeLines.push({ accountId: receivableAccount.id, debit: 0, credit: total, description: `Credit Note ${creditNoteNumber} - Receivable reduction` });
     }
 
     const totalDebit = jeLines.reduce((s, l) => s + l.debit, 0);

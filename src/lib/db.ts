@@ -11,10 +11,10 @@ function createPrismaClient() {
   return new PrismaClient({ adapter });
 }
 
-export const prisma =
-  globalForPrisma.prisma ??
-  (typeof window === "undefined" ? createPrismaClient() : undefined);
+// Always create PrismaClient on the server. In the browser this file should never be imported.
+export const prisma: PrismaClient =
+  globalForPrisma.prisma ?? createPrismaClient();
 
-if (process.env.NODE_ENV !== "production" && prisma) {
+if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
 }

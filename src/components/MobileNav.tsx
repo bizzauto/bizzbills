@@ -94,7 +94,7 @@ export function MobileNav() {
                 Settings
               </MobileLink>
             </div>
-            <hr className="my-3 border-default"
+            <hr className="my-3 border-default" />
             {session?.user ? (
               <div className="space-y-2">
                 <p className="px-3 text-sm text-muted">

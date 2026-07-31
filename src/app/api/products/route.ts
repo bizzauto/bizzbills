@@ -28,14 +28,23 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const orgId = await getSessionOrgId(session.user.id);
-  if (!orgId) return NextResponse.json({ error: "No organization" }, { status: 400 });
+    const orgId = await getSessionOrgId(session.user.id);
+    if (!orgId) return NextResponse.json({ error: "No organization" }, { status: 400 });
 
-  const data = await request.json();
-  const product = await prisma.product.create({ data: { ...data, orgId }, include: { inventory: true } });
-  return NextResponse.json(product, { status: 201 });
+    const data = await request.json();
+    if (!data.name) {
+      return NextResponse.json({ error: "Product name is required" }, { status: 400 });
+    }
+
+    const product = await prisma.product.create({ data: { ...data, orgId }, include: { inventory: true } });
+    return NextResponse.json(product, { status: 201 });
+  } catch (error) {
+    console.error("POST /api/products error:", error);
+    return NextResponse.json({ error: "Failed to create product" }, { status: 500 });
+  }
 }
 

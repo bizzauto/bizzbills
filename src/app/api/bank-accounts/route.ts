@@ -17,13 +17,22 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const orgId = await getSessionOrgId(session.user.id);
-  if (!orgId) return NextResponse.json({ error: "No organization" }, { status: 400 });
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const orgId = await getSessionOrgId(session.user.id);
+    if (!orgId) return NextResponse.json({ error: "No organization" }, { status: 400 });
 
-  const data = await request.json();
-  const account = await prisma.bankAccount.create({ data: { ...data, orgId } });
-  return NextResponse.json(account, { status: 201 });
+    const data = await request.json();
+    if (!data.name) {
+      return NextResponse.json({ error: "Account name is required" }, { status: 400 });
+    }
+
+    const account = await prisma.bankAccount.create({ data: { ...data, orgId } });
+    return NextResponse.json(account, { status: 201 });
+  } catch (error) {
+    console.error("POST /api/bank-accounts error:", error);
+    return NextResponse.json({ error: "Failed to create bank account" }, { status: 500 });
+  }
 }
 

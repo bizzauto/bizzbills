@@ -115,28 +115,24 @@ async function autoPostJournalEntries(
 ) {
   const revenueAccount = await findAccount(orgId, ["INCOME"], "REV");
   const receivableAccount = await findAccount(orgId, ["ASSET"], "AR");
-  const expenseAccount = await findAccount(orgId, ["EXPENSE"], "EXP");
   const taxAccount = await findAccount(orgId, ["LIABILITY"], "GST-PAY");
 
+  // Correct double-entry for a sales invoice:
+  //   Debit  Accounts Receivable  (total — what customer owes)
+  //   Credit Revenue              (subtotal — actual income)
+  //   Credit GST Payable          (taxTotal — tax collected)
   const lines: { accountId: string; debit: number; credit: number; description: string }[] = [];
-
-  if (revenueAccount) {
-    lines.push({ accountId: revenueAccount.id, debit: 0, credit: summary.total, description: `Invoice ${invoice.invoiceNumber} - Revenue` });
-  }
 
   if (receivableAccount) {
     lines.push({ accountId: receivableAccount.id, debit: summary.total, credit: 0, description: `Invoice ${invoice.invoiceNumber} - Receivable` });
   }
 
-  for (const line of clean.lines) {
-    const lineTotal = line.quantity * line.unitPrice;
-    const lineTax = (lineTotal * line.taxRate) / 100;
-    if (expenseAccount) {
-      lines.push({ accountId: expenseAccount.id, debit: lineTotal, credit: 0, description: `Invoice ${invoice.invoiceNumber} - ${line.description}` });
-    }
-    if (lineTax > 0 && taxAccount) {
-      lines.push({ accountId: taxAccount.id, debit: 0, credit: lineTax, description: `GST ${line.taxRate}% on Invoice ${invoice.invoiceNumber}` });
-    }
+  if (revenueAccount) {
+    lines.push({ accountId: revenueAccount.id, debit: 0, credit: summary.subtotal, description: `Invoice ${invoice.invoiceNumber} - Revenue` });
+  }
+
+  if (taxAccount && summary.taxTotal > 0) {
+    lines.push({ accountId: taxAccount.id, debit: 0, credit: summary.taxTotal, description: `Invoice ${invoice.invoiceNumber} - GST Payable` });
   }
 
   const totalDebit = lines.reduce((s, l) => s + l.debit, 0);

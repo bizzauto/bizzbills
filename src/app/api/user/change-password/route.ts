@@ -2,15 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { hashPassword } from "@/lib/password";
-import crypto from "crypto";
-
-// PBKDF2 verify (matches auth.ts pattern)
-function verifyPassword(password: string, stored: string): boolean {
-  const [iterations, salt, key] = stored.split(":");
-  const keyBuf = crypto.pbkdf2Sync(password, salt, parseInt(iterations), 64, "sha512");
-  return keyBuf.toString("hex") === key;
-}
+import { hashPassword, verifyPassword } from "@/lib/password";
 
 export async function POST(request: Request) {
   try {
@@ -30,7 +22,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const valid = verifyPassword(currentPassword, user.passwordHash);
+    const valid = await verifyPassword(currentPassword, user.passwordHash);
     if (!valid) {
       return NextResponse.json({ error: "Current password is incorrect" }, { status: 400 });
     }
