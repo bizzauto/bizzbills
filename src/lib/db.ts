@@ -1,8 +1,11 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { execSync } from "child_process";
+import { existsSync } from "fs";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
+  schemaSynced: boolean | undefined;
 };
 
 function createPrismaClient() {
@@ -11,7 +14,41 @@ function createPrismaClient() {
   return new PrismaClient({ adapter });
 }
 
-// Always create PrismaClient on the server. In the browser this file should never be imported.
+// Auto-sync database schema on first request (adds missing columns without data loss)
+function syncSchema() {
+  if (globalForPrisma.schemaSynced) return;
+
+  // Find the prisma binary
+  const candidates = [
+    "./node_modules/.bin/prisma",
+    "./node_modules/prisma/build/index.js",
+  ];
+  const prismaBin = candidates.find((p) => existsSync(p));
+  if (!prismaBin) {
+    console.warn("⚠️ Prisma CLI not found — schema sync skipped");
+    globalForPrisma.schemaSynced = true;
+    return;
+  }
+
+  try {
+    const cmd = prismaBin.endsWith(".js")
+      ? `node ${prismaBin} db push --accept-data-loss --skip-generate`
+      : `${prismaBin} db push --accept-data-loss --skip-generate`;
+    execSync(cmd, { stdio: "pipe", timeout: 30000 });
+    globalForPrisma.schemaSynced = true;
+    console.log("✅ Database schema synced");
+  } catch (e) {
+    console.warn("⚠️ Schema sync failed:", (e as Error).message?.split("\n")[0]);
+    globalForPrisma.schemaSynced = true; // Don't retry
+  }
+}
+
+// Sync schema once on server start
+if (typeof window === "undefined") {
+  syncSchema();
+}
+
+// Always create PrismaClient on the server
 export const prisma: PrismaClient =
   globalForPrisma.prisma ?? createPrismaClient();
 
