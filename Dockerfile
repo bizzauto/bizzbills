@@ -1,4 +1,4 @@
-# Minimal production Dockerfile for Next.js 16 + Prisma 7
+# Minimal production Dockerfile for Next.js 16 + Prisma 6
 FROM node:20-alpine AS base
 
 # Install dependencies only when needed
