@@ -283,6 +283,20 @@ const MENU_GROUPS: MenuGroup[] = [
     ],
   },
   {
+    title: "Banking",
+    items: [
+      { label: "Bank Accounts", href: "/banking", icon: "banking" },
+      { label: "Reconciliation", href: "/banking", icon: "banking" },
+      { label: "Pricing", href: "/pricing", icon: "settings" },
+    ],
+  },
+  {
+    title: "Approvals",
+    items: [
+      { label: "Pending Approvals", href: "/approvals", icon: "settings" },
+    ],
+  },
+  {
     title: "Reports",
     items: [
       { label: "Reports", href: "/reports", icon: "reports" },

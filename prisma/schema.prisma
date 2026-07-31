@@ -132,6 +132,8 @@ model Organization {
   payrollRuns     PayrollRun[]
   proformaInvoices ProformaInvoice[]
   expenses         Expense[]
+  priceLists       PriceList[]
+  discounts        Discount[]
 }
 
 /// Branch/location within an organization
@@ -219,6 +221,11 @@ model Invoice {
   version       Int      @default(1)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
+  approvalStatus  String    @default("draft") // draft, pending_approval, approved, rejected
+  approvedBy      String?
+  approvedAt      DateTime?
+  rejectionReason String?
 
   userId   String
   user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -596,6 +603,10 @@ model Order {
   total          Float    @default(0)
   notes          String   @default("")
   convertedToInvoiceId String?
+  approvalStatus  String    @default("draft") // draft, pending_approval, approved, rejected
+  approvedBy      String?
+  approvedAt      DateTime?
+  rejectionReason String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -943,4 +954,60 @@ model Expense {
   @@index([orgId])
   @@index([userId])
   @@index([category])
+}
+
+/// Price list — named catalog of product prices for an organization
+model PriceList {
+  id          String   @id @default(cuid())
+  orgId       String
+  name        String
+  description String   @default("")
+  isActive    Boolean  @default(true)
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  org   Organization    @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  items PriceListItem[]
+
+  @@unique([orgId, name])
+  @@index([orgId])
+}
+
+/// Individual line item within a price list
+model PriceListItem {
+  id          String  @id @default(cuid())
+  priceListId String
+  productId   String?
+  productName String
+  sku         String  @default("")
+  unitPrice   Float
+  minQuantity Float   @default(1)
+  maxQuantity Float?
+
+  priceList PriceList @relation(fields: [priceListId], references: [id], onDelete: Cascade)
+
+  @@index([priceListId])
+}
+
+/// Discount — percentage, fixed, or buy-x-get-y promotions
+model Discount {
+  id          String    @id @default(cuid())
+  orgId       String
+  name        String
+  type        String    @default("percentage") // percentage, fixed, buy_x_get_y
+  value       Float
+  minAmount   Float     @default(0)
+  minQuantity Float     @default(1)
+  maxUses     Int?
+  usedCount   Int       @default(0)
+  startDate   DateTime?
+  endDate     DateTime?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+  @@index([orgId, isActive])
 }
