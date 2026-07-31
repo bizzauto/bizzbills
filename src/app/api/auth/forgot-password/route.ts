@@ -33,10 +33,11 @@ export async function POST(request: Request) {
     });
 
     // TODO: Send email with reset link
-    // For now, log the link for development
-    console.log(`[PASSWORD RESET] ${user.email}: /auth/reset-password?token=${token}`);
+    // For now, return the reset link in response (dev mode)
+    const resetUrl = `/auth/reset-password?token=${token}`;
+    console.log(`[PASSWORD RESET] ${user.email}: ${resetUrl}`);
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, resetUrl });
   } catch (error) {
     console.error("Forgot password error:", error);
     return NextResponse.json({ error: "Failed to process request" }, { status: 500 });

@@ -7,17 +7,22 @@ import { PublicLayout } from "@/components/PublicLayout";
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
+  const [resetUrl, setResetUrl] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     try {
-      await fetch("/api/auth/forgot-password", {
+      const res = await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
+      const data = await res.json();
+      if (data.resetUrl) {
+        setResetUrl(data.resetUrl);
+      }
       setSent(true);
     } catch {
       setSent(true);
@@ -42,6 +47,14 @@ export default function ForgotPasswordPage() {
               <p className="mt-4 text-sm text-muted">
                 If an account exists with <span className="font-medium text-default">{email}</span>, you&apos;ll receive a password reset link shortly.
               </p>
+              {resetUrl && (
+                <div className="mt-4 rounded-xl border border-cyan-400/20 bg-cyan-500/10 p-4">
+                  <p className="text-xs text-cyan-300 mb-2">Dev mode — Click below to reset:</p>
+                  <Link href={resetUrl} className="text-sm font-medium text-cyan-400 hover:text-cyan-300 break-all">
+                    Reset Password →
+                  </Link>
+                </div>
+              )}
               <Link href="/auth/signin" className="mt-6 inline-block text-sm text-accent-light hover:text-accent">
                 ← Back to sign in
               </Link>
