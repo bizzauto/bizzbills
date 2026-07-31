@@ -51,6 +51,10 @@ export default function BillingPage() {
     orgAddress?: string;
     orgGstin?: string;
   } | null>(null);
+  // Party search
+  const [partySearch, setPartySearch] = useState("");
+  const [partyResults, setPartyResults] = useState<{ id: string; name: string; gstin: string; email?: string; phone?: string }[]>([]);
+  const [showPartyDropdown, setShowPartyDropdown] = useState(false);
   const [quickActions, setQuickActions] = useState<QuickAction[]>([
     { label: "Generate invoice from voice", key: "voice" },
     { label: "Scan OCR document", key: "ocr" },
@@ -75,6 +79,26 @@ export default function BillingPage() {
       })
       .catch(() => {});
   }, []);
+
+  // Party search — fetch after 2+ characters
+  useEffect(() => {
+    if (partySearch.length < 2) {
+      setPartyResults([]);
+      setShowPartyDropdown(false);
+      return;
+    }
+    const timeout = setTimeout(() => {
+      fetch(`/api/parties?search=${encodeURIComponent(partySearch)}`)
+        .then((r) => r.json())
+        .then((data) => {
+          const parties = Array.isArray(data) ? data : data.parties || [];
+          setPartyResults(parties.slice(0, 8));
+          setShowPartyDropdown(parties.length > 0);
+        })
+        .catch(() => setPartyResults([]));
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [partySearch]);
 
   const sanitizedDraft = useMemo(() => sanitizeInvoiceDraft(draft), [draft]);
   const summary = useMemo(() => calculateInvoiceSummary(sanitizedDraft), [sanitizedDraft]);
@@ -382,14 +406,48 @@ export default function BillingPage() {
 
           <div className="mt-6 space-y-4 section-card p-4">
             <div className="grid gap-4 md:grid-cols-2">
-              <label className="text-sm text-muted">
+              <label className="relative text-sm text-muted">
                 <span className="mb-1 block text-muted">Customer</span>
                 <input
-                  value={draft.customerName}
-                  onChange={(e) => updateField("customerName", e.target.value)}
-                  placeholder="Customer name"
+                  value={partySearch || draft.customerName}
+                  onChange={(e) => {
+                    setPartySearch(e.target.value);
+                    updateField("customerName", e.target.value);
+                    // Clear GSTIN when typing new name
+                    if (e.target.value !== draft.customerName) {
+                      updateField("customerGstin", "");
+                    }
+                  }}
+                  onFocus={() => { if (partyResults.length > 0) setShowPartyDropdown(true); }}
+                  onBlur={() => setTimeout(() => setShowPartyDropdown(false), 200)}
+                  placeholder="Search party by name..."
                   className="input"
                 />
+                {showPartyDropdown && partyResults.length > 0 && (
+                  <div className="absolute z-50 mt-1 w-full rounded-xl border border-[var(--card-border)] bg-[var(--card)] shadow-xl max-h-60 overflow-y-auto">
+                    {partyResults.map((party) => (
+                      <button
+                        key={party.id}
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => {
+                          updateField("customerName", party.name);
+                          updateField("customerGstin", party.gstin || "");
+                          setPartySearch("");
+                          setPartyResults([]);
+                          setShowPartyDropdown(false);
+                        }}
+                        className="w-full px-4 py-2.5 text-left text-sm transition hover:bg-[var(--badge-bg)]"
+                      >
+                        <p className="font-medium text-default">{party.name}</p>
+                        <p className="text-xs text-muted">
+                          {party.gstin && `${party.gstin} · `}
+                          {party.email || party.phone || ""}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </label>
               <label className="text-sm text-muted">
                 <span className="mb-1 block text-muted">Invoice #</span>

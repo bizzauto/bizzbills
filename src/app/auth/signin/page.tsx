@@ -29,8 +29,8 @@ export default function SignInPage() {
       setError("Invalid credentials. Please check and try again.");
       setLoading(false);
     } else {
-      router.push("/dashboard");
-      router.refresh();
+      // Hard navigation to ensure proxy middleware picks up the new session
+      window.location.href = "/dashboard";
     }
   }
 
