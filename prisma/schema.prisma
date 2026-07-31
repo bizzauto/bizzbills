@@ -134,6 +134,8 @@ model Organization {
   expenses         Expense[]
   priceLists       PriceList[]
   discounts        Discount[]
+  tdsEntries       TdsEntry[]
+  budgets          Budget[]
 }
 
 /// Branch/location within an organization
@@ -1010,4 +1012,42 @@ model Discount {
 
   @@index([orgId])
   @@index([orgId, isActive])
+}
+
+/// TDS (Tax Deducted at Source) entry
+model TdsEntry {
+  id            String   @id @default(cuid())
+  orgId         String
+  partyName     String
+  pan           String
+  section       String   // 194C, 194J, 194H, 194I
+  amount        Float    // base amount
+  tdsRate       Float    // percentage
+  tdsAmount     Float    // deducted amount
+  date          String
+  invoiceRef    String   @default("")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+  @@index([orgId, section])
+}
+
+/// Budget — category-wise spending limit for an organization
+model Budget {
+  id          String   @id @default(cuid())
+  orgId       String
+  category    String
+  amount      Float
+  period      String   @default("monthly") // monthly, quarterly, annual
+  startDate   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+  @@index([orgId, category])
 }

@@ -297,6 +297,15 @@ const MENU_GROUPS: MenuGroup[] = [
     ],
   },
   {
+    title: "Finance",
+    items: [
+      { label: "Cash Flow", href: "/reports/cash-flow", icon: "reports" },
+      { label: "Dunning", href: "/dunning", icon: "reports" },
+      { label: "TDS/TCS", href: "/tax/tds", icon: "reports" },
+      { label: "Budgets", href: "/budgets", icon: "reports" },
+    ],
+  },
+  {
     title: "Reports",
     items: [
       { label: "Reports", href: "/reports", icon: "reports" },
