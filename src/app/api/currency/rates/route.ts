@@ -4,29 +4,25 @@ import { authOptions } from "@/lib/auth";
 import { getSessionOrgId } from "@/lib/org";
 import { prisma } from "@/lib/db";
 import { fetchLatestRates } from "@/lib/forex";
-
-
+import { getExchangeRates } from "@/lib/currency-rates";
 
 export async function GET(request: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const orgId = await getSessionOrgId(session.user.id);
-  if (!orgId) {
-    return NextResponse.json({ error: "No organization" }, { status: 400 });
-  }
-
   const { searchParams } = new URL(request.url);
   const baseCurrency = searchParams.get("base") || "INR";
 
-  const rates = await prisma.currencyExchangeRate.findMany({
-    where: { orgId, fromCurrency: baseCurrency },
-    orderBy: { updatedAt: "desc" },
-  });
-
-  return NextResponse.json({ rates, baseCurrency });
+  try {
+    const rates = await getExchangeRates(baseCurrency);
+    return NextResponse.json({
+      base: baseCurrency,
+      rates,
+      timestamp: new Date().toISOString(),
+    });
+  } catch {
+    return NextResponse.json(
+      { error: "Failed to fetch exchange rates" },
+      { status: 502 }
+    );
+  }
 }
 
 export async function POST(request: Request) {

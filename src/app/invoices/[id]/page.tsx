@@ -53,6 +53,10 @@ export default function InvoiceDetailPage() {
   const [selectedVersion, setSelectedVersion] = useState<VersionEntry | null>(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [recipientEmail, setRecipientEmail] = useState("");
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailStatus, setEmailStatus] = useState<{ ok: boolean; msg: string } | null>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -110,6 +114,34 @@ export default function InvoiceDetailPage() {
       URL.revokeObjectURL(url);
     } finally {
       setExporting(false);
+    }
+  }
+
+  async function handleSendEmail() {
+    if (!recipientEmail.trim()) return;
+    setSendingEmail(true);
+    setEmailStatus(null);
+    try {
+      const res = await fetch(`/api/invoices/${invoiceId}/send-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: recipientEmail.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setEmailStatus({ ok: true, msg: `Invoice sent to ${data.sentTo}` });
+        setTimeout(() => {
+          setEmailModalOpen(false);
+          setEmailStatus(null);
+          setRecipientEmail("");
+        }, 2000);
+      } else {
+        setEmailStatus({ ok: false, msg: data.error ?? "Failed to send email" });
+      }
+    } catch {
+      setEmailStatus({ ok: false, msg: "Network error — could not send email" });
+    } finally {
+      setSendingEmail(false);
     }
   }
 
@@ -177,6 +209,15 @@ export default function InvoiceDetailPage() {
             >
               Markdown
             </button>
+            <button
+              onClick={() => {
+                setEmailModalOpen(true);
+                setEmailStatus(null);
+              }}
+              className="rounded-full bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400"
+            >
+              Send Email
+            </button>
             <Link
               href="/billing"
               className="rounded-full bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400"
@@ -209,6 +250,7 @@ export default function InvoiceDetailPage() {
             </div>
             {invoice.status !== "paid" && (
               <div className="flex gap-2">
+                <PayOnlineButton invoiceId={invoice.id} total={invoice.total} currency={invoice.currency} />
                 <MarkAsPaidButton invoiceId={invoice.id} />
               </div>
             )}
@@ -309,6 +351,67 @@ export default function InvoiceDetailPage() {
           )}
         </div>
       </section>
+
+      {/* Send Email Modal */}
+      {emailModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-slate-900 p-6 shadow-2xl">
+            <h3 className="text-lg font-semibold text-white">Send Invoice by Email</h3>
+            <p className="mt-1 text-sm text-slate-400">
+              Invoice #{invoice.invoiceNumber} — {formatAmount(invoice.total, invoice.currency)}
+            </p>
+
+            <div className="mt-4">
+              <label className="block text-sm">
+                <span className="text-slate-400">Recipient email</span>
+                <input
+                  type="email"
+                  value={recipientEmail}
+                  onChange={(e) => setRecipientEmail(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && recipientEmail.trim()) handleSendEmail();
+                  }}
+                  className="mt-1 w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2 text-white outline-none focus:border-cyan-500"
+                  placeholder="customer@example.com"
+                  autoFocus
+                />
+              </label>
+            </div>
+
+            {emailStatus && (
+              <div
+                className={`mt-3 rounded-xl px-3 py-2 text-sm ${
+                  emailStatus.ok
+                    ? "bg-emerald-500/10 text-emerald-300"
+                    : "bg-red-500/10 text-red-300"
+                }`}
+              >
+                {emailStatus.msg}
+              </div>
+            )}
+
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setEmailModalOpen(false);
+                  setEmailStatus(null);
+                  setRecipientEmail("");
+                }}
+                className="rounded-full border border-white/10 px-4 py-2 text-sm text-white hover:bg-white/10"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSendEmail}
+                disabled={sendingEmail || !recipientEmail.trim()}
+                className="rounded-full bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-400 disabled:opacity-50"
+              >
+                {sendingEmail ? "Sending..." : "Send Invoice"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
@@ -387,6 +490,127 @@ function MarkAsPaidButton({ invoiceId }: { invoiceId: string }) {
                 className="rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-50"
               >
                 {saving ? "Saving…" : "Confirm Payment"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+function PayOnlineButton({
+  invoiceId,
+  total,
+  currency,
+}: {
+  invoiceId: string;
+  total: number;
+  currency: string;
+}) {
+  const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [orderId, setOrderId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleCreateOrder() {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/payments/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: total, currency, invoiceId }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setOrderId(data.orderId);
+      } else {
+        setError(data.error ?? "Failed to create order");
+      }
+    } catch {
+      setError("Network error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleConfirmPaid() {
+    setLoading(true);
+    try {
+      await fetch("/api/payments/mark-paid", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ invoiceId, method: "razorpay", notes: `Razorpay order: ${orderId}` }),
+      });
+      window.location.reload();
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleClose() {
+    setShowModal(false);
+    setOrderId(null);
+    setError(null);
+  }
+
+  return (
+    <>
+      <button
+        onClick={() => setShowModal(true)}
+        className="rounded-full bg-violet-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-400"
+      >
+        Pay Online
+      </button>
+
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-slate-900 p-6 shadow-2xl">
+            <h3 className="text-lg font-semibold text-white">Online Payment</h3>
+            <p className="mt-1 text-sm text-slate-400">
+              Pay {currency} {total.toLocaleString("en-IN")} via Razorpay
+            </p>
+
+            <div className="mt-4">
+              {error && (
+                <p className="text-sm text-red-400">{error}</p>
+              )}
+
+              {!orderId ? (
+                <button
+                  onClick={handleCreateOrder}
+                  disabled={loading}
+                  className="w-full rounded-xl bg-violet-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-400 disabled:opacity-50"
+                >
+                  {loading ? "Creating order..." : "Create Payment Order"}
+                </button>
+              ) : (
+                <div className="space-y-3">
+                  <div className="rounded-xl border border-white/10 bg-slate-950 p-3 text-sm">
+                    <p className="text-slate-400">Order ID</p>
+                    <p className="font-mono text-white">{orderId}</p>
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    In production, the Razorpay checkout would open here. Click below to simulate a successful payment.
+                  </p>
+                  <button
+                    onClick={handleConfirmPaid}
+                    disabled={loading}
+                    className="w-full rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-emerald-400 disabled:opacity-50"
+                  >
+                    {loading ? "Processing..." : "Mark as Paid (Simulate)"}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={handleClose}
+                className="rounded-full border border-white/10 px-4 py-2 text-sm text-white hover:bg-white/10"
+              >
+                Close
               </button>
             </div>
           </div>
