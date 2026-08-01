@@ -250,6 +250,35 @@ model Invoice {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  // Extended fields for complete invoice
+  customerAddress   String   @default("")
+  customerEmail     String   @default("")
+  customerPhone     String   @default("")
+  shippingName      String   @default("")
+  shippingAddress   String   @default("")
+  shippingPhone     String   @default("")
+  poNumber          String   @default("")
+  referenceNumber   String   @default("")
+  placeOfSupply     String   @default("")
+  reverseCharge     Boolean  @default(false)
+  notes             String   @default("")
+  terms             String   @default("")
+  discountPercent   Float    @default(0)
+  discountAmount    Float    @default(0)
+  shippingCharges   Float    @default(0)
+  adjustment        Float    @default(0)
+  bankName          String   @default("")
+  bankAccountName   String   @default("")
+  bankAccountNumber String   @default("")
+  bankIfsc          String   @default("")
+  bankBranch        String   @default("")
+  upiId             String   @default("")
+  signatureName     String   @default("")
+  signatureDesignation String @default("")
+  isTaxInclusive     Boolean  @default(false)
+  roundOff          Float    @default(0)
+  amountInWords     String   @default("")
+
   approvalStatus  String    @default("draft") // draft, pending_approval, approved, rejected
   approvedBy      String?
   approvedAt      DateTime?

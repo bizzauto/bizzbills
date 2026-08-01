@@ -15,34 +15,63 @@ export interface TemplateData {
   customerGstin?: string;
   customerEmail?: string;
   customerPhone?: string;
+  customerState?: string;
   date: string;
   dueDate?: string;
   validUntil?: string;
   poNumber?: string;
+  referenceNumber?: string;
+  placeOfSupply?: string;
+  reverseCharge?: boolean;
   lines: TemplateLine[];
   subtotal: number;
   discount?: number;
+  discountAmount?: number;
   taxTotal: number;
   shippingCharges?: number;
+  adjustment?: number;
+  roundOff?: number;
   total: number;
   currency?: string;
   notes?: string;
   terms?: string;
+  // Shipping
+  shippingName?: string;
+  shippingAddress?: string;
+  shippingPhone?: string;
+  // Organization
   orgName: string;
   orgAddress?: string;
   orgGstin?: string;
   orgEmail?: string;
   orgPhone?: string;
   orgLogo?: string;
+  // Bank
   bankName?: string;
   bankAccount?: string;
+  bankAccountName?: string;
   bankIfsc?: string;
+  bankBranch?: string;
   upiId?: string;
+  // Signature
   signature?: string;
+  signatureName?: string;
+  signatureDesignation?: string;
+  // Status
   isPaid?: boolean;
   paymentMethod?: string;
+  // CGST/SGST breakup
+  cgstTotal?: number;
+  sgstTotal?: number;
+  igstTotal?: number;
+  cgstBreakup?: Record<number, number>;
+  sgstBreakup?: Record<number, number>;
+  igstBreakup?: Record<number, number>;
+  isInterState?: boolean;
+  // Amount in words
+  amountInWords?: string;
+  // Branding
   accentColor?: string;
-  // Branding fields (Phase 17)
   primaryColor?: string;
   fontFamily?: string;
   poweredByBizzBills?: boolean;
@@ -351,22 +380,34 @@ function ClassicGSTTemplate({ data }: { data: TemplateData }) {
       {/* Divider */}
       <div style={{ borderTop: "2px solid #e2e8f0", margin: "20px 0" }} />
 
-      {/* Bill To + Dates */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginBottom: "24px" }}>
+      {/* Bill To + Ship To + Dates */}
+      <div style={{ display: "grid", gridTemplateColumns: data.shippingAddress ? "1fr 1fr 1fr" : "1fr 1fr", gap: "16px", marginBottom: "24px" }}>
         <div style={{ background: "#f8fafc", padding: "14px", borderRadius: "8px" }}>
           <p style={{ fontSize: "9px", textTransform: "uppercase", letterSpacing: "0.12em", color: "#94a3b8", margin: "0 0 6px", fontWeight: 600 }}>Bill To</p>
           <p style={{ fontSize: "14px", fontWeight: "600", color: "#0f172a", margin: 0 }}>{data.customerName}</p>
           {data.customerAddress && <p style={{ fontSize: "11px", color: "#64748b", margin: "4px 0 0", lineHeight: 1.4 }}>{data.customerAddress}</p>}
           {data.customerGstin && <p style={{ fontSize: "11px", color: "#475569", margin: "4px 0 0" }}>GSTIN: {data.customerGstin}</p>}
+          {data.customerPhone && <p style={{ fontSize: "11px", color: "#64748b", margin: "2px 0 0" }}>{data.customerPhone}</p>}
           {data.customerEmail && <p style={{ fontSize: "11px", color: "#64748b", margin: "2px 0 0" }}>{data.customerEmail}</p>}
         </div>
+        {data.shippingAddress && (
+          <div style={{ background: "#f8fafc", padding: "14px", borderRadius: "8px" }}>
+            <p style={{ fontSize: "9px", textTransform: "uppercase", letterSpacing: "0.12em", color: "#94a3b8", margin: "0 0 6px", fontWeight: 600 }}>Ship To</p>
+            {data.shippingName && <p style={{ fontSize: "13px", fontWeight: "600", color: "#0f172a", margin: 0 }}>{data.shippingName}</p>}
+            <p style={{ fontSize: "11px", color: "#64748b", margin: "4px 0 0", lineHeight: 1.4 }}>{data.shippingAddress}</p>
+            {data.shippingPhone && <p style={{ fontSize: "11px", color: "#64748b", margin: "2px 0 0" }}>{data.shippingPhone}</p>}
+          </div>
+        )}
         <div style={{ textAlign: "right", paddingTop: "4px" }}>
           <table style={{ marginLeft: "auto", borderCollapse: "collapse", fontSize: "12px" }}>
             <tbody>
               {[
                 ["Invoice Date:", data.date] as const,
                 ["Due Date:", data.dueDate || "—"] as const,
-                ...(data.validUntil ? [["Valid Until:", data.validUntil] as const] : []),
+                ...(data.poNumber ? [["PO No:", data.poNumber] as const] : []),
+                ...(data.referenceNumber ? [["Ref No:", data.referenceNumber] as const] : []),
+                ...(data.placeOfSupply ? [["Place of Supply:", data.placeOfSupply] as const] : []),
+                ...(data.reverseCharge ? [["Reverse Charge:", "Yes"] as const] : []),
               ].map(([label, val]) => (
                 <tr key={String(label)}>
                   <td style={{ padding: "2px 12px 2px 0", color: "#94a3b8", textAlign: "right", whiteSpace: "nowrap" }}>{label}</td>
@@ -408,18 +449,59 @@ function ClassicGSTTemplate({ data }: { data: TemplateData }) {
 
       {/* Totals */}
       <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "20px" }}>
-        <div style={{ width: "260px" }}>
+        <div style={{ width: "320px" }}>
           {[
             ["Subtotal:", formatAmount(data.subtotal, cur)],
-            ["GST Total:", formatAmount(data.taxTotal, cur)],
-            ...(data.discount ? [["Discount:", `-${formatAmount(data.discount, cur)}`]] : []),
-            ...(data.shippingCharges ? [["Shipping:", formatAmount(data.shippingCharges, cur)]] : []),
+            ...(data.discountAmount ? [["Discount:", `-${formatAmount(data.discountAmount, cur)}`]] : []),
           ].map(([label, val], i) => (
             <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: "12px", color: "#64748b" }}>
               <span>{label}</span>
               <span style={{ color: "#475569", fontWeight: 500 }}>{val}</span>
             </div>
           ))}
+
+          {/* CGST/SGST Breakup */}
+          {data.isInterState ? (
+            <div style={{ padding: "4px 0", fontSize: "12px", color: "#64748b" }}>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span>IGST</span>
+                <span style={{ color: "#475569", fontWeight: 500 }}>{formatAmount(data.igstTotal || data.taxTotal, cur)}</span>
+              </div>
+              {data.igstBreakup && Object.entries(data.igstBreakup).map(([rate, amt]) => (
+                <div key={rate} style={{ display: "flex", justifyContent: "space-between", paddingLeft: "16px", fontSize: "10px", color: "#94a3b8" }}>
+                  <span>@ {rate}%</span>
+                  <span>{formatAmount(amt as number, cur)}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ padding: "4px 0", fontSize: "12px", color: "#64748b" }}>
+              {(data.cgstBreakup ? Object.keys(data.cgstBreakup) : data.sgstBreakup ? Object.keys(data.sgstBreakup) : []).map((rate) => (
+                <div key={rate} style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span>CGST @ {Number(rate) / 2}%</span>
+                  <span style={{ color: "#475569", fontWeight: 500 }}>{formatAmount(data.cgstBreakup?.[Number(rate)] || 0, cur)}</span>
+                </div>
+              ))}
+              {(data.sgstBreakup ? Object.keys(data.sgstBreakup) : data.cgstBreakup ? Object.keys(data.cgstBreakup) : []).map((rate) => (
+                <div key={`sgst-${rate}`} style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span>SGST @ {Number(rate) / 2}%</span>
+                  <span style={{ color: "#475569", fontWeight: 500 }}>{formatAmount(data.sgstBreakup?.[Number(rate)] || 0, cur)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {[
+            ...(data.shippingCharges ? [["Shipping:", formatAmount(data.shippingCharges, cur)]] : []),
+            ...(data.adjustment ? [["Adjustment:", `-₹${data.adjustment.toFixed(2)}`]] : []),
+            ...(data.roundOff ? [["Round Off:", `₹${data.roundOff.toFixed(2)}`]] : []),
+          ].map(([label, val], i) => (
+            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: "12px", color: "#64748b" }}>
+              <span>{label}</span>
+              <span style={{ color: "#475569", fontWeight: 500 }}>{val}</span>
+            </div>
+          ))}
+
           <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0 0", marginTop: "4px", borderTop: `2px solid ${accent(data)}`, fontSize: "15px", fontWeight: "700", color: "#0f172a" }}>
             <span>Total</span>
             <span style={{ color: accent(data) }}>{formatAmount(data.total, cur)}</span>
@@ -460,10 +542,12 @@ function ClassicGSTTemplate({ data }: { data: TemplateData }) {
       )}
 
       {/* Signature */}
-      {data.signature && (
+      {(data.signature || data.signatureName) && (
         <div style={{ marginTop: "24px", textAlign: "right", fontSize: "12px", color: "#475569" }}>
-          <div style={{ marginBottom: "6px" }}>Authorized Signature</div>
-          <div style={{ fontFamily: "'Brush Script MT', cursive", fontSize: "18px", color: "#0f172a" }}>{data.signature}</div>
+          <div style={{ marginBottom: "6px" }}>Authorized Signatory</div>
+          {data.signature && <div style={{ fontFamily: "'Brush Script MT', cursive", fontSize: "18px", color: "#0f172a", marginBottom: "4px" }}>{data.signature}</div>}
+          {data.signatureName && <div style={{ fontWeight: 600, color: "#0f172a" }}>{data.signatureName}</div>}
+          {data.signatureDesignation && <div style={{ fontSize: "11px", color: "#94a3b8" }}>{data.signatureDesignation}</div>}
         </div>
       )}
 
