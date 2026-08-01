@@ -25,7 +25,7 @@ export async function subscribeToPushNotifications(): Promise<PushSubscription |
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: VAPID_PUBLIC_KEY
-        ? urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+        ? urlBase64ToUint8Array(VAPID_PUBLIC_KEY).buffer as ArrayBuffer
         : undefined,
     });
 
@@ -90,6 +90,6 @@ export function sendLocalNotification(title: string, body: string, icon?: string
       icon: icon || "/icon.svg",
       badge: "/icon.svg",
       vibrate: [200, 100, 200],
-    });
+    } as NotificationOptions);
   }
 }

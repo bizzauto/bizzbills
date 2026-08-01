@@ -166,7 +166,7 @@ export default function InvoicesListPage() {
                       {inv.customerName}
                     </td>
                     <td className="px-4 py-3 font-semibold text-default">
-                      {formatAmount(inv.total)}
+                      {formatAmount(inv.total, "INR")}
                     </td>
                     <td className="px-4 py-3">
                       <span

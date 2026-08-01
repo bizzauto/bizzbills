@@ -85,7 +85,7 @@ export function OfflineInvoiceForm({ onSaved }: { onSaved?: () => void }) {
           notes: form.notes.trim(),
         },
         createdAt: new Date().toISOString(),
-        synced: 0,
+        synced: false,
       };
 
       await saveOfflineInvoice(invoice);

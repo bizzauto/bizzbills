@@ -67,7 +67,7 @@ export async function GET(request: Request) {
         "ID,Action,Entity,Entity ID,User ID,Metadata,Created At\n";
       const csvRows = logs
         .map((log) => {
-          const meta = log.metadata ? JSON.stringify(log.metadata).replace(/"/g, '""') : "";
+          const meta = log.details ? log.details.replace(/"/g, '""') : "";
           return `${log.id},${log.action},${log.entity || ""},${log.entityId || ""},${log.userId || ""},"${meta}",${log.createdAt.toISOString()}`;
         })
         .join("\n");

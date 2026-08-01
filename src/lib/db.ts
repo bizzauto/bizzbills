@@ -18,10 +18,12 @@ function createPrismaClient() {
 function syncSchema() {
   if (globalForPrisma.schemaSynced) return;
 
-  // Find the prisma binary
+  const cwd = process.cwd();
+
+  // Find the prisma binary using absolute paths
   const candidates = [
-    "./node_modules/.bin/prisma",
-    "./node_modules/prisma/build/index.js",
+    `${cwd}/node_modules/.bin/prisma`,
+    `${cwd}/node_modules/prisma/build/index.js`,
   ];
   const prismaBin = candidates.find((p) => existsSync(p));
   if (!prismaBin) {
@@ -32,9 +34,9 @@ function syncSchema() {
 
   try {
     const cmd = prismaBin.endsWith(".js")
-      ? `node ${prismaBin} db push --accept-data-loss --skip-generate`
-      : `${prismaBin} db push --accept-data-loss --skip-generate`;
-    execSync(cmd, { stdio: "pipe", timeout: 30000 });
+      ? `node "${prismaBin}" db push --accept-data-loss --skip-generate`
+      : `"${prismaBin}" db push --accept-data-loss --skip-generate`;
+    execSync(cmd, { stdio: "pipe", timeout: 60000, cwd });
     globalForPrisma.schemaSynced = true;
     console.log("✅ Database schema synced");
   } catch (e) {

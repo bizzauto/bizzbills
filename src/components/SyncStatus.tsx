@@ -74,7 +74,7 @@ export function SyncStatus() {
   const triggerSync = useCallback(async () => {
     if ("serviceWorker" in navigator && "SyncManager" in window) {
       const registration = await navigator.serviceWorker.ready;
-      await registration.sync.register("sync-invoices");
+      await (registration as any).sync.register("sync-invoices");
       setStatus("syncing");
     }
   }, []);

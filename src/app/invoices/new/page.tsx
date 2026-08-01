@@ -493,7 +493,7 @@ export default function NewInvoicePage() {
                       <select value={line.taxRate} onChange={(e) => updateLine(line.id, { taxRate: Number(e.target.value) })} className="input w-full text-center">
                         {TAX_RATES.map((r) => <option key={r} value={r}>{r}%</option>)}
                       </select>
-                      <div className="input w-full text-right bg-transparent border-none font-semibold text-default">{formatAmount(taxable + tax)}</div>
+                      <div className="input w-full text-right bg-transparent border-none font-semibold text-default">{formatAmount(taxable + tax, "INR")}</div>
                       <button type="button" onClick={() => removeLine(line.id)} className="text-danger hover:text-danger/80 text-lg p-2">✕</button>
                     </div>
                     {/* Mobile line total */}
@@ -544,12 +544,12 @@ export default function NewInvoicePage() {
                 <>
                   {Object.entries(calculations.cgstMap).map(([rate, amt]) => (
                     <div key={`cgst-${rate}`} className="flex justify-between text-muted text-xs">
-                      <span>CGST @ {rate/2}%</span><span>₹{(amt as number).toFixed(2)}</span>
+                      <span>CGST @ {Number(rate)/2}%</span><span>₹{(amt as number).toFixed(2)}</span>
                     </div>
                   ))}
                   {Object.entries(calculations.sgstMap).map(([rate, amt]) => (
                     <div key={`sgst-${rate}`} className="flex justify-between text-muted text-xs">
-                      <span>SGST @ {rate/2}%</span><span>₹{(amt as number).toFixed(2)}</span>
+                      <span>SGST @ {Number(rate)/2}%</span><span>₹{(amt as number).toFixed(2)}</span>
                     </div>
                   ))}
                 </>

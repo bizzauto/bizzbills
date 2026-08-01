@@ -72,7 +72,7 @@ type DocumentData = {
 
 function toTemplateData(data: DocumentData): TemplateData {
   // Calculate CGST/SGST breakup
-  const isInterState = data.customerState && data.placeOfSupply && data.customerState !== data.placeOfSupply;
+  const isInterState = Boolean(data.customerState && data.placeOfSupply && data.customerState !== data.placeOfSupply);
   const cgstBreakup: Record<number, number> = {};
   const sgstBreakup: Record<number, number> = {};
   const igstBreakup: Record<number, number> = {};
