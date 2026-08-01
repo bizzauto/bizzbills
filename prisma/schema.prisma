@@ -137,6 +137,8 @@ model Organization {
   tdsEntries       TdsEntry[]
   budgets          Budget[]
   rolePermissions  RolePermission[]
+  batches          Batch[]
+  documents        Document[]
 }
 
 /// Granular role-based permissions — per-org, per-role
@@ -534,6 +536,7 @@ model Product {
   org        Organization    @relation(fields: [orgId], references: [id], onDelete: Cascade)
   inventory  InventoryItem[]
   movements  StockMovement[]
+  batches    Batch[]
 
   @@unique([orgId, sku])
   @@index([orgId])
@@ -1066,4 +1069,44 @@ model Budget {
 
   @@index([orgId])
   @@index([orgId, category])
+}
+
+model Batch {
+  id              String    @id @default(cuid())
+  orgId           String
+  productId       String
+  batchNumber     String
+  quantity        Float     @default(0)
+  expiryDate      DateTime?
+  manufactureDate DateTime?
+  costPrice       Float     @default(0)
+  status          String    @default("active") // active, expired, recalled
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  org     Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  product Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, batchNumber])
+  @@index([orgId])
+  @@index([productId])
+  @@index([expiryDate])
+}
+
+model Document {
+  id         String   @id @default(cuid())
+  orgId      String
+  entityType String   // invoice, order, party, product, payment
+  entityId   String
+  fileName   String
+  fileUrl    String
+  fileType   String   @default("application/octet-stream")
+  fileSize   Int      @default(0)
+  uploadedBy String?
+  createdAt  DateTime @default(now())
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId, entityType, entityId])
+  @@index([orgId])
 }
