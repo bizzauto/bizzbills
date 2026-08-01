@@ -313,6 +313,7 @@ const MENU_GROUPS: MenuGroup[] = [
       { label: "Settings", href: "/settings", icon: "settings" },
       { label: "Template", href: "/settings/template", icon: "settings" },
       { label: "Subscription", href: "/settings/subscription", icon: "settings" },
+      { label: "Branches", href: "/organization/branches", icon: "banking" },
       { label: "Permissions", href: "/settings/permissions", icon: "settings" },
       { label: "API Docs", href: "/settings/api-docs", icon: "settings" },
       { label: "Webhooks", href: "/settings/webhooks", icon: "settings" },

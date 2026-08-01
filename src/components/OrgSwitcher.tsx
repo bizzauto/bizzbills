@@ -79,6 +79,13 @@ export function OrgSwitcher() {
                 >
                   Manage Users
                 </Link>
+                <Link
+                  href="/organization/branches"
+                  onClick={() => setOpen(false)}
+                  className="block rounded-xl px-3 py-2 text-sm text-muted transition hover-brighten"
+                >
+                  Branches
+                </Link>
               </>
             )}
 
