@@ -320,6 +320,7 @@ const MENU_GROUPS: MenuGroup[] = [
       { label: "Webhooks", href: "/settings/webhooks", icon: "settings" },
       { label: "Language", href: "/settings/language", icon: "settings" },
       { label: "Notifications", href: "/settings/notifications", icon: "settings" },
+      { label: "Offline Mode", href: "/offline", icon: "settings" },
     ],
   },
 ];

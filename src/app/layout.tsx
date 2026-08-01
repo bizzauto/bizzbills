@@ -4,6 +4,8 @@ import "./globals.css";
 import { AuthProvider } from "@/components/AuthProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ToastProvider } from "@/components/ToastProvider";
+import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
+import { SyncStatus } from "@/components/SyncStatus";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,10 +40,12 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
       <body className="min-h-full" style={{ background: "var(--background)", color: "var(--foreground)" }}>
+        <ServiceWorkerRegistration />
         <AuthProvider>
           <ThemeProvider>
             <ToastProvider>
               <AppShellClient>{children}</AppShellClient>
+              <SyncStatus />
             </ToastProvider>
           </ThemeProvider>
         </AuthProvider>
