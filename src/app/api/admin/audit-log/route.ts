@@ -60,6 +60,26 @@ export async function GET(request: Request) {
 
     const totalPages = Math.ceil(total / limit);
 
+    // ── CSV Export ────────────────────────────────────────────────
+    const format = searchParams.get("format")?.trim();
+    if (format === "csv") {
+      const csvHeader =
+        "ID,Action,Entity,Entity ID,User ID,Metadata,Created At\n";
+      const csvRows = logs
+        .map((log) => {
+          const meta = log.metadata ? JSON.stringify(log.metadata).replace(/"/g, '""') : "";
+          return `${log.id},${log.action},${log.entity || ""},${log.entityId || ""},${log.userId || ""},"${meta}",${log.createdAt.toISOString()}`;
+        })
+        .join("\n");
+
+      return new NextResponse(csvHeader + csvRows, {
+        headers: {
+          "Content-Type": "text/csv",
+          "Content-Disposition": `attachment; filename="audit-log-${new Date().toISOString().split("T")[0]}.csv"`,
+        },
+      });
+    }
+
     return NextResponse.json({
       data: logs,
       meta: {

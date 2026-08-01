@@ -331,6 +331,7 @@ const ADMIN_GROUP: MenuGroup = {
   items: [
     { label: "Dashboard", href: "/admin", icon: "dashboard" },
     { label: "User Management", href: "/admin/users", icon: "parties" },
+    { label: "Organizations", href: "/admin/organizations", icon: "banking" },
   ],
 };
 
