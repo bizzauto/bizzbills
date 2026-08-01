@@ -16,12 +16,14 @@ export async function PUT(request: Request) {
 
   const { name, slug, businessType, gstin, address, phone, email, currency, website, pan, upiId, bankName, accountName, accountNumber, ifscCode, onboardingCompleted,
     defaultTemplate, defaultAccentColor, invoiceTitle, footerNotes, showBankDetails, showGstin, showSignature, showQrCode,
+    primaryColor, fontFamily, poweredByBizzBills, customFields,
   } = body as {
     name?: string; slug?: string; businessType?: string; gstin?: string; address?: string;
     phone?: string; email?: string; currency?: string; website?: string; pan?: string;
     upiId?: string; bankName?: string; accountName?: string; accountNumber?: string; ifscCode?: string; onboardingCompleted?: boolean;
     defaultTemplate?: string; defaultAccentColor?: string; invoiceTitle?: string; footerNotes?: string;
     showBankDetails?: boolean; showGstin?: boolean; showSignature?: boolean; showQrCode?: boolean;
+    primaryColor?: string; fontFamily?: string; poweredByBizzBills?: boolean; customFields?: string;
   };
 
   const user = await prisma.user.findUnique({
@@ -46,6 +48,10 @@ export async function PUT(request: Request) {
   if (currency !== undefined) updates.currency = currency;
   if (website !== undefined) updates.website = website;
   if (upiId !== undefined) updates.upiId = upiId;
+  if (primaryColor !== undefined) updates.primaryColor = primaryColor;
+  if (fontFamily !== undefined) updates.fontFamily = fontFamily;
+  if (poweredByBizzBills !== undefined) updates.poweredByBizzBills = poweredByBizzBills;
+  if (customFields !== undefined) updates.customFields = customFields;
   // Merge into existing settings blob to avoid losing unrelated keys
   if (onboardingCompleted !== undefined || defaultTemplate !== undefined || defaultAccentColor !== undefined || invoiceTitle !== undefined || footerNotes !== undefined || showBankDetails !== undefined || showGstin !== undefined || showSignature !== undefined || showQrCode !== undefined) {
     let existing: Record<string, unknown> = {};
@@ -131,5 +137,10 @@ export async function GET() {
     showGstin: s.showGstin !== false,
     showSignature: s.showSignature !== false,
     showQrCode: s.showQrCode !== false,
+    // Branding settings (Phase 17)
+    primaryColor: (user.org as any).primaryColor || "#06b6d4",
+    fontFamily: (user.org as any).fontFamily || "Inter",
+    poweredByBizzBills: (user.org as any).poweredByBizzBills !== false,
+    customFields: (user.org as any).customFields || "[]",
   });
 }

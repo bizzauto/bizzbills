@@ -34,6 +34,11 @@ type DocumentData = {
   bankIfsc?: string;
   upiId?: string;
   accentColor?: string;
+  // Branding fields (Phase 17)
+  primaryColor?: string;
+  fontFamily?: string;
+  poweredByBizzBills?: boolean;
+  customFields?: string;
 };
 
 function toTemplateData(data: DocumentData): TemplateData {
@@ -68,6 +73,11 @@ function toTemplateData(data: DocumentData): TemplateData {
     upiId: data.upiId,
     accentColor: data.accentColor,
     terms: "Thank you for your business.",
+    // Branding fields (Phase 17)
+    primaryColor: data.primaryColor,
+    fontFamily: data.fontFamily,
+    poweredByBizzBills: data.poweredByBizzBills,
+    customFields: data.customFields,
   };
 }
 

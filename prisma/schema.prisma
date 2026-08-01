@@ -97,6 +97,13 @@ model Organization {
   upiId     String?
   plan      String   @default("free")
   settings  String   @default("{}")
+
+  // Branding fields (Phase 17)
+  primaryColor        String   @default("#06b6d4")
+  fontFamily          String   @default("Inter")
+  poweredByBizzBills  Boolean  @default(true)
+  customFields        String   @default("[]")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

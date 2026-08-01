@@ -312,6 +312,7 @@ const MENU_GROUPS: MenuGroup[] = [
       { label: "Profile", href: "/settings/profile", icon: "settings" },
       { label: "Settings", href: "/settings", icon: "settings" },
       { label: "Template", href: "/settings/template", icon: "settings" },
+      { label: "Branding", href: "/settings/branding", icon: "settings" },
       { label: "Subscription", href: "/settings/subscription", icon: "settings" },
       { label: "Branches", href: "/organization/branches", icon: "banking" },
       { label: "Permissions", href: "/settings/permissions", icon: "settings" },
