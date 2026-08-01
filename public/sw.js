@@ -97,6 +97,54 @@ self.addEventListener("sync", (event) => {
   }
 });
 
+// Push notification handler
+self.addEventListener("push", (event) => {
+  if (!event.data) return;
+
+  const data = event.data.json();
+
+  const options = {
+    body: data.body || "You have a new notification",
+    icon: data.icon || "/icon.svg",
+    badge: "/icon.svg",
+    vibrate: [200, 100, 200],
+    data: data.data || {},
+    actions: data.actions || [],
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(data.title || "BizzBills", options)
+  );
+});
+
+// Notification click handler
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  const action = event.action;
+  const data = event.notification.data;
+
+  let url = "/dashboard";
+  if (action === "view" && data.url) {
+    url = data.url;
+  } else if (action === "dismiss") {
+    return;
+  }
+
+  event.waitUntil(
+    self.clients.matchAll({ type: "window" }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url.includes(self.location.origin) && "focus" in client) {
+          client.focus();
+          client.navigate(url);
+          return;
+        }
+      }
+      self.clients.openWindow(url);
+    })
+  );
+});
+
 async function syncOfflineInvoices() {
   const clients = await self.clients.matchAll();
   clients.forEach((client) => {
