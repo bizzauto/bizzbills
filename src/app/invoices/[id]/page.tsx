@@ -7,6 +7,7 @@ import Link from "next/link";
 import { DiffViewer } from "@/components/invoice/DiffViewer";
 import { VersionTimeline } from "@/components/invoice/VersionTimeline";
 import { formatAmount } from "@/lib/currency";
+import { isValidGSTIN } from "@/lib/einvoice";
 import type { DiffChange } from "@/lib/diff";
 
 type LineItem = {
@@ -57,6 +58,12 @@ export default function InvoiceDetailPage() {
   const [recipientEmail, setRecipientEmail] = useState("");
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailStatus, setEmailStatus] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [eInvoiceIRN, setEInvoiceIRN] = useState<string | null>(null);
+  const [eInvoiceQRData, setEInvoiceQRData] = useState<string | null>(null);
+  const [eInvoiceDate, setEInvoiceDate] = useState<string | null>(null);
+  const [generatingIRN, setGeneratingIRN] = useState(false);
+  const [eInvoiceError, setEInvoiceError] = useState<string | null>(null);
+  const [irnCopied, setIrnCopied] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -143,6 +150,36 @@ export default function InvoiceDetailPage() {
     } finally {
       setSendingEmail(false);
     }
+  }
+
+  async function handleGenerateEInvoice() {
+    setGeneratingIRN(true);
+    setEInvoiceError(null);
+    try {
+      const res = await fetch(`/api/invoices/${invoiceId}/e-invoice`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setEInvoiceIRN(data.irn);
+        setEInvoiceQRData(data.qrData);
+        setEInvoiceDate(data.irnDate);
+      } else {
+        setEInvoiceError(data.error ?? "Failed to generate E-Invoice");
+      }
+    } catch {
+      setEInvoiceError("Network error — could not generate E-Invoice");
+    } finally {
+      setGeneratingIRN(false);
+    }
+  }
+
+  function handleCopyIRN() {
+    if (!eInvoiceIRN) return;
+    navigator.clipboard.writeText(eInvoiceIRN).then(() => {
+      setIrnCopied(true);
+      setTimeout(() => setIrnCopied(false), 2000);
+    });
   }
 
   if (loading) {
@@ -257,6 +294,142 @@ export default function InvoiceDetailPage() {
           </div>
         </div>
       )}
+
+      {/* E-Invoice section */}
+      <section className="rounded-[1.5rem] border border-white/10 bg-slate-900/70 p-6 backdrop-blur">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm uppercase tracking-[0.25em] text-cyan-300">
+              E-Invoice
+            </p>
+            <h2 className="mt-1 text-xl font-semibold text-white">GST Compliance</h2>
+          </div>
+          {!eInvoiceIRN && (
+            <button
+              onClick={handleGenerateEInvoice}
+              disabled={generatingIRN}
+              className="rounded-full bg-cyan-500 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:opacity-50"
+            >
+              {generatingIRN ? "Generating..." : "Generate E-Invoice"}
+            </button>
+          )}
+        </div>
+
+        {/* GSTIN validation status */}
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-slate-950/70 px-4 py-3">
+            <span
+              className={`inline-block h-2.5 w-2.5 rounded-full ${
+                invoice.customerGstin && isValidGSTIN(invoice.customerGstin)
+                  ? "bg-emerald-400"
+                  : "bg-red-400"
+              }`}
+            />
+            <div>
+              <p className="text-xs text-slate-400">Buyer GSTIN</p>
+              <p className="font-mono text-sm text-white">
+                {invoice.customerGstin || "Not provided"}
+              </p>
+            </div>
+            <span
+              className={`ml-auto rounded-full px-2 py-0.5 text-xs font-medium ${
+                invoice.customerGstin && isValidGSTIN(invoice.customerGstin)
+                  ? "bg-emerald-500/10 text-emerald-300"
+                  : "bg-red-500/10 text-red-300"
+              }`}
+            >
+              {invoice.customerGstin && isValidGSTIN(invoice.customerGstin)
+                ? "Valid"
+                : "Invalid"}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-slate-950/70 px-4 py-3">
+            <span className="inline-block h-2.5 w-2.5 rounded-full bg-slate-500" />
+            <div>
+              <p className="text-xs text-slate-400">Supplier GSTIN</p>
+              <p className="font-mono text-sm text-slate-400">
+                Configure in organization settings
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {eInvoiceError && (
+          <div className="mt-3 rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-300">
+            {eInvoiceError}
+          </div>
+        )}
+
+        {/* Generated E-Invoice result */}
+        {eInvoiceIRN && (
+          <div className="mt-4 space-y-3">
+            {/* Compliance badge */}
+            <div className="flex items-center gap-2 rounded-xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3">
+              <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-400" />
+              <span className="text-sm font-medium text-emerald-300">
+                E-Invoice Generated
+              </span>
+              {eInvoiceDate && (
+                <span className="ml-auto text-xs text-slate-400">
+                  {new Date(eInvoiceDate).toLocaleString()}
+                </span>
+              )}
+            </div>
+
+            {/* IRN display */}
+            <div className="rounded-xl border border-white/10 bg-slate-950/70 p-4">
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-slate-400">Invoice Reference Number (IRN)</p>
+                <button
+                  onClick={handleCopyIRN}
+                  className="rounded-full border border-white/10 px-3 py-1 text-xs text-white transition hover:bg-white/10"
+                >
+                  {irnCopied ? "Copied!" : "Copy"}
+                </button>
+              </div>
+              <p className="mt-1 break-all font-mono text-sm text-cyan-300">
+                {eInvoiceIRN}
+              </p>
+            </div>
+
+            {/* QR Code data */}
+            {eInvoiceQRData && (
+              <div className="rounded-xl border border-white/10 bg-slate-950/70 p-4">
+                <p className="text-xs text-slate-400">QR Code Data</p>
+                <div className="mt-2 flex items-center justify-center rounded-xl border border-white/10 bg-white p-4">
+                  <div className="flex flex-col items-center gap-1 text-center">
+                    <p className="text-[10px] font-bold text-slate-900">E-INVOICE</p>
+                    <p className="text-[8px] text-slate-600">Scan for verification</p>
+                    <div className="mt-1 grid grid-cols-5 gap-0.5">
+                      {Array.from({ length: 25 }, (_, i) => (
+                        <div
+                          key={i}
+                          className={`h-3 w-3 ${
+                            eInvoiceIRN.charCodeAt(i % eInvoiceIRN.length) % 3 === 0
+                              ? "bg-slate-900"
+                              : "bg-white"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <p className="mt-1 font-mono text-[7px] text-slate-500">
+                      {eInvoiceIRN.substring(0, 16)}...
+                    </p>
+                  </div>
+                </div>
+                <details className="mt-2">
+                  <summary className="cursor-pointer text-xs text-slate-400 hover:text-white">
+                    View raw JSON
+                  </summary>
+                  <pre className="mt-2 max-h-32 overflow-auto rounded-lg bg-slate-950 p-2 text-[10px] text-slate-400">
+                    {JSON.stringify(JSON.parse(eInvoiceQRData), null, 2)}
+                  </pre>
+                </details>
+              </div>
+            )}
+          </div>
+        )}
+      </section>
 
       {/* Main content grid */}
       <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
