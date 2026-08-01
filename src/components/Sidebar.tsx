@@ -277,6 +277,7 @@ const MENU_GROUPS: MenuGroup[] = [
     title: "AI Tools",
     items: [
       { label: "AI Assistant", href: "/ai", icon: "ai" },
+      { label: "AI Settings", href: "/ai/settings", icon: "ai" },
       { label: "AI Draft", href: "/ai/draft", icon: "ai" },
       { label: "AI OCR", href: "/ai/ocr", icon: "ai" },
       { label: "AI Analyze", href: "/ai/analyze", icon: "ai" },

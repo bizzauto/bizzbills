@@ -66,3 +66,25 @@ export async function POST(request: Request) {
   }
 }
 
+export async function DELETE() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const orgId = await getSessionOrgId(session.user.id);
+  if (!orgId) {
+    return NextResponse.json({ error: "No organization found" }, { status: 400 });
+  }
+
+  try {
+    await prisma.aIConfig.delete({
+      where: { orgId },
+    });
+
+    return NextResponse.json({ ok: true, message: "API key removed" });
+  } catch {
+    return NextResponse.json({ error: "Failed to remove API key" }, { status: 500 });
+  }
+}
+

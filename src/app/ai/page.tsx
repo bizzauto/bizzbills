@@ -66,7 +66,7 @@ export default function AiDashboard() {
       {status && !status.hasKey && (
         <div className="section-card">
           <p className="text-sm text-amber-200">
-            <Link href="/settings" className="underline hover:text-amber-100">Configure an AI provider</Link> to unlock LLM-powered features like smart drafting and intelligent analysis.
+            <Link href="/ai/settings" className="underline hover:text-amber-100">Configure an AI provider</Link> to unlock LLM-powered features. Free options available!
           </p>
         </div>
       )}
