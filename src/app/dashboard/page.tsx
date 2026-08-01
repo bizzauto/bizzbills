@@ -25,6 +25,26 @@ type InvoiceSummary = {
   createdAt: string;
 };
 
+type AiInsights = {
+  collectionRisk: {
+    overdueCount: number;
+    totalOverdueBalance: number;
+    topRisks: { customerName: string; balance: number; daysOverdue: number }[];
+  };
+  revenueTrend: {
+    last30Days: number;
+    previous30Days: number;
+    growthRate: number;
+  };
+  cashFlowHealth: {
+    score: number;
+    collectionEfficiency: number;
+    collected30d: number;
+    invoiced30d: number;
+  };
+  anomalies: { customerName: string; total: number; ratio: number }[];
+};
+
 // Document type routes with colors
 const DOC_TYPES = [
   { label: "Invoices", href: "/invoices", color: "var(--doc-invoice)", bg: "rgba(99,102,241,0.12)" },
@@ -53,6 +73,10 @@ export default function DashboardPage() {
       .then((r) => r.json())
       .then((d) => { setInvoices(Array.isArray(d) ? d : []); setLoading(false); })
       .catch(() => setLoading(false));
+    fetch("/api/ai/insights")
+      .then((r) => r.json())
+      .then((d) => { if (d.insights) setAiInsights(d.insights); })
+      .catch(() => {});
     return () => abort.abort();
   }, [status, router]);
 
@@ -104,6 +128,7 @@ export default function DashboardPage() {
 
   const [chartTextColor, setChartTextColor] = useState("#94a3b8");
   const [chartGridColor, setChartGridColor] = useState("rgba(255,255,255,0.05)");
+  const [aiInsights, setAiInsights] = useState<AiInsights | null>(null);
 
   // Update chart colors on theme change
   useEffect(() => {
@@ -243,6 +268,98 @@ export default function DashboardPage() {
         </section>
       )}
 
+      {/* AI Insights */}
+      {aiInsights && (
+        <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {/* Cash Flow Health Score */}
+          <div className="section-card">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-xs uppercase tracking-wider text-muted">Cash Flow Health</p>
+              <span className="text-xs">🤖</span>
+            </div>
+            <div className="flex items-end gap-3">
+              <span className={`text-3xl font-bold ${aiInsights.cashFlowHealth.score >= 70 ? "text-emerald-300" : aiInsights.cashFlowHealth.score >= 40 ? "text-amber-300" : "text-red-300"}`}>
+                {aiInsights.cashFlowHealth.score}
+              </span>
+              <span className="mb-1 text-xs text-muted">/ 100</span>
+            </div>
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+              <div
+                className={`h-full rounded-full transition-all ${aiInsights.cashFlowHealth.score >= 70 ? "bg-emerald-400" : aiInsights.cashFlowHealth.score >= 40 ? "bg-amber-400" : "bg-red-400"}`}
+                style={{ width: `${aiInsights.cashFlowHealth.score}%` }}
+              />
+            </div>
+            <p className="mt-2 text-xs text-muted">
+              Collection efficiency: {aiInsights.cashFlowHealth.collectionEfficiency.toFixed(0)}%
+            </p>
+          </div>
+
+          {/* Revenue Growth */}
+          <div className="section-card">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-xs uppercase tracking-wider text-muted">Revenue Trend</p>
+              <span className="text-xs">📈</span>
+            </div>
+            <p className={`text-3xl font-bold ${aiInsights.revenueTrend.growthRate >= 0 ? "text-emerald-300" : "text-red-300"}`}>
+              {aiInsights.revenueTrend.growthRate >= 0 ? "+" : ""}{aiInsights.revenueTrend.growthRate.toFixed(1)}%
+            </p>
+            <p className="mt-1 text-xs text-muted">
+              vs previous 30 days
+            </p>
+            <div className="mt-2 flex gap-2 text-[10px]">
+              <span className="rounded bg-white/5 px-1.5 py-0.5 text-muted">
+                30d: {formatAmount(aiInsights.revenueTrend.last30Days, currentOrgCurrency)}
+              </span>
+            </div>
+          </div>
+
+          {/* Collection Risk */}
+          <div className="section-card">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-xs uppercase tracking-wider text-muted">Overdue Risk</p>
+              <span className="text-xs">⚠️</span>
+            </div>
+            <p className={`text-3xl font-bold ${aiInsights.collectionRisk.overdueCount > 0 ? "text-amber-300" : "text-emerald-300"}`}>
+              {aiInsights.collectionRisk.overdueCount}
+            </p>
+            <p className="mt-1 text-xs text-muted">
+              overdue invoices
+            </p>
+            {aiInsights.collectionRisk.totalOverdueBalance > 0 && (
+              <p className="mt-2 text-xs font-medium text-amber-200">
+                {formatAmount(aiInsights.collectionRisk.totalOverdueBalance, currentOrgCurrency)} at risk
+              </p>
+            )}
+          </div>
+
+          {/* Anomalies */}
+          <div className="section-card">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-xs uppercase tracking-wider text-muted">Anomalies</p>
+              <span className="text-xs">🔍</span>
+            </div>
+            {aiInsights.anomalies.length === 0 ? (
+              <>
+                <p className="text-3xl font-bold text-emerald-300">0</p>
+                <p className="mt-1 text-xs text-muted">No unusual invoices detected</p>
+              </>
+            ) : (
+              <>
+                <p className="text-3xl font-bold text-amber-300">{aiInsights.anomalies.length}</p>
+                <p className="mt-1 text-xs text-muted">unusual invoices detected</p>
+                <div className="mt-2 space-y-1">
+                  {aiInsights.anomalies.slice(0, 2).map((a, i) => (
+                    <p key={i} className="text-[10px] text-amber-200 truncate">
+                      {a.customerName}: {formatAmount(a.total, currentOrgCurrency)} ({a.ratio.toFixed(1)}x avg)
+                    </p>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </section>
+      )}
+
       {/* Bottom Grid */}
       <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
         {/* Recent Invoices */}
@@ -300,9 +417,6 @@ export default function DashboardPage() {
             </div>
           )}
 
-          <div className="mt-4 rounded-xl border border-default bg-accent-subtle p-3 text-sm text-accent-light">
-            <span className="mr-1">🤖</span> AI: Best payment follow-up window is tomorrow morning.
-          </div>
         </div>
       </section>
     </main>
