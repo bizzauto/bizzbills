@@ -250,7 +250,8 @@ const MENU_GROUPS: MenuGroup[] = [
     items: [
       { label: "Payments", href: "/payments", icon: "payments" },
       { label: "Expenses", href: "/expenses", icon: "payments" },
-      { label: "Banking", href: "/banking", icon: "banking" },
+      { label: "Bank Accounts", href: "/banking", icon: "banking" },
+      { label: "Reconciliation", href: "/banking/reconciliation", icon: "banking" },
     ],
   },
   {
@@ -283,14 +284,6 @@ const MENU_GROUPS: MenuGroup[] = [
     ],
   },
   {
-    title: "Banking",
-    items: [
-      { label: "Bank Accounts", href: "/banking", icon: "banking" },
-      { label: "Reconciliation", href: "/banking", icon: "banking" },
-      { label: "Pricing", href: "/pricing", icon: "settings" },
-    ],
-  },
-  {
     title: "Approvals",
     items: [
       { label: "Pending Approvals", href: "/approvals", icon: "settings" },
@@ -310,6 +303,7 @@ const MENU_GROUPS: MenuGroup[] = [
     items: [
       { label: "Reports", href: "/reports", icon: "reports" },
       { label: "Currency", href: "/currency", icon: "currency" },
+      { label: "Pricing", href: "/pricing", icon: "settings" },
     ],
   },
   {

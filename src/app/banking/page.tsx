@@ -1,579 +1,551 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { useOrg } from "@/components/OrgProvider";
 import { formatAmount } from "@/lib/currency";
 
-interface BankEntry {
-  date: string;
-  description: string;
-  amount: number;
-  type: "credit" | "debit";
-}
+/* ── Types ── */
+type BankAccount = {
+  id: string;
+  name: string;
+  accountNumber: string;
+  bankName: string;
+  ifscCode: string;
+  branch: string;
+  type: string;
+  openingBalance: number;
+  currentBalance: number;
+  isActive: boolean;
+  createdAt: string;
+  _count: { transactions: number };
+};
 
-interface MatchedTransaction {
-  bankEntry: BankEntry;
-  payment: {
-    id: string;
-    amount: number;
-    method: string;
-    status: string;
-    paidAt: string | null;
-    invoiceNumber: string | null;
-    customerName: string | null;
-  };
-  dateDiff: number;
-}
+type AccountForm = {
+  name: string;
+  accountNumber: string;
+  bankName: string;
+  ifscCode: string;
+  branch: string;
+  type: string;
+  openingBalance: string;
+};
 
-interface UnmatchedTransaction {
-  bankEntry: BankEntry;
-  reason: string;
-}
+const EMPTY_FORM: AccountForm = {
+  name: "",
+  accountNumber: "",
+  bankName: "",
+  ifscCode: "",
+  branch: "",
+  type: "savings",
+  openingBalance: "",
+};
 
-interface ReconciliationResult {
-  matched: MatchedTransaction[];
-  unmatched: UnmatchedTransaction[];
-  summary: {
-    totalEntries: number;
-    matchedCount: number;
-    unmatchedCount: number;
-    matchedTotal: number;
-    unmatchedTotal: number;
-  };
-}
+const ACCOUNT_TYPES = [
+  { value: "savings", label: "Savings" },
+  { value: "current", label: "Current" },
+  { value: "credit_card", label: "Credit Card" },
+  { value: "loan", label: "Loan" },
+];
 
-function parseCSVLine(line: string): string[] {
-  const result: string[] = [];
-  let current = "";
-  let inQuotes = false;
-
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-    if (inQuotes) {
-      if (char === '"' && line[i + 1] === '"') {
-        current += '"';
-        i++;
-      } else if (char === '"') {
-        inQuotes = false;
-      } else {
-        current += char;
-      }
-    } else if (char === '"') {
-      inQuotes = true;
-    } else if (char === ",") {
-      result.push(current.trim());
-      current = "";
-    } else {
-      current += char;
-    }
-  }
-  result.push(current.trim());
-  return result;
-}
-
-function parseCSV(csvText: string): BankEntry[] {
-  const lines = csvText
-    .split(/\r?\n/)
-    .filter((line) => line.trim().length > 0);
-  if (lines.length < 2) return [];
-
-  const header = lines[0].toLowerCase();
-  const cols = parseCSVLine(header);
-
-  const dateIdx = cols.findIndex((c) =>
-    /date|trans.?date|txn.?date|value.?date/i.test(c)
-  );
-  const descIdx = cols.findIndex((c) =>
-    /desc|narration|particular|detail|memo|reference/i.test(c)
-  );
-  const debitIdx = cols.findIndex((c) =>
-    /debit|withdrawal|dr|debit.?amt/i.test(c)
-  );
-  const creditIdx = cols.findIndex((c) =>
-    /credit|deposit|cr|credit.?amt/i.test(c)
-  );
-  const amountIdx = cols.findIndex((c) =>
-    /amount|amt|txn.?amt/i.test(c) && !/debit|credit/i.test(c)
-  );
-
-  const entries: BankEntry[] = [];
-
-  for (let i = 1; i < lines.length; i++) {
-    const values = parseCSVLine(lines[i]);
-    if (values.length < 2) continue;
-
-    const dateStr = dateIdx >= 0 ? values[dateIdx] : values[0];
-    const description =
-      descIdx >= 0 ? values[descIdx] : values[1] || "Unknown";
-
-    let amount = 0;
-    let type: "credit" | "debit" = "debit";
-
-    if (debitIdx >= 0 && creditIdx >= 0) {
-      const debitVal = parseFloat(values[debitIdx]?.replace(/[,]/g, "") || "0");
-      const creditVal = parseFloat(
-        values[creditIdx]?.replace(/[,]/g, "") || "0"
-      );
-      if (creditVal > 0) {
-        amount = creditVal;
-        type = "credit";
-      } else if (debitVal > 0) {
-        amount = debitVal;
-        type = "debit";
-      }
-    } else if (amountIdx >= 0) {
-      const rawAmount = parseFloat(
-        values[amountIdx]?.replace(/[,]/g, "") || "0"
-      );
-      amount = Math.abs(rawAmount);
-      type = rawAmount >= 0 ? "credit" : "debit";
-    }
-
-    if (amount > 0 && dateStr) {
-      entries.push({ date: dateStr, description, amount, type });
-    }
-  }
-
-  return entries;
-}
-
-function formatEntryDate(dateStr: string): string {
-  try {
-    const d = new Date(dateStr);
-    if (!isNaN(d.getTime())) {
-      return d.toLocaleDateString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      });
-    }
-  } catch {
-    // fall through
-  }
-  return dateStr;
+function formatAcctNumber(num: string): string {
+  if (!num) return "—";
+  if (num.length <= 4) return num;
+  return "••••" + num.slice(-4);
 }
 
 export default function BankingPage() {
   const { currentOrgCurrency } = useOrg();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [entries, setEntries] = useState<BankEntry[]>([]);
-  const [result, setResult] = useState<ReconciliationResult | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [tab, setTab] = useState("accounts");
+  const [accounts, setAccounts] = useState<BankAccount[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState<AccountForm>(EMPTY_FORM);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isDragOver, setIsDragOver] = useState(false);
 
-  const handleFile = useCallback(async (file: File) => {
-    setError(null);
-    setResult(null);
-
-    if (!file.name.endsWith(".csv") && file.type !== "text/csv") {
-      setError("Please upload a CSV file");
-      return;
-    }
-
+  const fetchAccounts = useCallback(async () => {
     try {
-      const text = await file.text();
-      const parsed = parseCSV(text);
-      if (parsed.length === 0) {
-        setError(
-          "No valid transactions found. Ensure the CSV has date, description, and amount columns."
-        );
+      const res = await fetch("/api/bank-accounts");
+      const data = await res.json();
+      setAccounts(data.accounts ?? []);
+    } catch {
+      /* silent */
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchAccounts();
+  }, [fetchAccounts]);
+
+  const totalBalance = accounts.reduce((s, a) => s + a.currentBalance, 0);
+  const activeCount = accounts.filter((a) => a.isActive).length;
+  const totalTransactions = accounts.reduce(
+    (s, a) => s + a._count.transactions,
+    0
+  );
+
+  const openCreate = useCallback(() => {
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+    setError(null);
+    setShowForm(true);
+  }, []);
+
+  const openEdit = useCallback((acct: BankAccount) => {
+    setEditingId(acct.id);
+    setForm({
+      name: acct.name,
+      accountNumber: acct.accountNumber,
+      bankName: acct.bankName,
+      ifscCode: acct.ifscCode,
+      branch: acct.branch,
+      type: acct.type,
+      openingBalance: String(acct.openingBalance),
+    });
+    setError(null);
+    setShowForm(true);
+  }, []);
+
+  const closeForm = useCallback(() => {
+    setShowForm(false);
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+    setError(null);
+  }, []);
+
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!form.name.trim()) {
+        setError("Account name is required");
         return;
       }
-      setEntries(parsed);
-    } catch {
-      setError("Failed to parse CSV file. Check the format and try again.");
-    }
-  }, []);
-
-  const handleFileInput = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file) handleFile(file);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    },
-    [handleFile]
-  );
-
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      setIsDragOver(false);
-      const file = e.dataTransfer.files[0];
-      if (file) handleFile(file);
-    },
-    [handleFile]
-  );
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(true);
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-  }, []);
-
-  const runReconciliation = useCallback(async () => {
-    if (entries.length === 0) return;
-
-    setIsProcessing(true);
-    setError(null);
-    setResult(null);
-
-    try {
-      const response = await fetch("/api/banking/reconcile", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ entries }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Reconciliation failed");
+      setSaving(true);
+      setError(null);
+      try {
+        const url = editingId
+          ? `/api/bank-accounts/${editingId}`
+          : "/api/bank-accounts";
+        const method = editingId ? "PUT" : "POST";
+        const res = await fetch(url, {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...form,
+            openingBalance: parseFloat(form.openingBalance) || 0,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.error || "Failed to save");
+          return;
+        }
+        closeForm();
+        fetchAccounts();
+      } catch {
+        setError("Network error — try again");
+      } finally {
+        setSaving(false);
       }
+    },
+    [form, editingId, closeForm, fetchAccounts]
+  );
 
-      const data: ReconciliationResult = await response.json();
-      setResult(data);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "An unexpected error occurred"
-      );
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [entries]);
+  const handleDelete = useCallback(
+    async (id: string) => {
+      if (!confirm("Delete this bank account?")) return;
+      try {
+        const res = await fetch(`/api/bank-accounts/${id}`, {
+          method: "DELETE",
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.error || "Cannot delete");
+          return;
+        }
+        fetchAccounts();
+      } catch {
+        alert("Network error");
+      }
+    },
+    [fetchAccounts]
+  );
 
-  const clearAll = useCallback(() => {
-    setEntries([]);
-    setResult(null);
-    setError(null);
-  }, []);
+  const toggleActive = useCallback(
+    async (acct: BankAccount) => {
+      try {
+        await fetch(`/api/bank-accounts/${acct.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ isActive: !acct.isActive }),
+        });
+        fetchAccounts();
+      } catch {
+        /* silent */
+      }
+    },
+    [fetchAccounts]
+  );
 
   return (
     <main className="flex flex-1 flex-col gap-6 pb-10">
+      {/* Header */}
       <section className="section-card">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-sm uppercase tracking-[0.25em] text-accent-light">
               Finance
             </p>
             <h1 className="mt-1 text-2xl font-semibold text-default">
-              Bank Reconciliation
+              Banking
             </h1>
           </div>
-          {entries.length > 0 && (
-            <button
-              onClick={clearAll}
-              className="btn-secondary"
-            >
-              Start Over
-            </button>
-          )}
+          <div className="flex flex-wrap gap-2">
+            {["accounts", "reconciliation"].map((t) => (
+              <button
+                key={t}
+                onClick={() => {
+                  if (t === "reconciliation") {
+                    window.location.href = "/banking/reconciliation";
+                  } else {
+                    setTab(t);
+                  }
+                }}
+                className={`rounded-full px-4 py-1.5 text-xs font-medium capitalize transition ${
+                  tab === t
+                    ? "bg-cyan-500 text-slate-950"
+                    : "border border-white/10 text-slate-300 hover:bg-white/5"
+                }`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
         </div>
       </section>
 
-      {result?.summary && (
-        <section className="grid gap-4 md:grid-cols-4">
-          <div className="kpi-card kpi-accent-cyan">
-            <p className="text-muted text-xs">Total Entries</p>
-            <p className="text-default mt-1 text-2xl font-semibold">
-              {result.summary.totalEntries}
-            </p>
+      {/* KPI Cards */}
+      {tab === "accounts" && (
+        <>
+          <div className="grid gap-4 md:grid-cols-4">
+            <div className="kpi-card kpi-accent-cyan">
+              <p className="text-muted text-xs">Total Accounts</p>
+              <p className="text-default mt-1 text-2xl font-semibold">
+                {accounts.length}
+              </p>
+            </div>
+            <div className="kpi-card kpi-accent-green">
+              <p className="text-muted text-xs">Active Accounts</p>
+              <p className="text-success mt-1 text-2xl font-semibold">
+                {activeCount}
+              </p>
+            </div>
+            <div className="kpi-card kpi-accent-purple">
+              <p className="text-muted text-xs">Total Balance</p>
+              <p className="mt-1 text-2xl font-semibold text-cyan-300">
+                {formatAmount(totalBalance, currentOrgCurrency)}
+              </p>
+            </div>
+            <div className="kpi-card kpi-accent-amber">
+              <p className="text-muted text-xs">Transactions</p>
+              <p className="text-warning mt-1 text-2xl font-semibold">
+                {totalTransactions}
+              </p>
+            </div>
           </div>
-          <div className="kpi-card kpi-accent-green">
-            <p className="text-muted text-xs">Matched</p>
-            <p className="text-success mt-1 text-2xl font-semibold">
-              {result.summary.matchedCount}
-            </p>
-          </div>
-          <div className="kpi-card kpi-accent-amber">
-            <p className="text-muted text-xs">Unmatched</p>
-            <p className="text-warning mt-1 text-2xl font-semibold">
-              {result.summary.unmatchedCount}
-            </p>
-          </div>
-          <div className="kpi-card kpi-accent-purple">
-            <p className="text-muted text-xs">Matched Amount</p>
-            <p className="text-success mt-1 text-2xl font-semibold">
-              {formatAmount(result.summary.matchedTotal, currentOrgCurrency)}
-            </p>
-          </div>
-        </section>
-      )}
 
-      {entries.length === 0 && !result && (
-        <section
-          className={`section-card flex flex-col items-center justify-center border-2 border-dashed py-16 transition-colors ${
-            isDragOver
-              ? "border-accent bg-accent-subtle"
-              : "border-default"
-          }`}
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-        >
-          <div className="text-center">
-            <div className="text-muted mb-4 text-5xl">Upload</div>
-            <p className="text-default text-lg font-medium">
-              Drop your bank statement CSV here
-            </p>
-            <p className="text-muted mt-1 text-sm">
-              or click to browse files
-            </p>
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="btn-primary mt-6"
-            >
-              Choose CSV File
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".csv,text/csv"
-              onChange={handleFileInput}
-              className="hidden"
-            />
-          </div>
-        </section>
-      )}
-
-      {error && (
-        <div className="section-card bg-error text-danger flex items-center gap-3 p-4">
-          <span className="text-lg">!</span>
-          <p className="text-sm">{error}</p>
-        </div>
-      )}
-
-      {entries.length > 0 && !result && (
-        <section className="section-card">
-          <div className="mb-4 flex items-center justify-between">
-            <div>
+          {/* Accounts Table */}
+          <section className="section-card">
+            <div className="mb-4 flex items-center justify-between">
               <h2 className="text-default text-lg font-semibold">
-                Parsed Entries
+                Bank Accounts
               </h2>
-              <p className="text-muted text-sm">
-                {entries.length} transaction{entries.length !== 1 ? "s" : ""}{" "}
-                found. Review before reconciling.
-              </p>
+              <button onClick={openCreate} className="btn-primary">
+                + Add Account
+              </button>
             </div>
-            <button
-              onClick={runReconciliation}
-              disabled={isProcessing}
-              className="btn-primary"
-            >
-              {isProcessing ? "Reconciling..." : "Run Reconciliation"}
-            </button>
-          </div>
-          <div className="max-h-96 overflow-y-auto">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-default text-muted">
-                  <th className="p-3 font-medium">Date</th>
-                  <th className="p-3 font-medium">Description</th>
-                  <th className="p-3 font-medium text-right">Amount</th>
-                  <th className="p-3 font-medium">Type</th>
-                </tr>
-              </thead>
-              <tbody>
-                {entries.map((entry, idx) => (
-                  <tr
-                    key={idx}
-                    className="border-t border-default hover:bg-card-hover"
-                  >
-                    <td className="p-3 text-default">
-                      {formatEntryDate(entry.date)}
-                    </td>
-                    <td className="p-3 text-default">{entry.description}</td>
-                    <td className="p-3 text-right font-medium text-default">
-                      {formatAmount(entry.amount, currentOrgCurrency)}
-                    </td>
-                    <td className="p-3">
-                      <span
-                        className={`badge ${
-                          entry.type === "credit"
-                            ? "badge-completed"
-                            : "badge-overdue"
-                        }`}
+
+            {loading ? (
+              <p className="text-muted py-8 text-center text-sm">Loading…</p>
+            ) : accounts.length === 0 ? (
+              <div className="py-12 text-center">
+                <p className="text-muted mb-2 text-lg">No bank accounts yet</p>
+                <p className="text-muted mb-4 text-sm">
+                  Add your first bank account to start tracking balances
+                </p>
+                <button onClick={openCreate} className="btn-primary">
+                  + Add Bank Account
+                </button>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-default text-muted">
+                      <th className="p-3 font-medium">Account</th>
+                      <th className="p-3 font-medium">Bank</th>
+                      <th className="p-3 font-medium">Number</th>
+                      <th className="p-3 font-medium">Type</th>
+                      <th className="p-3 font-medium text-right">Balance</th>
+                      <th className="p-3 font-medium text-center">Txns</th>
+                      <th className="p-3 font-medium">Status</th>
+                      <th className="p-3 font-medium text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {accounts.map((a) => (
+                      <tr
+                        key={a.id}
+                        className="border-t border-default hover:bg-card-hover"
                       >
-                        {entry.type === "credit" ? "Credit" : "Debit"}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                        <td className="p-3 text-default font-medium">
+                          {a.name}
+                        </td>
+                        <td className="p-3 text-slate-300">
+                          {a.bankName || "—"}
+                        </td>
+                        <td className="p-3 font-mono text-xs text-slate-400">
+                          {formatAcctNumber(a.accountNumber)}
+                        </td>
+                        <td className="p-3">
+                          <span className="badge badge-pending capitalize">
+                            {a.type.replace("_", " ")}
+                          </span>
+                        </td>
+                        <td
+                          className={`p-3 text-right font-semibold ${
+                            a.currentBalance >= 0
+                              ? "text-success"
+                              : "text-danger"
+                          }`}
+                        >
+                          {formatAmount(a.currentBalance, currentOrgCurrency)}
+                        </td>
+                        <td className="p-3 text-center text-slate-400">
+                          {a._count.transactions}
+                        </td>
+                        <td className="p-3">
+                          <button
+                            onClick={() => toggleActive(a)}
+                            className={`badge cursor-pointer ${
+                              a.isActive
+                                ? "badge-completed"
+                                : "badge-overdue"
+                            }`}
+                          >
+                            {a.isActive ? "Active" : "Inactive"}
+                          </button>
+                        </td>
+                        <td className="p-3 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => openEdit(a)}
+                              className="text-xs text-cyan-300 hover:text-cyan-200"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDelete(a.id)}
+                              className="text-xs text-red-400 hover:text-red-300"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        </>
+      )}
+
+      {/* Reconciliation tab — redirect note */}
+      {tab === "reconciliation" && (
+        <section className="section-card py-12 text-center">
+          <p className="text-muted mb-2 text-lg">
+            Redirecting to Reconciliation…
+          </p>
+          <Link
+            href="/banking/reconciliation"
+            className="text-cyan-300 text-sm hover:underline"
+          >
+            Go to Reconciliation →
+          </Link>
         </section>
       )}
 
-      {result && (
-        <section className="grid gap-6 lg:grid-cols-2">
-          <div className="section-card">
+      {/* Create / Edit Modal */}
+      {showForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="section-card mx-4 w-full max-w-lg">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-success text-lg font-semibold">
-                Matched ({result.matched.length})
+              <h2 className="text-default text-lg font-semibold">
+                {editingId ? "Edit Bank Account" : "Add Bank Account"}
               </h2>
-              <span className="badge badge-completed">
-                {formatAmount(result.summary.matchedTotal, currentOrgCurrency)}
-              </span>
+              <button
+                onClick={closeForm}
+                className="text-muted text-xl hover:text-default"
+              >
+                ×
+              </button>
             </div>
-            {result.matched.length === 0 ? (
-              <p className="text-muted py-8 text-center text-sm">
-                No matching payments found.
-              </p>
-            ) : (
-              <div className="max-h-[500px] space-y-3 overflow-y-auto">
-                {result.matched.map((m, idx) => (
-                  <div
-                    key={idx}
-                    className="bg-success list-item flex items-start justify-between"
-                    style={{
-                      borderLeft: "3px solid var(--success)",
-                    }}
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="text-default text-sm font-medium">
-                        {m.bankEntry.description}
-                      </p>
-                      <p className="text-muted mt-0.5 text-xs">
-                        {formatEntryDate(m.bankEntry.date)}
-                        {m.dateDiff === 0
-                          ? " (same day)"
-                          : ` (${m.dateDiff}d off)`}
-                      </p>
-                      <p className="text-muted mt-1 text-xs">
-                        Matched to payment{" "}
-                        <span className="font-mono">
-                          #{m.payment.id.slice(0, 8)}
-                        </span>
-                        {m.payment.invoiceNumber &&
-                          ` / Invoice #${m.payment.invoiceNumber}`}
-                        {m.payment.customerName &&
-                          ` (${m.payment.customerName})`}
-                      </p>
-                    </div>
-                    <div className="ml-3 shrink-0 text-right">
-                      <p className="text-success text-sm font-semibold">
-                        {formatAmount(m.bankEntry.amount, currentOrgCurrency)}
-                      </p>
-                      <span
-                        className={`mt-1 badge ${
-                          m.bankEntry.type === "credit"
-                            ? "badge-completed"
-                            : "badge-overdue"
-                        }`}
-                      >
-                        {m.bankEntry.type === "credit" ? "CR" : "DR"}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+
+            {error && (
+              <div className="mb-4 rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-300">
+                {error}
               </div>
             )}
-          </div>
 
-          <div className="section-card">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-warning text-lg font-semibold">
-                Unmatched ({result.unmatched.length})
-              </h2>
-              <span className="badge badge-pending">
-                {formatAmount(
-                  result.summary.unmatchedTotal,
-                  currentOrgCurrency
-                )}
-              </span>
-            </div>
-            {result.unmatched.length === 0 ? (
-              <p className="text-muted py-8 text-center text-sm">
-                All transactions matched. Fully reconciled.
-              </p>
-            ) : (
-              <div className="max-h-[500px] space-y-3 overflow-y-auto">
-                {result.unmatched.map((u, idx) => (
-                  <div
-                    key={idx}
-                    className="bg-warning list-item flex items-start justify-between"
-                    style={{
-                      borderLeft: "3px solid var(--warning)",
-                    }}
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="text-muted mb-1 block text-xs">
+                  Account Name *
+                </label>
+                <input
+                  type="text"
+                  value={form.name}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, name: e.target.value }))
+                  }
+                  className="input-field w-full"
+                  placeholder="e.g. HDFC Business A/c"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-muted mb-1 block text-xs">
+                    Bank Name
+                  </label>
+                  <input
+                    type="text"
+                    value={form.bankName}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, bankName: e.target.value }))
+                    }
+                    className="input-field w-full"
+                    placeholder="HDFC Bank"
+                  />
+                </div>
+                <div>
+                  <label className="text-muted mb-1 block text-xs">
+                    Account Type
+                  </label>
+                  <select
+                    value={form.type}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, type: e.target.value }))
+                    }
+                    className="input-field w-full"
                   >
-                    <div className="min-w-0 flex-1">
-                      <p className="text-default text-sm font-medium">
-                        {u.bankEntry.description}
-                      </p>
-                      <p className="text-muted mt-0.5 text-xs">
-                        {formatEntryDate(u.bankEntry.date)}
-                      </p>
-                      <p className="text-danger mt-1 text-xs">{u.reason}</p>
-                    </div>
-                    <div className="ml-3 shrink-0 text-right">
-                      <p className="text-warning text-sm font-semibold">
-                        {formatAmount(
-                          u.bankEntry.amount,
-                          currentOrgCurrency
-                        )}
-                      </p>
-                      <span
-                        className={`mt-1 badge ${
-                          u.bankEntry.type === "credit"
-                            ? "badge-completed"
-                            : "badge-overdue"
-                        }`}
-                      >
-                        {u.bankEntry.type === "credit" ? "CR" : "DR"}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                    {ACCOUNT_TYPES.map((t) => (
+                      <option key={t.value} value={t.value}>
+                        {t.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
-            )}
-          </div>
-        </section>
-      )}
 
-      {result && (
-        <section className="section-card">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <div>
-                <p className="text-muted text-xs">Reconciled Amount</p>
-                <p className="text-success text-lg font-semibold">
-                  {formatAmount(result.summary.matchedTotal, currentOrgCurrency)}
-                </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-muted mb-1 block text-xs">
+                    Account Number
+                  </label>
+                  <input
+                    type="text"
+                    value={form.accountNumber}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        accountNumber: e.target.value,
+                      }))
+                    }
+                    className="input-field w-full"
+                    placeholder="1234567890"
+                  />
+                </div>
+                <div>
+                  <label className="text-muted mb-1 block text-xs">
+                    IFSC Code
+                  </label>
+                  <input
+                    type="text"
+                    value={form.ifscCode}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, ifscCode: e.target.value }))
+                    }
+                    className="input-field w-full"
+                    placeholder="HDFC0001234"
+                  />
+                </div>
               </div>
-              <div className="h-8 w-px bg-white/10" />
+
               <div>
-                <p className="text-muted text-xs">Unreconciled Amount</p>
-                <p className="text-warning text-lg font-semibold">
-                  {formatAmount(
-                    result.summary.unmatchedTotal,
-                    currentOrgCurrency
-                  )}
-                </p>
+                <label className="text-muted mb-1 block text-xs">
+                  Branch
+                </label>
+                <input
+                  type="text"
+                  value={form.branch}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, branch: e.target.value }))
+                  }
+                  className="input-field w-full"
+                  placeholder="Main Branch, Mumbai"
+                />
               </div>
-              <div className="h-8 w-px bg-white/10" />
+
               <div>
-                <p className="text-muted text-xs">Reconciliation Rate</p>
-                <p className="text-default text-lg font-semibold">
-                  {result.summary.totalEntries > 0
-                    ? Math.round(
-                        (result.summary.matchedCount /
-                          result.summary.totalEntries) *
-                          100
-                      )
-                    : 0}
-                  %
-                </p>
+                <label className="text-muted mb-1 block text-xs">
+                  Opening Balance
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={form.openingBalance}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      openingBalance: e.target.value,
+                    }))
+                  }
+                  className="input-field w-full"
+                  placeholder="0.00"
+                />
               </div>
-            </div>
-            <button onClick={clearAll} className="btn-secondary">
-              Upload New Statement
-            </button>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={closeForm}
+                  className="btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="btn-primary"
+                >
+                  {saving
+                    ? "Saving…"
+                    : editingId
+                      ? "Update Account"
+                      : "Create Account"}
+                </button>
+              </div>
+            </form>
           </div>
-        </section>
+        </div>
       )}
     </main>
   );
