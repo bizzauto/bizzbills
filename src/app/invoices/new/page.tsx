@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { formatAmount } from "@/lib/currency";
+import { GstinAutoFill } from "@/components/GstinAutoFill";
 
 type LineItem = {
   id: string;
@@ -390,7 +391,15 @@ export default function NewInvoicePage() {
               </label>
               <label className="text-sm text-muted">
                 GSTIN
-                <input value={form.customerGstin} onChange={(e) => updateField("customerGstin", e.target.value.toUpperCase())} className="input mt-1 w-full" placeholder="22AAAAA0000A1Z5" maxLength={15} />
+                <GstinAutoFill
+                  value={form.customerGstin}
+                  onChange={(gstin) => updateField("customerGstin", gstin)}
+                  onStateDetected={(state) => {
+                    updateField("customerState", state);
+                    updateField("placeOfSupply", state);
+                  }}
+                  className="mt-1"
+                />
               </label>
               <label className="text-sm text-muted md:col-span-2">
                 Address
