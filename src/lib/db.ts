@@ -45,8 +45,8 @@ function syncSchema() {
   }
 }
 
-// Sync schema once on server start
-if (typeof window === "undefined") {
+// Sync schema once on server start (dev only — production schema pushed at deploy time)
+if (typeof window === "undefined" && process.env.NODE_ENV !== "production") {
   syncSchema();
 }
 
