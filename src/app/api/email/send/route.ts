@@ -14,9 +14,6 @@ export async function POST(request: Request) {
     }
 
     // TODO: Integrate with actual email provider (Resend, SendGrid, Nodemailer, etc.)
-    // For now, log the email for development
-    console.log(`[EMAIL] To: ${to} | Subject: ${subject} | Doc: ${documentType} #${documentNumber}`);
-    console.log(`[EMAIL] Body preview: ${body.substring(0, 200)}...`);
 
     return NextResponse.json({
       success: true,

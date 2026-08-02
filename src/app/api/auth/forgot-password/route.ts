@@ -43,13 +43,7 @@ export async function POST(request: Request) {
 
     // TODO: Send email/SMS with reset link
     // In production, send via email service (Resend, SendGrid, etc.)
-    // For now, log to console only — never return in response
-    if (user.email) {
-      console.log(`[PASSWORD RESET EMAIL] To: ${user.email}, Link: ${resetUrl}`);
-    }
-    if (user.phone) {
-      console.log(`[PASSWORD RESET SMS] To: ${user.phone}, Link: ${resetUrl}`);
-    }
+    // Never return the resetUrl in the response — security fix
 
     // Never return the resetUrl in the response — security fix
     return NextResponse.json({ success: true });

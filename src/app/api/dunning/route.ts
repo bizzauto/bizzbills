@@ -158,9 +158,7 @@ export async function POST(request: Request) {
       );
     }
 
-    console.log(
-      `[DUNNING] Reminder sent — Invoice: #${invoice.invoiceNumber}, Customer: ${invoice.customerName}, Type: ${severityLabel(body.reminderType)}, Sent by: ${session.user.id}, Org: ${orgId}`
-    );
+    // Dunning reminder sent successfully
 
     return NextResponse.json({
       success: true,

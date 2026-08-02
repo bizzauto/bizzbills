@@ -13,9 +13,7 @@ export interface EmailOptions {
 export async function sendEmail(
   options: EmailOptions,
 ): Promise<{ success: boolean; messageId?: string }> {
-  console.log(
-    `[EMAIL] To: ${options.to}, Subject: ${options.subject}`,
-  );
+  // Email sending initiated
 
   // Production example (uncomment when RESEND_API_KEY is set):
   //

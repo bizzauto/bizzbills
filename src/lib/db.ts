@@ -38,7 +38,7 @@ function syncSchema() {
       : `"${prismaBin}" db push --accept-data-loss --skip-generate`;
     execSync(cmd, { stdio: "pipe", timeout: 60000, cwd });
     globalForPrisma.schemaSynced = true;
-    console.log("✅ Database schema synced");
+    // Schema synced successfully
   } catch (e) {
     console.warn("⚠️ Schema sync failed:", (e as Error).message?.split("\n")[0]);
     globalForPrisma.schemaSynced = true; // Don't retry
