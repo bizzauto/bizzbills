@@ -145,73 +145,77 @@ export function OfflineInvoiceForm({ onSaved }: { onSaved?: () => void }) {
         <label className="mb-2 block text-sm font-medium text-default">
           Items
         </label>
-        <div className="space-y-3">
-          {form.items.map((item, index) => (
-            <div
-              key={index}
-              className="flex flex-col gap-2 rounded-lg border border-[var(--card-border)] bg-[var(--input-bg)] p-3 sm:flex-row"
-            >
-              <input
-                type="text"
-                value={item.description}
-                onChange={(e) =>
-                  updateItem(index, { description: e.target.value })
-                }
-                className="input flex-1"
-                placeholder="Item description"
-              />
-              <input
-                type="number"
-                value={item.quantity}
-                onChange={(e) =>
-                  updateItem(index, { quantity: Number(e.target.value) || 1 })
-                }
-                className="input w-20"
-                min="1"
-                placeholder="Qty"
-              />
-              <input
-                type="number"
-                value={item.unitPrice}
-                onChange={(e) =>
-                  updateItem(index, {
-                    unitPrice: Number(e.target.value) || 0,
-                  })
-                }
-                className="input w-24"
-                min="0"
-                step="0.01"
-                placeholder="Price"
-              />
-              <select
-                value={item.taxRate}
-                onChange={(e) =>
-                  updateItem(index, { taxRate: Number(e.target.value) })
-                }
-                className="input w-24"
+        <div className="space-y-2">
+          {form.items.map((item, index) => {
+            const lineTotal = item.quantity * item.unitPrice;
+            const tax = lineTotal * (item.taxRate / 100);
+            const total = lineTotal + tax;
+            return (
+              <div
+                key={index}
+                className="rounded-lg border border-[var(--card-border)] bg-[var(--input-bg)] p-3"
               >
-                <option value={0}>0%</option>
-                <option value={5}>5%</option>
-                <option value={12}>12%</option>
-                <option value={18}>18%</option>
-                <option value={28}>28%</option>
-              </select>
-              {form.items.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => removeItem(index)}
-                  className="text-danger hover:text-danger/80 px-2 text-sm"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-          ))}
+                {/* Row 1: Item name */}
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs text-muted font-medium w-5">{index + 1}.</span>
+                  <input
+                    type="text"
+                    value={item.description}
+                    onChange={(e) => updateItem(index, { description: e.target.value })}
+                    className="input flex-1 text-sm font-medium"
+                    placeholder="Item name"
+                  />
+                  {form.items.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeItem(index)}
+                      className="text-danger/60 hover:text-danger text-lg p-1"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+                {/* Row 2: Qty × Rate = Amount + GST */}
+                <div className="flex items-center gap-2 ml-7">
+                  <input
+                    type="number"
+                    value={item.quantity}
+                    onChange={(e) => updateItem(index, { quantity: Number(e.target.value) || 1 })}
+                    className="input w-16 text-center text-sm"
+                    min="1"
+                  />
+                  <span className="text-muted text-xs">×</span>
+                  <input
+                    type="number"
+                    value={item.unitPrice}
+                    onChange={(e) => updateItem(index, { unitPrice: Number(e.target.value) || 0 })}
+                    className="input w-24 text-right text-sm"
+                    min="0"
+                    step="0.01"
+                    placeholder="Rate"
+                  />
+                  <span className="text-muted text-xs">=</span>
+                  <span className="text-sm font-semibold text-default ml-auto">₹{total.toFixed(2)}</span>
+                  <select
+                    value={item.taxRate}
+                    onChange={(e) => updateItem(index, { taxRate: Number(e.target.value) })}
+                    className="input w-16 text-center text-xs py-1"
+                  >
+                    <option value={0}>0%</option>
+                    <option value={5}>5%</option>
+                    <option value={12}>12%</option>
+                    <option value={18}>18%</option>
+                    <option value={28}>28%</option>
+                  </select>
+                </div>
+              </div>
+            );
+          })}
         </div>
         <button
           type="button"
           onClick={addItem}
-          className="mt-3 text-sm font-medium text-accent hover:text-accent/80"
+          className="mt-3 w-full rounded-xl border border-dashed border-[var(--card-border)] p-3 text-sm text-muted transition hover:border-accent/40 hover:text-accent"
         >
           + Add Item
         </button>

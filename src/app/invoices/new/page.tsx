@@ -464,8 +464,8 @@ export default function NewInvoicePage() {
           {/* Line Items */}
           <section className="section-card">
             <h2 className="section-label">Line Items</h2>
-            <div className="space-y-3">
-              {/* Header */}
+            <div className="space-y-2">
+              {/* Desktop Header */}
               <div className="hidden md:grid grid-cols-[1fr_80px_100px_80px_100px_80px_100px_40px] gap-2 text-xs font-medium text-muted px-1">
                 <span>Description</span>
                 <span>HSN/SAC</span>
@@ -482,9 +482,58 @@ export default function NewInvoicePage() {
                 const lineDiscount = lineAmount * (line.discount / 100);
                 const taxable = lineAmount - lineDiscount;
                 const tax = taxable * (line.taxRate / 100);
+                const total = taxable + tax;
                 return (
                   <div key={line.id} className="rounded-xl border border-[var(--card-border)] bg-[var(--badge-bg)] p-3 md:p-4">
-                    <div className="grid grid-cols-1 md:grid-cols-[1fr_80px_100px_80px_100px_80px_100px_40px] gap-2 items-start">
+                    {/* Mobile: Compact My Billbook-style layout */}
+                    <div className="md:hidden">
+                      {/* Row 1: Item name + delete */}
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs text-muted font-medium w-5">{i + 1}.</span>
+                        <input
+                          value={line.description}
+                          onChange={(e) => updateLine(line.id, { description: e.target.value })}
+                          className="input flex-1 text-sm font-medium"
+                          placeholder={`Item name`}
+                        />
+                        {form.lines.length > 1 && (
+                          <button type="button" onClick={() => removeLine(line.id)} className="text-danger/60 hover:text-danger text-lg p-1">✕</button>
+                        )}
+                      </div>
+                      {/* Row 2: Qty × Rate = Amount + GST badge */}
+                      <div className="flex items-center gap-2 ml-7">
+                        <input
+                          type="number"
+                          value={line.quantity}
+                          onChange={(e) => updateLine(line.id, { quantity: Number(e.target.value) || 1 })}
+                          className="input w-16 text-center text-sm"
+                          min="0.01"
+                          step="0.01"
+                        />
+                        <span className="text-muted text-xs">×</span>
+                        <input
+                          type="number"
+                          value={line.unitPrice}
+                          onChange={(e) => updateLine(line.id, { unitPrice: Number(e.target.value) || 0 })}
+                          className="input w-24 text-right text-sm"
+                          min="0"
+                          step="0.01"
+                          placeholder="Rate"
+                        />
+                        <span className="text-muted text-xs">=</span>
+                        <span className="text-sm font-semibold text-default ml-auto">₹{total.toFixed(2)}</span>
+                        <select
+                          value={line.taxRate}
+                          onChange={(e) => updateLine(line.id, { taxRate: Number(e.target.value) })}
+                          className="input w-16 text-center text-xs py-1"
+                        >
+                          {TAX_RATES.map((r) => <option key={r} value={r}>{r}%</option>)}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Desktop: Full grid layout */}
+                    <div className="hidden md:grid grid-cols-[1fr_80px_100px_80px_100px_80px_100px_40px] gap-2 items-start">
                       <input value={line.description} onChange={(e) => updateLine(line.id, { description: e.target.value })} className="input w-full" placeholder={`Item ${i + 1}`} />
                       <input value={line.hsnCode} onChange={(e) => updateLine(line.id, { hsnCode: e.target.value })} className="input w-full text-center" placeholder="HSN" />
                       <input type="number" value={line.quantity} onChange={(e) => updateLine(line.id, { quantity: Number(e.target.value) || 1 })} className="input w-full text-right" min="0.01" step="0.01" />
@@ -493,20 +542,15 @@ export default function NewInvoicePage() {
                       <select value={line.taxRate} onChange={(e) => updateLine(line.id, { taxRate: Number(e.target.value) })} className="input w-full text-center">
                         {TAX_RATES.map((r) => <option key={r} value={r}>{r}%</option>)}
                       </select>
-                      <div className="input w-full text-right bg-transparent border-none font-semibold text-default">{formatAmount(taxable + tax, "INR")}</div>
+                      <div className="input w-full text-right bg-transparent border-none font-semibold text-default">{formatAmount(total, "INR")}</div>
                       <button type="button" onClick={() => removeLine(line.id)} className="text-danger hover:text-danger/80 text-lg p-2">✕</button>
-                    </div>
-                    {/* Mobile line total */}
-                    <div className="md:hidden mt-2 flex justify-between text-sm text-muted">
-                      <span>Qty: {line.quantity} × ₹{line.unitPrice} = ₹{lineAmount.toFixed(2)}</span>
-                      <span>+ {line.taxRate}% GST = ₹{tax.toFixed(2)}</span>
                     </div>
                   </div>
                 );
               })}
 
               <button type="button" onClick={addLine} className="w-full rounded-xl border border-dashed border-[var(--card-border)] p-3 text-sm text-muted transition hover:border-accent/40 hover:text-accent">
-                + Add Line Item
+                + Add Item
               </button>
             </div>
           </section>
