@@ -2,7 +2,7 @@ import { withAuth } from "next-auth/middleware";
 import { NextResponse, type NextRequest } from "next/server";
 import { rateLimit, ipFromRequest } from "@/lib/rate-limit";
 
-const publicPaths = ["/auth/signin", "/auth/register", "/api/auth", "/api/setup", "/api/seed-super-admin", "/", "/pricing", "/terms", "/privacy", "/contact", "/auth/forgot-password", "/auth/reset-password"];
+const publicPaths = ["/auth/signin", "/auth/register", "/api/auth", "/api/setup", "/api/seed-super-admin", "/api/health", "/", "/pricing", "/terms", "/privacy", "/contact", "/auth/forgot-password", "/auth/reset-password"];
 
 const auth = withAuth({
   pages: { signIn: "/auth/signin" },
