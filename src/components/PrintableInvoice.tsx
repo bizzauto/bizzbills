@@ -59,6 +59,7 @@ type DocumentData = {
   primaryColor?: string;
   fontFamily?: string;
   poweredByBizzBills?: boolean;
+  watermark?: boolean;
   customFields?: string;
   // CGST/SGST breakup
   cgstTotal?: number;
@@ -147,6 +148,7 @@ function toTemplateData(data: DocumentData): TemplateData {
     primaryColor: data.primaryColor,
     fontFamily: data.fontFamily,
     poweredByBizzBills: data.poweredByBizzBills,
+    watermark: data.watermark,
     customFields: data.customFields,
     // CGST/SGST breakup
     cgstTotal: Object.values(cgstBreakup).reduce((a, b) => a + b, 0),

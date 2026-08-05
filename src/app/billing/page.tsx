@@ -50,6 +50,7 @@ export default function BillingPage() {
     orgName?: string;
     orgAddress?: string;
     orgGstin?: string;
+    plan?: string;
   } | null>(null);
   // Party search
   const [partySearch, setPartySearch] = useState("");
@@ -75,6 +76,7 @@ export default function BillingPage() {
           orgName: data.name,
           orgAddress: data.address,
           orgGstin: data.gstin,
+          plan: data.plan,
         });
       })
       .catch(() => {});
@@ -159,6 +161,7 @@ export default function BillingPage() {
     orgGstin: templateSettings?.orgGstin || "27AABCU9603R1ZX",
     isPaid: false,
     accentColor,
+    watermark: templateSettings?.plan === "free",
   }), [sanitizedDraft, summary, accentColor, templateSettings]);
 
   const draftLines = draft.lines; // stable ref for UI

@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { formatAmount } from "@/lib/currency";
 
 /* ───────────────────────────────────────────────
@@ -75,6 +76,7 @@ export interface TemplateData {
   primaryColor?: string;
   fontFamily?: string;
   poweredByBizzBills?: boolean;
+  watermark?: boolean;
   customFields?: string;
 }
 
@@ -297,20 +299,54 @@ export function InvoiceTemplate({
   template: TemplateId;
   data: TemplateData;
 }) {
+  let inner: ReactNode;
   switch (template) {
-    case "classic": return <ClassicGSTTemplate data={data} />;
-    case "modern": return <ModernCleanTemplate data={data} />;
-    case "minimal": return <MinimalTemplate data={data} />;
-    case "premium": return <PremiumTemplate data={data} />;
-    case "mybillbook": return <MyBillBookTemplate data={data} />;
-    case "best": return <BestTemplate data={data} />;
-    case "corporate": return <CorporateTemplate data={data} />;
-    case "gradient": return <GradientTemplate data={data} />;
-    case "blue": return <BlueTemplate data={data} />;
-    case "green": return <GreenTemplate data={data} />;
-    case "dark": return <DarkTemplate data={data} />;
-    case "compact": return <CompactTemplate data={data} />;
+    case "classic": inner = <ClassicGSTTemplate data={data} />; break;
+    case "modern": inner = <ModernCleanTemplate data={data} />; break;
+    case "minimal": inner = <MinimalTemplate data={data} />; break;
+    case "premium": inner = <PremiumTemplate data={data} />; break;
+    case "mybillbook": inner = <MyBillBookTemplate data={data} />; break;
+    case "best": inner = <BestTemplate data={data} />; break;
+    case "corporate": inner = <CorporateTemplate data={data} />; break;
+    case "gradient": inner = <GradientTemplate data={data} />; break;
+    case "blue": inner = <BlueTemplate data={data} />; break;
+    case "green": inner = <GreenTemplate data={data} />; break;
+    case "dark": inner = <DarkTemplate data={data} />; break;
+    case "compact": inner = <CompactTemplate data={data} />; break;
   }
+
+  // Free-plan invoices carry the BizzAuto Ai logo watermark (platform branding)
+  if (!data.watermark) return inner;
+
+  return (
+    <div style={{ position: "relative" }}>
+      <div style={{ position: "relative", zIndex: 1 }}>{inner}</div>
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          inset: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          pointerEvents: "none",
+          zIndex: 2,
+          overflow: "hidden",
+        }}
+      >
+        <img
+          src="/bizzauto-watermark.svg"
+          alt="BizzAuto Ai"
+          style={{
+            width: "460px",
+            maxWidth: "85%",
+            opacity: 0.09,
+            transform: "rotate(-24deg)",
+          }}
+        />
+      </div>
+    </div>
+  );
 }
 
 /* ───────────────────────────────────────────────

@@ -1,6 +1,6 @@
-const CACHE_NAME = "bizzbills-v1";
-const STATIC_CACHE = "bizzbills-static-v1";
-const DYNAMIC_CACHE = "bizzbills-dynamic-v1";
+const CACHE_NAME = "bizzbills-v2";
+const STATIC_CACHE = "bizzbills-static-v2";
+const DYNAMIC_CACHE = "bizzbills-dynamic-v2";
 
 // Static assets to pre-cache
 const STATIC_ASSETS = [
@@ -45,8 +45,34 @@ self.addEventListener("fetch", (event) => {
   // Skip non-GET requests
   if (request.method !== "GET") return;
 
-  // Skip API calls and auth routes
-  if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/auth/")) {
+  // Never cache auth routes (sessions/credentials)
+  if (url.pathname.startsWith("/auth/")) return;
+
+  // API data calls: network-first with cache fallback (offline read access)
+  if (url.pathname.startsWith("/api/")) {
+    // Skip auth/session and admin endpoints — never cache sensitive data
+    if (url.pathname.startsWith("/api/auth/") || url.pathname.startsWith("/api/admin/")) return;
+
+    event.respondWith(
+      fetch(request)
+        .then((networkResponse) => {
+          if (networkResponse.ok && networkResponse.type === "basic") {
+            const clone = networkResponse.clone();
+            caches.open(DYNAMIC_CACHE).then((cache) => cache.put(request, clone));
+          }
+          return networkResponse;
+        })
+        .catch(() =>
+          caches.match(request).then(
+            (cached) =>
+              cached ||
+              new Response(JSON.stringify({ error: "Offline" }), {
+                status: 503,
+                headers: { "Content-Type": "application/json" },
+              })
+          )
+        )
+    );
     return;
   }
 
