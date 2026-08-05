@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { getPlanLimit, invoiceCountWhere } from "@/lib/planLimits";
 
 const CRON_SECRET = process.env.CRON_SECRET;
 
@@ -43,6 +44,21 @@ export async function GET(request: Request) {
       await prisma.recurringInvoice.update({ where: { id: ri.id }, data: { status: "completed" } });
       results.push(`Completed recurring ${ri.id} (end date passed)`);
       continue;
+    }
+
+    // ── Plan limit enforcement: skip orgs at their monthly cap ──
+    const org = await prisma.organization.findUnique({
+      where: { id: ri.orgId },
+      select: { plan: true },
+    });
+    const plan = getPlanLimit(org?.plan);
+    if (plan.invoiceLimit !== null) {
+      const used = await prisma.invoice.count({ where: invoiceCountWhere(ri.orgId) });
+      if (used >= plan.invoiceLimit) {
+        await prisma.recurringInvoice.update({ where: { id: ri.id }, data: { status: "paused" } });
+        results.push(`Paused recurring ${ri.id} (plan invoice limit reached)`);
+        continue;
+      }
     }
 
     const firstUser = await prisma.user.findFirst({ where: { orgId: ri.orgId } });

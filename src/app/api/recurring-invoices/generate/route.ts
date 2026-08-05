@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { getPlanLimit, invoiceCountWhere } from "@/lib/planLimits";
 
 function calcNextRunDate(date: Date, freq: string, interval: number): Date {
   const d = new Date(date);
@@ -43,6 +44,24 @@ export async function POST() {
     if (ri.endDate && new Date(ri.endDate) < new Date()) {
       await prisma.recurringInvoice.update({ where: { id: ri.id }, data: { status: "completed" } });
       continue;
+    }
+
+    // ── Plan limit enforcement: skip generation for orgs at their monthly cap ──
+    const org = await prisma.organization.findUnique({
+      where: { id: ri.orgId },
+      select: { plan: true },
+    });
+    const plan = getPlanLimit(org?.plan);
+    if (plan.invoiceLimit !== null) {
+      const used = await prisma.invoice.count({ where: invoiceCountWhere(ri.orgId) });
+      if (used >= plan.invoiceLimit) {
+        // Pause recurring so it doesn't keep hitting the cap every cron tick
+        await prisma.recurringInvoice.update({
+          where: { id: ri.id },
+          data: { status: "paused" },
+        });
+        continue;
+      }
     }
 
     const count = await prisma.invoice.count({ where: { orgId: ri.orgId } });

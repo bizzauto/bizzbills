@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { type AccountType } from "@prisma/client";
 import { calculateInvoiceSummary, sanitizeInvoiceDraft, type InvoiceDraft } from "@/lib/invoicing";
 import { snapshotFromInvoice } from "@/lib/diff";
+import { getPlanLimit, invoiceCountWhere } from "@/lib/planLimits";
 
 
 
@@ -57,6 +58,30 @@ export async function POST(request: Request) {
     const summary = calculateInvoiceSummary(clean);
 
     const { orgId } = (await getSessionOrg()) ?? {};
+
+    // ── Plan limit enforcement (per plan pricing) ──
+    // Only enforced for org-scoped invoices; plan limits are per-organization.
+    if (orgId) {
+      const org = await prisma.organization.findUnique({
+        where: { id: orgId },
+        select: { plan: true },
+      });
+      const plan = getPlanLimit(org?.plan);
+      if (plan.invoiceLimit !== null) {
+        const used = await prisma.invoice.count({ where: invoiceCountWhere(orgId) });
+        if (used >= plan.invoiceLimit) {
+          return NextResponse.json(
+            {
+              error: `Plan limit reached: ${plan.invoiceLimit} invoices/month on your current plan. Upgrade to continue.`,
+              code: "INVOICE_LIMIT_REACHED",
+              limit: plan.invoiceLimit,
+              used,
+            },
+            { status: 403 },
+          );
+        }
+      }
+    }
 
     const invoice = await prisma.invoice.create({
       data: {
