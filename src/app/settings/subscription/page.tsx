@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 
 /* ── Plan catalogue (client-side; mirrors server plan strings) ── */
 
-type PlanId = "free" | "starter" | "professional" | "enterprise";
+type PlanId = "free" | "starter" | "professional" | "agency" | "enterprise";
 
 type PlanFeature = {
   label: string;
@@ -84,6 +84,27 @@ const PLANS: PlanDefinition[] = [
       { label: "Full API access", included: true },
       { label: "Custom branding", included: true },
       { label: "Multi-branch support", included: true },
+    ],
+  },
+  {
+    id: "agency",
+    name: "Agency",
+    tagline: "For agencies & billing consultants",
+    price: 999,
+    priceLabel: "₹999",
+    invoiceLimit: null,
+    userLimit: 25,
+    features: [
+      { label: "Unlimited invoices", included: true },
+      { label: "Up to 25 accounts", included: true },
+      { label: "Unlimited devices", included: true },
+      { label: "All invoice templates", included: true },
+      { label: "GST calculations", included: true },
+      { label: "Priority support", included: true },
+      { label: "Full API access", included: true },
+      { label: "Custom branding", included: true },
+      { label: "Multi-branch support", included: true },
+      { label: "Client management tools", included: true },
     ],
   },
   {
@@ -397,7 +418,7 @@ export default function SubscriptionPage() {
           Choose the plan that fits your business. Upgrade or downgrade at any time.
         </p>
 
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-5 xl:grid-cols-5">
           {PLANS.map((plan) => {
             const isCurrent = plan.id === currentPlan;
             const isDowngrade = getPlanTierIndex(plan.id) < activeTierIndex;
