@@ -32,6 +32,30 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Code, name, and type are required" }, { status: 400 });
   }
 
+  // Check for existing accounts by both code and name (unique constraint)
+  const existingByCode = await prisma.chartOfAccount.findFirst({
+    where: { orgId, code: body.code },
+  });
+  const existingByName = await prisma.chartOfAccount.findFirst({
+    where: { orgId, name: body.name },
+  });
+
+  if (existingByCode || existingByName) {
+    return NextResponse.json(
+      {
+        error: existingByCode && existingByName
+          ? `Account with code "${body.code}" and name "${body.name}" already exists`
+          : existingByCode
+          ? `Account with code "${body.code}" already exists in this organization`
+          : `Account with name "${body.name}" already exists in this organization`,
+        code: "DUPLICATE_ACCOUNT",
+        ...(existingByCode && { duplicateBy: "code" }),
+        ...(existingByName && { duplicateBy: "name" }),
+      },
+      { status: 409 },
+    );
+  }
+
   const account = await prisma.chartOfAccount.create({
     data: {
       orgId,

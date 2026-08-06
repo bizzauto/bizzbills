@@ -295,30 +295,44 @@ export async function POST(request: Request) {
           created++;
         }
       } else if (entity === "chart_of_accounts") {
-        const existing = await prisma.chartOfAccount.findFirst({
+        // Check for existing by BOTH code AND name to match the unique constraint
+        const existingByCode = await prisma.chartOfAccount.findFirst({
           where: { orgId, code: String(row.code) },
         });
+        const existingByName = await prisma.chartOfAccount.findFirst({
+          where: { orgId, name: String(row.name) },
+        });
 
-        if (existing) {
-          await prisma.chartOfAccount.update({
-            where: { id: existing.id },
-            data: {
-              name: String(row.name),
-              type: (String(row.type || "EXPENSE") as "ASSET" | "LIABILITY" | "EQUITY" | "INCOME" | "EXPENSE"),
-            },
-          });
-          updated++;
-        } else {
-          await prisma.chartOfAccount.create({
-            data: {
-              orgId,
-              code: String(row.code),
-              name: String(row.name),
-              type: (String(row.type || "EXPENSE") as "ASSET" | "LIABILITY" | "EQUITY" | "INCOME" | "EXPENSE"),
-            },
-          });
-          created++;
+        if (existingByCode || existingByName) {
+          skipped++;
+          if (existingByCode) {
+            importErrors.push({
+              row: i + 1,
+              field: "code",
+              message: `Account with code "${row.code}" already exists in this organization`,
+              value: row.code,
+            });
+          }
+          if (existingByName) {
+            importErrors.push({
+              row: i + 1,
+              field: "name",
+              message: `Account with name "${row.name}" already exists in this organization`,
+              value: row.name,
+            });
+          }
+          continue;
         }
+
+        await prisma.chartOfAccount.create({
+          data: {
+            orgId,
+            code: String(row.code),
+            name: String(row.name),
+            type: (String(row.type || "EXPENSE") as "ASSET" | "LIABILITY" | "EQUITY" | "INCOME" | "EXPENSE"),
+          },
+        });
+        created++;
       }
     } catch (err) {
       skipped++;

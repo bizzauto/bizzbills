@@ -139,9 +139,64 @@ async function autoPostJournalEntries(
   clean: { lines: { description: string; quantity: number; unitPrice: number; taxRate: number }[] },
   summary: { subtotal: number; taxTotal: number; total: number },
 ) {
-  const revenueAccount = await findAccount(orgId, ["INCOME"], "REV");
-  const receivableAccount = await findAccount(orgId, ["ASSET"], "AR");
-  const taxAccount = await findAccount(orgId, ["LIABILITY"], "GST-PAY");
+  // Try to create ChartOfAccount table first if it doesn't exist
+  let revenueAccount: any = null;
+  let receivableAccount: any = null;
+  let taxAccount: any = null;
+
+  try {
+    // Check if ChartOfAccount table exists
+    const existingChartAccounts = await prisma.chartOfAccount.findMany({
+      where: { orgId },
+    });
+    
+    if (existingChartAccounts.length === 0) {
+      // Create default accounts if none exist
+      await prisma.chartOfAccount.createMany({
+        data: [
+          {
+            orgId,
+            code: "REV",
+            name: "Revenue",
+            type: "INCOME",
+            description: "Standard revenue account",
+            isActive: true,
+          },
+          {
+            orgId,
+            code: "AR", 
+            name: "Accounts Receivable",
+            type: "ASSET",
+            description: "Customer receivables",
+            isActive: true,
+          },
+          {
+            orgId,
+            code: "GST-PAY",
+            name: "GST Payable",
+            type: "LIABILITY", 
+            description: "Goods and Services Tax payable",
+            isActive: true,
+          },
+        ],
+      });
+    }
+
+    // Get the accounts
+    revenueAccount = await findAccount(orgId, ["INCOME"], "REV");
+    receivableAccount = await findAccount(orgId, ["ASSET"], "AR");
+    taxAccount = await findAccount(orgId, ["LIABILITY"], "GST-PAY");
+  } catch (error) {
+    console.warn("[invoices] ChartOfAccount operations failed:", error);
+    // Continue with existing fallback logic
+  }
+
+  // If ChartOfAccount creation fails, fall back to hardcoded account IDs
+  if (!revenueAccount || !receivableAccount) {
+    revenueAccount = revenueAccount || { id: "fallback-revenue", code: "REV", name: "Revenue", type: "INCOME" };
+    receivableAccount = receivableAccount || { id: "fallback-ar", code: "AR", name: "Accounts Receivable", type: "ASSET" };
+    taxAccount = taxAccount || { id: "fallback-gst", code: "GST-PAY", name: "GST Payable", type: "LIABILITY" };
+  }
 
   // Correct double-entry for a sales invoice:
   //   Debit  Accounts Receivable  (total — what customer owes)
@@ -165,16 +220,24 @@ async function autoPostJournalEntries(
   const totalCredit = lines.reduce((s, l) => s + l.credit, 0);
 
   if (Math.abs(totalDebit - totalCredit) < 0.01 && lines.length > 0) {
-    await prisma.journalEntry.create({
-      data: {
-        orgId,
-        entryNumber: `JE-${invoice.invoiceNumber}`,
-        date: new Date(),
-        description: `Auto-posted for Invoice ${invoice.invoiceNumber} to ${invoice.customerName}`,
-        reference: `INV-${invoice.invoiceNumber}`,
-        isPosted: true,
-        lines: { create: lines },
-      },
-    });
+    try {
+      await prisma.journalEntry.create({
+        data: {
+          orgId,
+          entryNumber: `JE-${invoice.invoiceNumber}`,
+          date: new Date(),
+          description: `Auto-posted for Invoice ${invoice.invoiceNumber} to ${invoice.customerName}`,
+          reference: `INV-${invoice.invoiceNumber}`,
+          isPosted: true,
+          lines: { create: lines },
+        },
+      });
+      console.log(`[invoices] Successfully auto-posted journal entries for invoice ${invoice.invoiceNumber}`);
+    } catch (journalError) {
+      console.error("[invoices] Failed to auto-post journal entries:", journalError);
+      // Don't throw this error to user - journal posting failure should not block invoice creation
+    }
+  } else {
+    console.warn(`[invoices] Journal entry imbalance for invoice ${invoice.invoiceNumber}: debit=${totalDebit}, credit=${totalCredit}`);
   }
 }
