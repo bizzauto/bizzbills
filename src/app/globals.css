@@ -495,6 +495,14 @@ html.light .list-item:hover {
   .no-print { display: none !important; }
   body { background: white !important; color: black !important; }
   .print-only { display: block !important; }
+  /* Hide navigation, buttons, modals */
+  header, nav, aside, .fixed, button, .rounded-full, a[href] { display: none !important; }
+  /* Clean table styles */
+  table { border-collapse: collapse; width: 100%; }
+  th, td { border: 1px solid #e2e8f0; padding: 8px; font-size: 12px; }
+  th { background: #f1f5f9; font-weight: 600; }
+  /* Page breaks */
+  .page-break { page-break-before: always; }
 }
 .print-only { display: none; }
 
@@ -515,4 +523,8 @@ html.light .list-item:hover {
     margin: 0.5in;
     size: A4;
   }
+  /* Invoice specific */
+  .invoice-template h1 { font-size: 24px !important; color: #0f172a !important; }
+  .invoice-template p { margin: 4px 0 !important; }
+  .invoice-template table { margin-top: 16px !important; }
 }

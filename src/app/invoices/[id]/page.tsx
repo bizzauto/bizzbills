@@ -211,7 +211,7 @@ export default function InvoiceDetailPage() {
   return (
     <main className="flex flex-1 flex-col gap-6 pb-10">
       {/* Header */}
-      <section className="rounded-[2rem] border border-white/10 bg-slate-900/70 p-6 shadow-2xl shadow-black/20 backdrop-blur">
+      <section className="rounded-[2rem] border border-white/10 bg-slate-900/70 p-6 shadow-2xl shadow-black/20 backdrop-blur no-print">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-sm uppercase tracking-[0.25em] text-cyan-300">
@@ -247,6 +247,12 @@ export default function InvoiceDetailPage() {
               Markdown
             </button>
             <button
+              onClick={() => window.print()}
+              className="rounded-full border border-white/15 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
+            >
+              Print / Preview
+            </button>
+            <button
               onClick={() => {
                 setEmailModalOpen(true);
                 setEmailStatus(null);
@@ -261,6 +267,23 @@ export default function InvoiceDetailPage() {
             >
               Edit
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Print header — only visible when printing */}
+      <section className="print-only invoice-template mb-8">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between pb-6 border-b-2 border-slate-300">
+          <div>
+            <p className="text-sm uppercase tracking-[0.25em] text-slate-500">
+              Invoice
+            </p>
+            <h1 className="mt-2 text-3xl font-bold text-slate-900">
+              #{invoice.invoiceNumber}
+            </h1>
+            <p className="mt-1 text-sm text-slate-500">
+              Version {invoice.version} · {invoice.status} · {new Date(invoice.createdAt).toLocaleDateString()}
+            </p>
           </div>
         </div>
       </section>
