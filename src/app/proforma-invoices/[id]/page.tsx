@@ -17,7 +17,7 @@ export default function ProformaInvoiceDetailPage() {
   const { currentOrgCurrency } = useOrg();
   const [invoice, setInvoice] = useState<any>(null);
 
-  useEffect(() => { fetch(`/api/proforma-invoices/${params.id}`).then((r) => r.json()).then(setInvoice); }, [params.id]);
+  useEffect(() => { fetch(`/api/proforma-invoices/${params.id}`).then((r) => r.json()).then((d) => setInvoice(d && !d.error ? d : null)); }, [params.id]);
 
   if (!invoice) return <main className="pb-10 text-sm text-slate-400">Loading…</main>;
 

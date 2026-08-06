@@ -43,7 +43,7 @@ export default function AiDashboard() {
   const [status, setStatus] = useState<AiStatus | null>(null);
 
   useEffect(() => {
-    fetch("/api/ai/keys").then((r) => r.json()).then(setStatus).catch(() => {});
+    fetch("/api/ai/keys").then((r) => r.json()).then((d) => setStatus(d && !d.error ? d : null)).catch(() => {});
   }, []);
 
   return (
