@@ -6,7 +6,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { KeyboardShortcuts } from "@/components/KeyboardShortcuts";
 
-const PUBLIC_PREFIXES = ["/", "/auth", "/pricing", "/terms", "/privacy", "/contact"];
+const PUBLIC_PREFIXES = ["/", "/auth", "/pricing", "/plans", "/terms", "/privacy", "/contact"];
 
 function isPublicRoute(pathname: string): boolean {
   return PUBLIC_PREFIXES.some(

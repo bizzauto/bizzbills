@@ -273,17 +273,39 @@ export default function InvoiceDetailPage() {
 
       {/* Print header — only visible when printing */}
       <section className="print-only invoice-template mb-8">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between pb-6 border-b-2 border-slate-300">
-          <div>
-            <p className="text-sm uppercase tracking-[0.25em] text-slate-500">
-              Invoice
-            </p>
-            <h1 className="mt-2 text-3xl font-bold text-slate-900">
-              #{invoice.invoiceNumber}
-            </h1>
-            <p className="mt-1 text-sm text-slate-500">
-              Version {invoice.version} · {invoice.status} · {new Date(invoice.createdAt).toLocaleDateString()}
-            </p>
+        <div className="inv-header" style={{borderBottom: '2px solid #0f172a', paddingBottom: '12px', marginBottom: '12px'}}>
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="inv-label" style={{fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#64748b', fontWeight: 600}}>
+                TAX INVOICE
+              </p>
+              <h1 style={{fontSize: '20px', fontWeight: 'bold', color: '#0f172a', margin: '4px 0'}}>
+                Led Brighter Power Systems
+              </h1>
+              <p style={{fontSize: '10px', color: '#475569', margin: '2px 0'}}>
+                SEC. FLORE, A.B. ENTERPRISES JAMBHULWADI ROAD, AMBEGAON BK, Pune 411046
+              </p>
+              <p style={{fontSize: '10px', color: '#475569', margin: '2px 0'}}>
+                GSTIN: 27AQGPD5031L1ZX | PAN: AQGPD5031L | Mobile: 8983027975
+              </p>
+              <p style={{fontSize: '10px', color: '#475569', margin: '2px 0'}}>
+                Email: info.ledbrighter@gmail.com
+              </p>
+            </div>
+            <div style={{textAlign: 'right'}}>
+              <p style={{fontSize: '10px', color: '#64748b', margin: '2px 0'}}>
+                Invoice No: <span style={{fontWeight: 'bold', color: '#0f172a'}}>{invoice.invoiceNumber}</span>
+              </p>
+              <p style={{fontSize: '10px', color: '#64748b', margin: '2px 0'}}>
+                Date: <span style={{color: '#0f172a'}}>{new Date(invoice.createdAt).toLocaleDateString('en-IN')}</span>
+              </p>
+              <p style={{fontSize: '10px', color: '#64748b', margin: '2px 0'}}>
+                Due Date: <span style={{color: '#0f172a'}}>{invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString('en-IN') : 'N/A'}</span>
+              </p>
+              <p style={{fontSize: '10px', color: '#64748b', margin: '2px 0'}}>
+                Version: {invoice.version} | Status: <span style={{textTransform: 'capitalize'}}>{invoice.status}</span>
+              </p>
+            </div>
           </div>
         </div>
       </section>

@@ -514,17 +514,31 @@ html.light .list-item:hover {
     background: white !important;
     padding: 0 !important;
     margin: 0 !important;
+    font-size: 11px !important;
+    line-height: 1.4 !important;
   }
   .invoice-template * {
     box-shadow: none !important;
     text-shadow: none !important;
   }
   @page {
-    margin: 0.5in;
+    margin: 0.4in;
     size: A4;
   }
-  /* Invoice specific */
-  .invoice-template h1 { font-size: 24px !important; color: #0f172a !important; }
-  .invoice-template p { margin: 4px 0 !important; }
-  .invoice-template table { margin-top: 16px !important; }
+  .invoice-template h1 { font-size: 20px !important; color: #0f172a !important; margin: 0 !important; }
+  .invoice-template h2 { font-size: 14px !important; color: #0f172a !important; margin: 8px 0 4px !important; }
+  .invoice-template h3 { font-size: 12px !important; color: #334155 !important; margin: 6px 0 2px !important; }
+  .invoice-template p { margin: 2px 0 !important; font-size: 10px !important; }
+  .invoice-template table { margin-top: 8px !important; font-size: 10px !important; }
+  .invoice-template th { background: #f1f5f9 !important; padding: 6px 8px !important; font-weight: 600 !important; border: 1px solid #cbd5e1 !important; }
+  .invoice-template td { padding: 5px 8px !important; border: 1px solid #e2e8f0 !important; }
+  .invoice-template .inv-header { border-bottom: 2px solid #0f172a !important; padding-bottom: 12px !important; margin-bottom: 12px !important; }
+  .invoice-template .inv-section { margin-bottom: 12px !important; }
+  .invoice-template .inv-label { font-size: 9px !important; text-transform: uppercase !important; letter-spacing: 0.1em !important; color: #64748b !important; font-weight: 600 !important; }
+  .invoice-template .inv-value { font-size: 11px !important; color: #0f172a !important; font-weight: 500 !important; }
+  .invoice-template .inv-total { background: #f8fafc !important; border: 2px solid #0f172a !important; padding: 8px 12px !important; }
+  .invoice-template .inv-bank { background: #f8fafc !important; border: 1px solid #e2e8f0 !important; padding: 8px !important; }
+  .invoice-template .inv-terms { font-size: 9px !important; color: #64748b !important; }
+  .invoice-template .inv-sign { border-top: 1px solid #cbd5e1 !important; padding-top: 8px !important; margin-top: 16px !important; }
+  .invoice-template .inv-badge { background: #0f172a !important; color: white !important; padding: 4px 12px !important; font-size: 10px !important; font-weight: 600 !important; display: inline-block !important; }
 }

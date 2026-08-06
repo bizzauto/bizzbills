@@ -47,7 +47,7 @@ export default function Home() {
                 <Link href="/auth/register" className="rounded-full bg-cyan-500 px-8 py-3.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400">
                   Start Free Trial
                 </Link>
-                <Link href="/pricing" className="rounded-full border border-default px-8 py-3.5 text-sm font-semibold text-default transition hover-brighten">
+                <Link href="/plans" className="rounded-full border border-default px-8 py-3.5 text-sm font-semibold text-default transition hover-brighten">
                   View Pricing
                 </Link>
               </div>

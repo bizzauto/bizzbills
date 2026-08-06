@@ -23,7 +23,7 @@ export function Navbar() {
 
         {/* Desktop nav */}
         <div className="hidden items-center gap-6 md:flex">
-          <Link href="/pricing" className="text-sm transition" style={{ color: "var(--muted)" }}>
+          <Link href="/plans" className="text-sm transition" style={{ color: "var(--muted)" }}>
             Pricing
           </Link>
           <Link href="/contact" className="text-sm transition" style={{ color: "var(--muted)" }}>
@@ -103,7 +103,7 @@ export function Navbar() {
       {/* Mobile menu */}
       {mobileOpen && (
         <div className="border-t px-4 pb-4 pt-2 md:hidden" style={{ borderColor: "var(--card-border)", background: "var(--nav-bg)" }}>
-          <Link href="/pricing" className="block py-2 text-sm" style={{ color: "var(--muted)" }}>Pricing</Link>
+          <Link href="/plans" className="block py-2 text-sm" style={{ color: "var(--muted)" }}>Pricing</Link>
           <Link href="/contact" className="block py-2 text-sm" style={{ color: "var(--muted)" }}>Contact</Link>
           {session ? (
             <>
