@@ -70,7 +70,7 @@ export default function CollectionsPredictionPage() {
     fetch(url)
       .then((r) => r.json())
       .then((d: ApiResponse) => {
-        setData(d);
+        setData(d && !(d as any).error ? d : null);
         setLoading(false);
       })
       .catch(() => setLoading(false));

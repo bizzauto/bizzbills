@@ -38,7 +38,7 @@ export default function CashFlowPage() {
     fetch(`/api/reports/cash-flow?days=${rangeDays}`)
       .then((r) => r.json())
       .then((d: CashFlowData) => {
-        setData(d);
+        setData(d && !(d as any).error ? d : null);
         setLoading(false);
       })
       .catch(() => setLoading(false));
