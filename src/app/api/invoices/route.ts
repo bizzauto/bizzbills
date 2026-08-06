@@ -124,9 +124,10 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(invoice, { status: 201 });
-  } catch {
+  } catch (e) {
+    console.error("[invoices] POST failed:", e);
     return NextResponse.json(
-      { error: "Failed to create invoice" },
+      { error: e instanceof Error ? e.message : "Failed to create invoice" },
       { status: 500 },
     );
   }

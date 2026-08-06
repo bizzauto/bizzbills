@@ -304,9 +304,16 @@ export default function NewInvoicePage() {
       if (res.ok) {
         const invoice = await res.json();
         router.push(`/invoices/${invoice.id}`);
+      } else {
+        let msg = "Failed to create invoice";
+        try {
+          const data = await res.json();
+          if (data?.error) msg = data.error;
+        } catch { /* ignore */ }
+        alert(msg);
       }
-    } catch {
-      alert("Failed to create invoice");
+    } catch (e) {
+      alert("Failed to create invoice: " + (e instanceof Error ? e.message : String(e)));
     } finally {
       setSaving(false);
     }
