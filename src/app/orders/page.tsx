@@ -25,7 +25,7 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
 
   useEffect(() => {
-    fetch(`/api/orders?type=${tab}`).then((r) => r.json()).then(setOrders);
+    fetch(`/api/orders?type=${tab}`).then((r) => r.json()).then((d) => setOrders(Array.isArray(d) ? d : []));
   }, [tab]);
 
   return (

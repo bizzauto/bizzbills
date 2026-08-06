@@ -19,8 +19,8 @@ export default function ProductDetailPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch(`/api/products/${params.id}`).then((r) => r.json()).then(setProduct),
-      fetch("/api/warehouses").then((r) => r.json()).then(setWarehouses),
+      fetch(`/api/products/${params.id}`).then((r) => r.json()).then((d) => setProduct(Array.isArray(d) ? d[0] || d : d)),
+      fetch("/api/warehouses").then((r) => r.json()).then((d) => setWarehouses(Array.isArray(d) ? d : [])),
     ]).finally(() => setLoading(false));
   }, [params.id]);
 

@@ -12,7 +12,7 @@ export default function NewDeliveryChallanPage() {
   const [lines, setLines] = useState([{ description: "", quantity: "1", unitPrice: "0", taxRate: "0", hsnCode: "" }]);
 
   useEffect(() => {
-    fetch("/api/parties").then((r) => r.json()).then(setParties);
+    fetch("/api/parties").then((r) => r.json()).then((d) => setParties(Array.isArray(d) ? d : []));
     fetch("/api/products").then((r) => r.json()).then((d) => setProducts(d.products ?? []));
   }, []);
 

@@ -18,7 +18,7 @@ export default function InventoryPage() {
   useEffect(() => {
     Promise.all([
       fetch("/api/products").then((r) => r.json()).then((d) => { setProducts(d.products ?? []); }),
-      fetch("/api/warehouses").then((r) => r.json()).then(setWarehouses),
+      fetch("/api/warehouses").then((r) => r.json()).then((d) => setWarehouses(Array.isArray(d) ? d : [])),
     ]).finally(() => setLoading(false));
   }, []);
 
@@ -186,7 +186,7 @@ export default function InventoryPage() {
 function StockMovementList() {
   const [movements, setMovements] = useState<any[]>([]);
   useEffect(() => {
-    fetch("/api/inventory/movements").then((r) => r.json()).then(setMovements);
+    fetch("/api/inventory/movements").then((r) => r.json()).then((d) => setMovements(Array.isArray(d) ? d : []));
   }, []);
 
   if (movements.length === 0) return <p className="text-sm text-slate-500">No movements yet.</p>;

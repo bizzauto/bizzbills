@@ -13,7 +13,7 @@ export default function PayrollRunPage() {
   const [result, setResult] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/employees").then((r) => r.json()).then(setEmployees);
+    fetch("/api/employees").then((r) => r.json()).then((d) => setEmployees(Array.isArray(d) ? d : []));
   }, []);
 
   async function handleRun() {

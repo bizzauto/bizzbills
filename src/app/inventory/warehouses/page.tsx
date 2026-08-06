@@ -9,7 +9,7 @@ export default function WarehousesPage() {
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
 
   useEffect(() => {
-    fetch("/api/warehouses").then((r) => r.json()).then(setWarehouses);
+    fetch("/api/warehouses").then((r) => r.json()).then((d) => setWarehouses(Array.isArray(d) ? d : []));
   }, []);
 
   return (

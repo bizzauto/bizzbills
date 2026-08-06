@@ -16,7 +16,7 @@ export default function PartiesPage() {
   useEffect(() => {
     const params = new URLSearchParams({ type: tab });
     if (search) params.set("search", search);
-    fetch(`/api/parties?${params}`).then((r) => r.json()).then(setParties);
+    fetch(`/api/parties?${params}`).then((r) => r.json()).then((d) => setParties(Array.isArray(d) ? d : []));
   }, [tab, search]);
 
   return (

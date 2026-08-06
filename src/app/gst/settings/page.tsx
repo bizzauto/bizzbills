@@ -18,7 +18,7 @@ export default function GstSettingsPage() {
   useEffect(() => {
     fetch("/api/gst/settings")
       .then((r) => r.json())
-      .then(setData);
+      .then((d) => setData(d && typeof d === "object" ? d : null));
   }, []);
 
   async function handleSave() {

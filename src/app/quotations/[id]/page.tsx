@@ -17,7 +17,7 @@ export default function QuotationDetailPage() {
   const { currentOrgCurrency } = useOrg();
   const [order, setOrder] = useState<any>(null);
 
-  useEffect(() => { fetch(`/api/orders/${params.id}`).then((r) => r.json()).then(setOrder); }, [params.id]);
+  useEffect(() => { fetch(`/api/orders/${params.id}`).then((r) => r.json()).then((d) => setOrder(Array.isArray(d) ? d[0] || d : d)); }, [params.id]);
 
   if (!order) return <main className="pb-10 text-sm text-slate-400">Loading…</main>;
 
