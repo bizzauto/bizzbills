@@ -48,8 +48,8 @@ export default function BatchesPage() {
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/products").then((r) => r.json()).then((d) => setProducts(d.products ?? [])),
-      fetch("/api/inventory/batches").then((r) => r.json()).then(setBatches),
+      fetch("/api/products").then((r) => r.json()).then((d) => setProducts(d?.products ?? [])),
+      fetch("/api/inventory/batches").then((r) => r.json()).then((d) => setBatches(Array.isArray(d) ? d : [])),
     ]).finally(() => setLoading(false));
   }, []);
 

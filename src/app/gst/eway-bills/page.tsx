@@ -34,7 +34,7 @@ export default function EwayBillsPage() {
   useEffect(() => {
     fetch("/api/gst/eway-bills")
       .then((r) => r.json())
-      .then(setBills);
+      .then((d) => setBills(Array.isArray(d) ? d : []));
   }, []);
 
   async function handleSave() {

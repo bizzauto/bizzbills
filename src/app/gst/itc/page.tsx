@@ -17,7 +17,7 @@ export default function ItcPage() {
   useEffect(() => {
     fetch("/api/gst/itc")
       .then((r) => r.json())
-      .then((d) => { setData(d); setLoading(false); });
+      .then((d) => { setData(d && !d.error ? d : null); setLoading(false); });
   }, []);
 
   if (loading) {

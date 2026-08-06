@@ -24,7 +24,7 @@ export default function Gstr3bPage() {
   useEffect(() => {
     fetch("/api/gst/gstr-3b")
       .then((r) => r.json())
-      .then((d) => { setData(d); setLoading(false); });
+      .then((d) => { setData(d && !d.error ? d : null); setLoading(false); });
   }, []);
 
   if (loading) {

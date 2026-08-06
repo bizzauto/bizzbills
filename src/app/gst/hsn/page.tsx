@@ -24,7 +24,7 @@ export default function HsnPage() {
   useEffect(() => {
     fetch("/api/gst/hsn")
       .then((r) => r.json())
-      .then(setCodes);
+      .then((d) => setCodes(Array.isArray(d) ? d : []));
   }, []);
 
   async function handleSave() {

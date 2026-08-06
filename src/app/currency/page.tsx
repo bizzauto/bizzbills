@@ -25,7 +25,7 @@ export default function CurrencyPage() {
     setLoading(true);
     const res = await fetch(`/api/currency/rates?base=${baseCurrency}`);
     const data = await res.json();
-    setRates(data.rates ?? []);
+    setRates(data?.rates ?? []);
     setLoading(false);
   }
 

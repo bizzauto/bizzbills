@@ -189,7 +189,7 @@ export default function ReconciliationPage() {
     fetch("/api/bank-accounts")
       .then((r) => r.json())
       .then((d) => {
-        const list = d.accounts ?? [];
+        const list = d?.accounts ?? [];
         setAccounts(list);
         if (list.length === 1) setSelectedAccountId(list[0].id);
       })

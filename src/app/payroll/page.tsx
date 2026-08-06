@@ -12,8 +12,8 @@ export default function PayrollPage() {
 
   async function load() {
     const [e, r] = await Promise.all([fetch("/api/employees").then((r) => r.json()), fetch("/api/payroll-runs").then((r) => r.json())]);
-    setEmployees(e);
-    setRuns(r);
+    setEmployees(Array.isArray(e) ? e : []);
+    setRuns(Array.isArray(r) ? r : []);
   }
 
   useEffect(() => { load(); }, []);

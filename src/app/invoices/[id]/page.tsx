@@ -165,7 +165,7 @@ export default function InvoiceDetailPage() {
         setEInvoiceQRData(data.qrData);
         setEInvoiceDate(data.irnDate);
       } else {
-        setEInvoiceError(data.error ?? "Failed to generate E-Invoice");
+        setEInvoiceError(data?.error ?? "Failed to generate E-Invoice");
       }
     } catch {
       setEInvoiceError("Network error — could not generate E-Invoice");

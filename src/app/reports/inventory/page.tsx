@@ -62,11 +62,11 @@ export default function InventoryReportPage() {
         `/api/reports/inventory?fromDate=${fromDate}&toDate=${toDate}`
       );
       const d = await res.json();
-      setSummary(d.summary ?? null);
-      setCategories(d.categories ?? []);
-      setLowStock(d.lowStockProducts ?? []);
-      setMovements(d.recentMovements ?? []);
-      setTrend(d.movementTrend ?? []);
+      setSummary(d?.summary ?? null);
+      setCategories(d?.categories ?? []);
+      setLowStock(d?.lowStockProducts ?? []);
+      setMovements(d?.recentMovements ?? []);
+      setTrend(d?.movementTrend ?? []);
     } catch {
       /* silent */
     } finally {

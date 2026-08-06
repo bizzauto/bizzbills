@@ -69,7 +69,7 @@ export default function BankingPage() {
     try {
       const res = await fetch("/api/bank-accounts");
       const data = await res.json();
-      setAccounts(data.accounts ?? []);
+      setAccounts(data?.accounts ?? []);
     } catch {
       /* silent */
     } finally {

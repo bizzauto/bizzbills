@@ -62,7 +62,7 @@ export default function BranchesPage() {
     try {
       const res = await fetch("/api/organization/branches");
       const data = await res.json();
-      setBranches(data.branches ?? []);
+      setBranches(data?.branches ?? []);
     } catch {
       /* silent */
     } finally {

@@ -18,7 +18,7 @@ export default function Gstr1Page() {
   useEffect(() => {
     fetch("/api/gst/gstr-1")
       .then((r) => r.json())
-      .then((d) => { setData(d); setLoading(false); });
+      .then((d) => { setData(d && !d.error ? d : null); setLoading(false); });
   }, []);
 
   if (loading) {
