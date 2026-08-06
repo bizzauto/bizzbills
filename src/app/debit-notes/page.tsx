@@ -27,7 +27,7 @@ export default function DebitNotesPage() {
   async function fetchNotes() {
     const res = await fetch("/api/debit-notes");
     const data = await res.json();
-    setNotes(data);
+    setNotes(Array.isArray(data) ? data : []);
     setLoading(false);
   }
 

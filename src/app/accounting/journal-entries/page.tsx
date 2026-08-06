@@ -26,7 +26,7 @@ export default function JournalEntriesPage() {
     try {
       const res = await fetch("/api/accounting/journal-entries");
       const data = await res.json();
-      setEntries(data);
+      setEntries(Array.isArray(data) ? data : []);
     } catch {
       setEntries([]);
     } finally {

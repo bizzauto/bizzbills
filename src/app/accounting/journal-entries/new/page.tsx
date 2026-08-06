@@ -38,7 +38,7 @@ export default function NewJournalEntryPage() {
     try {
       const res = await fetch("/api/accounting/chart-of-accounts");
       const data = await res.json();
-      setAccounts(data);
+      setAccounts(Array.isArray(data) ? data : []);
     } catch {
       setAccounts([]);
     } finally {

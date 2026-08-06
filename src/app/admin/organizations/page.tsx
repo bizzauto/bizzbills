@@ -38,7 +38,7 @@ export default function AdminOrganizationsPage() {
       const res = await fetch("/api/admin/organizations");
       if (res.ok) {
         const data = await res.json();
-        setOrganizations(data);
+        setOrganizations(Array.isArray(data) ? data : []);
       }
     } catch {
       console.error("Failed to fetch organizations");

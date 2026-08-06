@@ -46,7 +46,7 @@ export default function ReportsPage() {
       const params = new URLSearchParams({ type: reportType, fromDate, toDate });
       const res = await fetch(`/api/accounting/reports?${params}`);
       const result = await res.json();
-      setData(result);
+      setData(result && !result.error ? result : null);
     } catch {
       setMessage("Failed to generate report");
     } finally {

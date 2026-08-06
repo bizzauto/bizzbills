@@ -13,7 +13,7 @@ export default function ActivityPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/activity").then((r) => r.json()).then((d) => { setLogs(d); setLoading(false); }).catch(() => setLoading(false));
+    fetch("/api/activity").then((r) => r.json()).then((d) => { setLogs(Array.isArray(d) ? d : []); setLoading(false); }).catch(() => setLoading(false));
   }, []);
 
   return (

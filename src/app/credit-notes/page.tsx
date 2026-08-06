@@ -27,7 +27,7 @@ export default function CreditNotesPage() {
   async function fetchNotes() {
     const res = await fetch("/api/credit-notes");
     const data = await res.json();
-    setNotes(data);
+    setNotes(Array.isArray(data) ? data : []);
     setLoading(false);
   }
 

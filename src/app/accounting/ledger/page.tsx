@@ -33,7 +33,7 @@ export default function LedgerPage() {
     try {
       const res = await fetch("/api/accounting/chart-of-accounts");
       const data = await res.json();
-      setAccounts(data);
+      setAccounts(Array.isArray(data) ? data : []);
     } catch {
       setAccounts([]);
     }
@@ -52,7 +52,7 @@ export default function LedgerPage() {
       const params = new URLSearchParams({ accountId, fromDate, toDate });
       const res = await fetch(`/api/accounting/ledger?${params}`);
       const data = await res.json();
-      setEntries(data);
+      setEntries(Array.isArray(data) ? data : []);
 
       if (data.length === 0) {
         setMessage("No ledger entries found for the selected period.");

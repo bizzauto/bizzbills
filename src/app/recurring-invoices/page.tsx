@@ -28,7 +28,7 @@ export default function RecurringInvoicesPage() {
   async function fetchData() {
     const res = await fetch("/api/recurring-invoices");
     const data = await res.json();
-    setItems(data);
+    setItems(Array.isArray(data) ? data : []);
     setLoading(false);
   }
 
