@@ -58,6 +58,11 @@ export default function BillingPage() {
   const [partySearch, setPartySearch] = useState("");
   const [partyResults, setPartyResults] = useState<{ id: string; name: string; gstin: string; email?: string; phone?: string }[]>([]);
   const [showPartyDropdown, setShowPartyDropdown] = useState(false);
+  // Product search for line items
+  const [productSearch, setProductSearch] = useState("");
+  const [productResults, setProductResults] = useState<{ id: string; name: string; hsnCode: string; sellingPrice: number; taxRate: number; unit: string }[]>([]);
+  const [showProductDropdown, setShowProductDropdown] = useState(false);
+  const [activeProductLine, setActiveProductLine] = useState<string | null>(null);
   const [quickActions, setQuickActions] = useState<QuickAction[]>([
     { label: "Generate invoice from voice", key: "voice" },
     { label: "Scan OCR document", key: "ocr" },
@@ -103,6 +108,37 @@ export default function BillingPage() {
     }, 300);
     return () => clearTimeout(timeout);
   }, [partySearch]);
+
+  // Product search for line items — fetch after 2+ characters
+  useEffect(() => {
+    if (productSearch.length < 2 || !activeProductLine) {
+      setProductResults([]);
+      setShowProductDropdown(false);
+      return;
+    }
+    const timeout = setTimeout(() => {
+      fetch(`/api/products?search=${encodeURIComponent(productSearch)}`)
+        .then((r) => r.json())
+        .then((data) => {
+          const products = data.products || [];
+          setProductResults(products.slice(0, 8));
+          setShowProductDropdown(products.length > 0);
+        })
+        .catch(() => setProductResults([]));
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [productSearch, activeProductLine]);
+
+  function selectProduct(lineId: string, product: typeof productResults[0]) {
+    updateLine(lineId, "description", product.name);
+    updateLine(lineId, "hsnCode", product.hsnCode || "");
+    updateLine(lineId, "unitPrice", product.sellingPrice || 0);
+    updateLine(lineId, "taxRate", product.taxRate || 0);
+    setProductSearch("");
+    setProductResults([]);
+    setShowProductDropdown(false);
+    setActiveProductLine(null);
+  }
 
   const sanitizedDraft = useMemo(() => sanitizeInvoiceDraft(draft), [draft]);
   const summary = useMemo(() => calculateInvoiceSummary(sanitizedDraft), [sanitizedDraft]);
@@ -509,18 +545,47 @@ export default function BillingPage() {
                         key={line.id}
                         className="border-t border-default bg-surface"
                       >
-                        <td className="p-2">
+                        <td className="p-2 relative">
                           <input
                             value={
-                              draftLines.find((l) => l.id === line.id)
-                                ?.description ?? ""
+                              activeProductLine === line.id
+                                ? productSearch
+                                : draftLines.find((l) => l.id === line.id)
+                                    ?.description ?? ""
                             }
-                            onChange={(e) =>
-                              updateLine(line.id, "description", e.target.value)
-                            }
-                            placeholder="Item description"
+                            onChange={(e) => {
+                              setProductSearch(e.target.value);
+                              setActiveProductLine(line.id);
+                              updateLine(line.id, "description", e.target.value);
+                            }}
+                            onFocus={() => {
+                              setActiveProductLine(line.id);
+                              if (productResults.length > 0) setShowProductDropdown(true);
+                            }}
+                            onBlur={() => setTimeout(() => { setShowProductDropdown(false); setActiveProductLine(null); }, 200)}
+                            placeholder="Search product or type item..."
                             className="w-full rounded-lg bg-surface-darker px-2 py-1 text-default outline-none ring-0 placeholder:text-muted"
                           />
+                          {showProductDropdown && activeProductLine === line.id && productResults.length > 0 && (
+                            <div className="absolute z-50 mt-1 w-72 rounded-xl border border-[var(--card-border)] bg-[var(--card)] shadow-xl max-h-48 overflow-y-auto">
+                              {productResults.map((product) => (
+                                <button
+                                  key={product.id}
+                                  type="button"
+                                  onMouseDown={(e) => e.preventDefault()}
+                                  onClick={() => selectProduct(line.id, product)}
+                                  className="w-full px-3 py-2 text-left text-sm transition hover:bg-[var(--badge-bg)]"
+                                >
+                                  <p className="font-medium text-default">{product.name}</p>
+                                  <p className="text-xs text-muted">
+                                    {product.hsnCode && `HSN: ${product.hsnCode} · `}
+                                    ₹{product.sellingPrice.toLocaleString("en-IN")}
+                                    {product.taxRate > 0 && ` · ${product.taxRate}% GST`}
+                                  </p>
+                                </button>
+                              ))}
+                            </div>
+                          )}
                           {hsnHints.length > 0 && (
                             <div className="mt-1 flex flex-wrap gap-1">
                               {hsnHints.map((h) => (
