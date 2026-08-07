@@ -54,3 +54,4 @@ tmp-*.py
 
 # Claude
 .claude/
+screenshot-*.png
