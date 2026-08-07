@@ -83,9 +83,19 @@ export async function POST(request: Request) {
       }
     }
 
+    // Generate unique invoice number
+    let invoiceNumber = clean.invoiceNumber;
+    const existing = await prisma.invoice.findFirst({
+      where: { orgId: orgId ?? undefined, invoiceNumber },
+    });
+    if (existing) {
+      // Append timestamp to make unique
+      invoiceNumber = `${invoiceNumber}-${Date.now().toString(36).toUpperCase()}`;
+    }
+
     const invoice = await prisma.invoice.create({
       data: {
-        invoiceNumber: clean.invoiceNumber,
+        invoiceNumber,
         customerName: clean.customerName,
         customerGstin: clean.customerGstin,
         currency: clean.currency,
