@@ -28,11 +28,6 @@ export default function NewJournalEntryPage() {
   const [reference, setReference] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchAccounts();
-  }, []);
 
   async function fetchAccounts() {
     try {
@@ -41,10 +36,12 @@ export default function NewJournalEntryPage() {
       setAccounts(Array.isArray(data) ? data : []);
     } catch {
       setAccounts([]);
-    } finally {
-      setLoading(false);
     }
   }
+
+  useEffect(() => {
+    fetchAccounts();
+  }, []);
 
   function addLine() {
     setLines((prev) => [...prev, { accountId: "", debit: 0, credit: 0, description: "" }]);

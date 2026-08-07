@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireSuperAdmin } from "@/lib/admin";
+import { requireSuperAdmin, HttpError } from "@/lib/admin";
 import { prisma } from "@/lib/db";
 import { hashPassword } from "@/lib/password";
 
@@ -23,12 +23,8 @@ export async function GET() {
 
     return NextResponse.json(users);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    if (message === "Unauthorized") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    if (message === "Forbidden") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (error instanceof HttpError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
     }
     console.error("Admin users list error:", error);
     return NextResponse.json({ error: "Failed to fetch users" }, { status: 500 });
@@ -89,12 +85,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json(user, { status: 201 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    if (message === "Unauthorized") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    if (message === "Forbidden") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (error instanceof HttpError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
     }
     console.error("Admin user create error:", error);
     return NextResponse.json({ error: "Failed to create user" }, { status: 500 });

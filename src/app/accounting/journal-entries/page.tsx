@@ -18,10 +18,6 @@ export default function JournalEntriesPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
 
-  useEffect(() => {
-    fetchEntries();
-  }, []);
-
   async function fetchEntries() {
     try {
       const res = await fetch("/api/accounting/journal-entries");
@@ -33,6 +29,10 @@ export default function JournalEntriesPage() {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    fetchEntries();
+  }, []);
 
   async function handleDelete(id: string) {
     if (!confirm("Delete this journal entry?")) return;

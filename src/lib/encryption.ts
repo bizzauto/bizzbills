@@ -1,3 +1,5 @@
+import crypto from "node:crypto";
+
 const ALGORITHM = "aes-256-gcm";
 
 function getKey(): Buffer {
@@ -6,12 +8,10 @@ function getKey(): Buffer {
     throw new Error("ENCRYPTION_KEY environment variable is required");
   }
   // Derive a 32-byte key from the secret
-  const crypto = require("crypto");
   return crypto.scryptSync(secret, "bizzbills-salt", 32);
 }
 
 export function encrypt(plaintext: string): string {
-  const crypto = require("crypto");
   const key = getKey();
   const iv = crypto.randomBytes(16);
   const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
@@ -22,7 +22,6 @@ export function encrypt(plaintext: string): string {
 }
 
 export function decrypt(encoded: string): string {
-  const crypto = require("crypto");
   const [ivHex, authTagHex, encrypted] = encoded.split(":");
   if (!ivHex || !authTagHex || !encrypted) {
     throw new Error("Invalid encrypted format");

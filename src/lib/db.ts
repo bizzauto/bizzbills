@@ -1,7 +1,5 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { execSync } from "child_process";
-import { existsSync } from "fs";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -14,41 +12,10 @@ function createPrismaClient() {
   return new PrismaClient({ adapter });
 }
 
-// Auto-sync database schema on first request (adds missing columns without data loss)
-function syncSchema() {
-  if (globalForPrisma.schemaSynced) return;
-
-  const cwd = process.cwd();
-
-  // Find the prisma binary using absolute paths
-  const candidates = [
-    `${cwd}/node_modules/.bin/prisma`,
-    `${cwd}/node_modules/prisma/build/index.js`,
-  ];
-  const prismaBin = candidates.find((p) => existsSync(p));
-  if (!prismaBin) {
-    console.warn("⚠️ Prisma CLI not found — schema sync skipped");
-    globalForPrisma.schemaSynced = true;
-    return;
-  }
-
-  try {
-    const cmd = prismaBin.endsWith(".js")
-      ? `node "${prismaBin}" db push --accept-data-loss --skip-generate`
-      : `"${prismaBin}" db push --accept-data-loss --skip-generate`;
-    execSync(cmd, { stdio: "pipe", timeout: 60000, cwd });
-    globalForPrisma.schemaSynced = true;
-    // Schema synced successfully
-  } catch (e) {
-    console.warn("⚠️ Schema sync failed:", (e as Error).message?.split("\n")[0]);
-    globalForPrisma.schemaSynced = true; // Don't retry
-  }
-}
-
-// Sync schema once on server start (dev only — production schema pushed at deploy time)
-if (typeof window === "undefined" && process.env.NODE_ENV !== "production") {
-  syncSchema();
-}
+// NOTE: Schema sync was removed — `prisma db push` via execSync on every import
+// caused out-of-memory crashes during dev (HMR re-imports this module repeatedly,
+// each time spawning a child process that never gets cleaned up).
+// Instead, run `npx prisma db push` manually when you change the schema.
 
 // Always create PrismaClient on the server
 export const prisma: PrismaClient =

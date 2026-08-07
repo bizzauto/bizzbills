@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireSuperAdmin } from "@/lib/admin";
+import { requireSuperAdmin, HttpError } from "@/lib/admin";
 import { prisma } from "@/lib/db";
 
 // GET /api/admin/audit-log?page=1&limit=50&action=create&entity=invoice&from=2026-01-01&to=2026-12-31
@@ -90,12 +90,8 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    if (message === "Unauthorized") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    if (message === "Forbidden") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (error instanceof HttpError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
     }
     console.error("Audit log error:", error);
     return NextResponse.json(

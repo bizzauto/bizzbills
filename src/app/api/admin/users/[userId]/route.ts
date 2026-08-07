@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireSuperAdmin } from "@/lib/admin";
+import { requireSuperAdmin, HttpError } from "@/lib/admin";
 import { prisma } from "@/lib/db";
 
 // PATCH /api/admin/users/[userId] - Update user (super admin only)
@@ -57,12 +57,8 @@ export async function PATCH(
 
     return NextResponse.json(updated);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    if (message === "Unauthorized") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    if (message === "Forbidden") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (error instanceof HttpError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
     }
     console.error("Admin user update error:", error);
     return NextResponse.json({ error: "Failed to update user" }, { status: 500 });
@@ -99,12 +95,8 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    if (message === "Unauthorized") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    if (message === "Forbidden") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (error instanceof HttpError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
     }
     console.error("Admin user delete error:", error);
     return NextResponse.json({ error: "Failed to delete user" }, { status: 500 });

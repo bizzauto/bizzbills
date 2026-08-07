@@ -2,8 +2,10 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import crypto from "crypto";
 
-const PORTAL_SECRET =
-  process.env.PORTAL_SECRET || "billinvoice-portal-secret-change-in-production";
+const PORTAL_SECRET = process.env.PORTAL_SECRET;
+if (!PORTAL_SECRET) {
+  console.warn("⚠️ PORTAL_SECRET is not set — portal tokens will be rejected");
+}
 
 /**
  * Generate a portal token for a customer+org combination.
@@ -13,6 +15,7 @@ function generatePortalToken(
   customerName: string,
   orgId: string
 ): string {
+  if (!PORTAL_SECRET) throw new Error("PORTAL_SECRET not configured");
   const payload = JSON.stringify({ c: customerName, o: orgId });
   const encoded = Buffer.from(payload).toString("base64url");
   const sig = crypto
@@ -30,6 +33,7 @@ function generatePortalToken(
 function decodePortalToken(
   token: string
 ): { customerName: string; orgId: string } | null {
+  if (!PORTAL_SECRET) return null;
   try {
     const [encoded, sig] = token.split(".");
     if (!encoded || !sig) return null;

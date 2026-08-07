@@ -85,7 +85,7 @@ export async function getUnsyncedInvoices(): Promise<OfflineInvoice[]> {
   const index = store.index("synced");
 
   return new Promise((resolve, reject) => {
-    const request = index.getAll(IDBKeyRange.only(0));
+    const request = index.getAll(IDBKeyRange.only(false));
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
   });
@@ -102,7 +102,7 @@ export async function markInvoiceSynced(id: string): Promise<void> {
     getRequest.onsuccess = () => {
       const invoice = getRequest.result;
       if (invoice) {
-        invoice.synced = 1;
+        invoice.synced = true;
         store.put(invoice);
       }
       resolve();

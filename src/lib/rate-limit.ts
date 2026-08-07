@@ -28,13 +28,17 @@ export function rateLimit(opts: { key: string; limit: number; windowMs?: number 
   return { allowed: true, remaining: opts.limit - entry.count, resetIn: entry.resetAt - now };
 }
 
-// Periodically purge expired entries to avoid memory leak
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of store) {
-    if (entry.resetAt <= now) store.delete(key);
-  }
-}, ONE_MINUTE * 5);
+// Periodically purge expired entries to avoid unbounded growth.
+// Guard against duplicate intervals (HMR in dev reloads this module).
+const g = globalThis as Record<string, unknown>;
+if (!g.__rateLimitCleanup) {
+  g.__rateLimitCleanup = setInterval(() => {
+    const now = Date.now();
+    for (const [key, entry] of store) {
+      if (entry.resetAt <= now) store.delete(key);
+    }
+  }, ONE_MINUTE * 5);
+}
 
 export function ipFromRequest(request: Request): string {
   return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()

@@ -19,7 +19,7 @@ export function getCorsHeaders(origin: string | null): Record<string, string> {
     headers["Access-Control-Allow-Credentials"] = "true";
   } else if (!origin) {
     // Allow requests without origin (server-to-server, Postman, etc.)
-    headers["Access-Control-Allow-Origin"] = "*";
+    // Do NOT set credentials header with wildcard — browsers reject that combination
   }
 
   return headers;

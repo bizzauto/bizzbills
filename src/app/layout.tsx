@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/components/AuthProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ToastProvider } from "@/components/ToastProvider";
+import { OrgProvider } from "@/components/OrgProvider";
 import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
 import { SyncStatus } from "@/components/SyncStatus";
 
@@ -42,12 +43,14 @@ export default function RootLayout({
       <body className="min-h-full" style={{ background: "var(--background)", color: "var(--foreground)" }}>
         <ServiceWorkerRegistration />
         <AuthProvider>
-          <ThemeProvider>
-            <ToastProvider>
-              <AppShellClient>{children}</AppShellClient>
-              <SyncStatus />
-            </ToastProvider>
-          </ThemeProvider>
+          <OrgProvider>
+            <ThemeProvider>
+              <ToastProvider>
+                <AppShellClient>{children}</AppShellClient>
+                <SyncStatus />
+              </ToastProvider>
+            </ThemeProvider>
+          </OrgProvider>
         </AuthProvider>
       </body>
     </html>
