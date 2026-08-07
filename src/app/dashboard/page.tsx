@@ -161,6 +161,12 @@ export default function DashboardPage() {
             </h1>
           </div>
           <div className="flex items-center gap-3">
+            <Link
+              href="/billing"
+              className="rounded-full bg-cyan-500 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400"
+            >
+              + Create Invoice
+            </Link>
             <button onClick={() => setSearchOpen(true)} className="flex items-center gap-2 rounded-full border border-default bg-surface-darker px-4 py-2 text-sm text-muted transition hover:border-default hover:text-default">
               <span className="text-xs">🔍</span> Search&hellip;
               <kbd className="ml-1 rounded border border-default bg-badge px-1.5 py-0.5 text-[10px]">⌘K</kbd>

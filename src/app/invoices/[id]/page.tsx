@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
@@ -9,6 +9,7 @@ import { VersionTimeline } from "@/components/invoice/VersionTimeline";
 import { formatAmount } from "@/lib/currency";
 import { isValidGSTIN } from "@/lib/einvoice";
 import type { DiffChange } from "@/lib/diff";
+import { InvoiceTemplate, type TemplateData, type TemplateId } from "@/components/invoice/InvoiceTemplates";
 
 type LineItem = {
   id: string;
@@ -64,6 +65,8 @@ export default function InvoiceDetailPage() {
   const [generatingIRN, setGeneratingIRN] = useState(false);
   const [eInvoiceError, setEInvoiceError] = useState<string | null>(null);
   const [irnCopied, setIrnCopied] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>("classic");
+  const [orgSettings, setOrgSettings] = useState<{ name?: string; address?: string; gstin?: string; email?: string; phone?: string } | null>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -77,12 +80,17 @@ export default function InvoiceDetailPage() {
     Promise.all([
       fetch(`/api/invoices/${invoiceId}`, { signal: abort.signal }).then((r) => r.json()),
       fetch(`/api/invoices/${invoiceId}/versions`, { signal: abort.signal }).then((r) => r.json()),
+      fetch("/api/organization/settings").then((r) => r.json()).catch(() => ({})),
     ])
-      .then(([inv, vers]) => {
+      .then(([inv, vers, org]) => {
         if (abort.signal.aborted) return;
         setInvoice(inv);
         const sorted = Array.isArray(vers) ? vers.sort((a: VersionEntry, b: VersionEntry) => b.version - a.version) : [];
         setVersions(sorted);
+        if (org && org.name) {
+          setOrgSettings({ name: org.name, address: org.address, gstin: org.gstin, email: org.email, phone: org.phone });
+          if (org.defaultTemplate) setSelectedTemplate(org.defaultTemplate);
+        }
         setLoading(false);
         if (sorted.length > 0) {
           fetchVersionDetail(invoiceId, sorted[0].id);
@@ -208,6 +216,32 @@ export default function InvoiceDetailPage() {
     );
   }
 
+  const templateData: TemplateData = {
+    number: invoice.invoiceNumber,
+    title: "Tax Invoice",
+    customerName: invoice.customerName,
+    customerGstin: invoice.customerGstin,
+    date: new Date(invoice.createdAt).toLocaleDateString("en-IN"),
+    dueDate: invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString("en-IN") : undefined,
+    lines: invoice.lines.map((l) => ({
+      description: l.description,
+      hsnCode: l.hsnCode,
+      quantity: l.quantity,
+      unitPrice: l.unitPrice,
+      taxRate: l.taxRate,
+    })),
+    subtotal: invoice.subtotal,
+    taxTotal: invoice.taxTotal,
+    total: invoice.total,
+    currency: invoice.currency,
+    orgName: orgSettings?.name || "Your Company",
+    orgAddress: orgSettings?.address,
+    orgGstin: orgSettings?.gstin,
+    orgEmail: orgSettings?.email,
+    orgPhone: orgSettings?.phone,
+    isPaid: invoice.status === "paid",
+  };
+
   return (
     <main className="flex flex-1 flex-col gap-6 pb-10">
       {/* Header */}
@@ -246,6 +280,20 @@ export default function InvoiceDetailPage() {
             >
               Markdown
             </button>
+            <select
+              value={selectedTemplate}
+              onChange={(e) => setSelectedTemplate(e.target.value as TemplateId)}
+              className="rounded-full border border-white/15 bg-transparent px-3 py-2 text-sm text-white outline-none"
+            >
+              <option value="classic">Classic GST</option>
+              <option value="modern">Modern</option>
+              <option value="minimal">Minimal</option>
+              <option value="premium">Premium</option>
+              <option value="mybillbook">Super</option>
+              <option value="best">Best (Tally)</option>
+              <option value="corporate">Corporate</option>
+              <option value="compact">Compact</option>
+            </select>
             <button
               onClick={() => window.print()}
               className="rounded-full border border-white/15 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
@@ -272,42 +320,8 @@ export default function InvoiceDetailPage() {
       </section>
 
       {/* Print header — only visible when printing */}
-      <section className="print-only invoice-template mb-8">
-        <div className="inv-header" style={{borderBottom: '2px solid #0f172a', paddingBottom: '12px', marginBottom: '12px'}}>
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="inv-label" style={{fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#64748b', fontWeight: 600}}>
-                TAX INVOICE
-              </p>
-              <h1 style={{fontSize: '20px', fontWeight: 'bold', color: '#0f172a', margin: '4px 0'}}>
-                Led Brighter Power Systems
-              </h1>
-              <p style={{fontSize: '10px', color: '#475569', margin: '2px 0'}}>
-                SEC. FLORE, A.B. ENTERPRISES JAMBHULWADI ROAD, AMBEGAON BK, Pune 411046
-              </p>
-              <p style={{fontSize: '10px', color: '#475569', margin: '2px 0'}}>
-                GSTIN: 27AQGPD5031L1ZX | PAN: AQGPD5031L | Mobile: 8983027975
-              </p>
-              <p style={{fontSize: '10px', color: '#475569', margin: '2px 0'}}>
-                Email: info.ledbrighter@gmail.com
-              </p>
-            </div>
-            <div style={{textAlign: 'right'}}>
-              <p style={{fontSize: '10px', color: '#64748b', margin: '2px 0'}}>
-                Invoice No: <span style={{fontWeight: 'bold', color: '#0f172a'}}>{invoice.invoiceNumber}</span>
-              </p>
-              <p style={{fontSize: '10px', color: '#64748b', margin: '2px 0'}}>
-                Date: <span style={{color: '#0f172a'}}>{new Date(invoice.createdAt).toLocaleDateString('en-IN')}</span>
-              </p>
-              <p style={{fontSize: '10px', color: '#64748b', margin: '2px 0'}}>
-                Due Date: <span style={{color: '#0f172a'}}>{invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString('en-IN') : 'N/A'}</span>
-              </p>
-              <p style={{fontSize: '10px', color: '#64748b', margin: '2px 0'}}>
-                Version: {invoice.version} | Status: <span style={{textTransform: 'capitalize'}}>{invoice.status}</span>
-              </p>
-            </div>
-          </div>
-        </div>
+      <section className="print-only mb-8">
+        <InvoiceTemplate template={selectedTemplate} data={templateData} />
       </section>
 
       {/* Payment status bar */}
