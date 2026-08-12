@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { formatAmount } from "@/lib/currency";
+import { calculateInvoiceSummary, type InvoiceDraft } from "@/lib/invoicing";
 import { GstinAutoFill } from "@/components/GstinAutoFill";
 
 type LineItem = {
@@ -84,7 +85,7 @@ const INDIAN_STATES = [
 ];
 
 function generateId(): string {
-  return Math.random().toString(36).substring(2, 11);
+  return `${Date.now().toString(36)}${Math.random().toString(36).substring(2, 9)}`;
 }
 
 function numberToWords(num: number): string {
@@ -140,7 +141,7 @@ export default function NewInvoicePage() {
     invoicePostfix: "",
     invoiceTitle: "Tax Invoice",
     date: new Date().toISOString().split("T")[0],
-    dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+    dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], // eslint-disable-line react-hooks/purity
     referenceNumber: "",
     poNumber: "",
     customerName: "",
@@ -195,9 +196,11 @@ export default function NewInvoicePage() {
       .catch(() => {});
   }, [status, router]);
 
-  // Auto-generate invoice number
+  // Auto-generate invoice number when the prefix/postfix change.
+  // This is a one-time sync of a derived default, not a cascading render.
   useEffect(() => {
     const timestamp = Date.now().toString().slice(-6);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setForm((prev) => ({
       ...prev,
       invoiceNumber: `${prev.invoicePrefix}${timestamp}${prev.invoicePostfix}`,
@@ -229,14 +232,129 @@ export default function NewInvoicePage() {
     }));
   }, []);
 
-  // Calculations
+  // ── Party (customer) autocomplete ──
+  const [partySearch, setPartySearch] = useState("");
+  const [partyResults, setPartyResults] = useState<{
+    id: string;
+    name: string;
+    gstin: string;
+    email?: string;
+    phone?: string;
+    addresses?: { type?: string; address?: string; city?: string; state?: string; pincode?: string }[];
+  }[]>([]);
+  const [showPartyDropdown, setShowPartyDropdown] = useState(false);
+
+  // ── Product (item) autocomplete ──
+  const [productSearch, setProductSearch] = useState("");
+  const [productResults, setProductResults] = useState<{ id: string; name: string; hsnCode: string; sellingPrice: number; taxRate: number }[]>([]);
+  const [showProductDropdown, setShowProductDropdown] = useState(false);
+  const [activeProductLine, setActiveProductLine] = useState<string | null>(null);
+
+  // Debounced party search against /api/parties
+  useEffect(() => {
+    const term = partySearch.trim();
+    if (term.length < 2) {
+      setPartyResults([]);
+      setShowPartyDropdown(false);
+      return;
+    }
+    const t = setTimeout(() => {
+      fetch(`/api/parties?search=${encodeURIComponent(term)}`)
+        .then((r) => r.json())
+        .then((data) => {
+          const parties = Array.isArray(data) ? data : data?.parties ?? [];
+          setPartyResults(parties.slice(0, 8));
+          setShowPartyDropdown(parties.length > 0);
+        })
+        .catch(() => setPartyResults([]));
+    }, 300);
+    return () => clearTimeout(t);
+  }, [partySearch]);
+
+  // Debounced product search against /api/products (scoped to the focused line)
+  useEffect(() => {
+    const term = productSearch.trim();
+    if (term.length < 2 || !activeProductLine) {
+      setProductResults([]);
+      setShowProductDropdown(false);
+      return;
+    }
+    const t = setTimeout(() => {
+      fetch(`/api/products?search=${encodeURIComponent(term)}`)
+        .then((r) => r.json())
+        .then((data) => {
+          const products = data?.products ?? [];
+          setProductResults(products.slice(0, 8));
+          setShowProductDropdown(products.length > 0);
+        })
+        .catch(() => setProductResults([]));
+    }, 300);
+    return () => clearTimeout(t);
+  }, [productSearch, activeProductLine]);
+
+  function selectParty(p: {
+    id: string;
+    name: string;
+    gstin: string;
+    email?: string;
+    phone?: string;
+    addresses?: { type?: string; address?: string; city?: string; state?: string; pincode?: string }[];
+  }) {
+    updateField("customerName", p.name);
+    updateField("customerGstin", p.gstin || "");
+    updateField("customerEmail", p.email || "");
+    updateField("customerPhone", p.phone || "");
+    // Prefer the billing/default address, fall back to the first one.
+    const addr = p.addresses?.find((a) => a.type === "billing" || a.type === "both") ?? p.addresses?.[0];
+    if (addr) {
+      const parts = [addr.address, addr.city, addr.pincode].filter(Boolean);
+      updateField("customerAddress", parts.join(", "));
+      if (addr.state) updateField("customerState", addr.state);
+    }
+    setPartySearch("");
+    setShowPartyDropdown(false);
+  }
+
+  function selectProduct(lineId: string, product: { id: string; name: string; hsnCode: string; sellingPrice: number; taxRate: number }) {
+    updateLine(lineId, {
+      description: product.name,
+      hsnCode: product.hsnCode || "",
+      unitPrice: product.sellingPrice || 0,
+      taxRate: product.taxRate || 0,
+    });
+    setProductSearch("");
+    setProductResults([]);
+    setShowProductDropdown(false);
+    setActiveProductLine(null);
+  }
+
+  // Renders the product dropdown for the line that is currently focused.
+  const productDropdown = (lineId: string) =>
+    showProductDropdown && activeProductLine === lineId && productResults.length > 0 ? (
+      <div className="absolute z-50 mt-1 w-full rounded-xl border border-[var(--card-border)] bg-[var(--card)] shadow-xl max-h-40 overflow-y-auto">
+        {productResults.map((prod) => (
+          <button
+            key={prod.id}
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => selectProduct(lineId, prod)}
+            className="w-full px-3 py-2 text-left text-sm transition hover:bg-[var(--badge-bg)]"
+          >
+            <p className="font-medium text-default">{prod.name}</p>
+            <p className="text-xs text-muted">₹{prod.sellingPrice.toLocaleString("en-IN")} · {prod.taxRate}% GST</p>
+          </button>
+        ))}
+      </div>
+    ) : null;
+
+  // Calculations — shared with the server via lib/invoicing so the UI
+  // summary can never diverge from what gets persisted.
   const calculations = (() => {
-    let subtotal = 0;
+    const summary = calculateInvoiceSummary(form as unknown as InvoiceDraft);
+
     let totalCgst = 0;
     let totalSgst = 0;
     let totalIgst = 0;
-    let totalDiscount = 0;
-
     const cgstMap: Record<number, number> = {};
     const sgstMap: Record<number, number> = {};
     const igstMap: Record<number, number> = {};
@@ -246,11 +364,7 @@ export default function NewInvoicePage() {
     form.lines.forEach((line) => {
       const lineTotal = line.quantity * line.unitPrice;
       const lineDiscount = lineTotal * (line.discount / 100);
-      const taxableAmount = lineTotal - lineDiscount;
-      const taxAmount = taxableAmount * (line.taxRate / 100);
-
-      subtotal += lineTotal;
-      totalDiscount += lineDiscount;
+      const taxAmount = (lineTotal - lineDiscount) * (line.taxRate / 100);
 
       if (isInterState) {
         totalIgst += taxAmount;
@@ -264,19 +378,16 @@ export default function NewInvoicePage() {
       }
     });
 
-    const afterDiscount = subtotal - totalDiscount;
-    const beforeShipping = afterDiscount;
-    const grandTotal = beforeShipping + form.shippingCharges - form.adjustment + (form.isTaxInclusive ? 0 : totalCgst + totalSgst + totalIgst);
-    const taxTotal = totalCgst + totalSgst + totalIgst;
-    const finalTotal = form.isTaxInclusive ? afterDiscount : grandTotal;
-    const roundedTotal = Math.round(finalTotal);
-    const roundOff = roundedTotal - finalTotal;
-
     return {
-      subtotal, totalDiscount, totalCgst, totalSgst, totalIgst,
+      subtotal: summary.subtotal,
+      totalDiscount: summary.discountAmount,
+      totalCgst, totalSgst, totalIgst,
       cgstMap, sgstMap, igstMap,
-      taxTotal, grandTotal: roundedTotal, roundOff, isInterState,
-      amountInWords: numberToWords(roundedTotal),
+      taxTotal: summary.taxTotal,
+      grandTotal: summary.total,
+      roundOff: summary.roundOff,
+      isInterState,
+      amountInWords: numberToWords(summary.total),
     };
   })();
 
@@ -394,7 +505,25 @@ export default function NewInvoicePage() {
             <div className="grid gap-4 md:grid-cols-2">
               <label className="text-sm text-muted">
                 Customer Name *
-                <input value={form.customerName} onChange={(e) => updateField("customerName", e.target.value)} className="input mt-1 w-full" placeholder="Customer / Company name" />
+                <div className="relative mt-1">
+                  <input value={partySearch || form.customerName} onChange={(e) => { setPartySearch(e.target.value); updateField("customerName", e.target.value); }} onFocus={() => { if (partyResults.length > 0) setShowPartyDropdown(true); }} onBlur={() => setTimeout(() => setShowPartyDropdown(false), 200)} className="input w-full" placeholder="Customer / Company name" autoComplete="off" />
+                  {showPartyDropdown && partyResults.length > 0 && (
+                    <div className="absolute z-50 mt-1 w-full rounded-xl border border-[var(--card-border)] bg-[var(--card)] shadow-xl max-h-48 overflow-y-auto">
+                      {partyResults.map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => selectParty(p)}
+                          className="w-full px-4 py-2.5 text-left text-sm transition hover:bg-[var(--badge-bg)]"
+                        >
+                          <p className="font-medium text-default">{p.name}</p>
+                          <p className="text-xs text-muted">{p.gstin && `GSTIN: ${p.gstin}`}{p.phone && ` · ${p.phone}`}</p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </label>
               <label className="text-sm text-muted">
                 GSTIN
@@ -497,12 +626,18 @@ export default function NewInvoicePage() {
                       {/* Row 1: Item name + delete */}
                       <div className="flex items-center gap-2 mb-2">
                         <span className="text-xs text-muted font-medium w-5">{i + 1}.</span>
-                        <input
-                          value={line.description}
-                          onChange={(e) => updateLine(line.id, { description: e.target.value })}
-                          className="input flex-1 text-sm font-medium"
-                          placeholder={`Item name`}
-                        />
+                        <div className="relative flex-1">
+                          <input
+                            value={activeProductLine === line.id ? productSearch : line.description}
+                            onChange={(e) => { setActiveProductLine(line.id); setProductSearch(e.target.value); updateLine(line.id, { description: e.target.value }); }}
+                            onFocus={() => { setActiveProductLine(line.id); if (productResults.length > 0) setShowProductDropdown(true); }}
+                            onBlur={() => setTimeout(() => { setShowProductDropdown(false); setActiveProductLine(null); }, 200)}
+                            className="input w-full text-sm font-medium"
+                            placeholder={`Item name`}
+                            autoComplete="off"
+                          />
+                          {productDropdown(line.id)}
+                        </div>
                         {form.lines.length > 1 && (
                           <button type="button" onClick={() => removeLine(line.id)} className="text-danger/60 hover:text-danger text-lg p-1">✕</button>
                         )}
@@ -541,7 +676,10 @@ export default function NewInvoicePage() {
 
                     {/* Desktop: Full grid layout */}
                     <div className="hidden md:grid grid-cols-[1fr_80px_100px_80px_100px_80px_100px_40px] gap-2 items-start">
-                      <input value={line.description} onChange={(e) => updateLine(line.id, { description: e.target.value })} className="input w-full" placeholder={`Item ${i + 1}`} />
+                      <div className="relative">
+                        <input value={activeProductLine === line.id ? productSearch : line.description} onChange={(e) => { setActiveProductLine(line.id); setProductSearch(e.target.value); updateLine(line.id, { description: e.target.value }); }} onFocus={() => { setActiveProductLine(line.id); if (productResults.length > 0) setShowProductDropdown(true); }} onBlur={() => setTimeout(() => { setShowProductDropdown(false); setActiveProductLine(null); }, 200)} className="input w-full" placeholder={`Item ${i + 1}`} autoComplete="off" />
+                        {productDropdown(line.id)}
+                      </div>
                       <input value={line.hsnCode} onChange={(e) => updateLine(line.id, { hsnCode: e.target.value })} className="input w-full text-center" placeholder="HSN" />
                       <input type="number" value={line.quantity} onChange={(e) => updateLine(line.id, { quantity: Number(e.target.value) || 1 })} className="input w-full text-right" min="0.01" step="0.01" />
                       <input type="number" value={line.unitPrice} onChange={(e) => updateLine(line.id, { unitPrice: Number(e.target.value) || 0 })} className="input w-full text-right" min="0" step="0.01" />
