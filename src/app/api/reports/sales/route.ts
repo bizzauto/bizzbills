@@ -28,7 +28,7 @@ export async function GET(request: Request) {
     orderBy: { createdAt: "asc" },
   });
 
-  let grouped: Record<string, { count: number; total: number; collected: number; taxTotal: number; customers: Set<string> }> = {};
+  const grouped: Record<string, { count: number; total: number; collected: number; taxTotal: number; customers: Set<string> }> = {};
 
   for (const inv of invoices) {
     let key: string;

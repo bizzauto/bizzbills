@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getPlanLimit, invoiceCountWhere } from "@/lib/planLimits";
+import { calcNextRunDate, type RecurrenceFrequency } from "@/lib/recurring";
 
 const CRON_SECRET = process.env.CRON_SECRET;
 
@@ -10,18 +11,6 @@ function authorize(request: Request) {
     return false;
   }
   return true;
-}
-
-function calcNextRunDate(date: Date, freq: string, interval: number): Date {
-  const d = new Date(date);
-  switch (freq) {
-    case "daily": d.setDate(d.getDate() + interval); break;
-    case "weekly": d.setDate(d.getDate() + 7 * interval); break;
-    case "monthly": d.setMonth(d.getMonth() + interval); break;
-    case "quarterly": d.setMonth(d.getMonth() + 3 * interval); break;
-    case "yearly": d.setFullYear(d.getFullYear() + interval); break;
-  }
-  return d;
 }
 
 export async function GET(request: Request) {
@@ -65,8 +54,15 @@ export async function GET(request: Request) {
 
     // Atomic invoice creation inside a transaction to avoid duplicate invoice numbers
     const { invoice, invoiceNumber } = await prisma.$transaction(async (tx) => {
-      const existingCount = await tx.invoice.count({ where: { orgId: ri.orgId } });
-      const invNum = `INV-${String(existingCount + 1).padStart(4, "0")}`;
+      // Detect collisions before creating: the padded sequence may already exist
+      let invNum = `INV-${String(await tx.invoice.count({ where: { orgId: ri.orgId } }) + 1).padStart(4, "0")}`;
+      const collision = await tx.invoice.findFirst({
+        where: { orgId: ri.orgId, invoiceNumber: invNum },
+        select: { id: true },
+      });
+      if (collision) {
+        invNum = `${invNum}-${Date.now().toString(36).toUpperCase()}`;
+      }
 
       const inv = await tx.invoice.create({
         data: {
@@ -75,7 +71,7 @@ export async function GET(request: Request) {
         customerGstin: ri.customerGstin ?? "",
         currency: ri.currency,
         dueDate: new Date(Date.now() + 15 * 86400000).toISOString().split("T")[0],
-        status: "sent",
+        status: "pending",
         subtotal: ri.subtotal,
         taxTotal: ri.taxTotal,
         total: ri.total,
@@ -95,9 +91,16 @@ export async function GET(request: Request) {
       return { invoice: inv, invoiceNumber: invNum };
     });
 
-    const existingIds: string[] = JSON.parse(ri.invoiceIds);
+    // invoiceIds may be "" or a JSON array; never let an empty/legacy value crash the cron.
+    let existingIds: string[] = [];
+    try {
+      const parsed = JSON.parse(ri.invoiceIds || "[]");
+      existingIds = Array.isArray(parsed) ? parsed : [];
+    } catch {
+      existingIds = [];
+    }
     existingIds.push(invoice.id);
-    const nextRun = calcNextRunDate(new Date(ri.nextRunDate), ri.frequency, ri.interval);
+    const nextRun = calcNextRunDate(new Date(ri.nextRunDate), ri.frequency as RecurrenceFrequency, ri.interval);
 
     await prisma.recurringInvoice.update({
       where: { id: ri.id },

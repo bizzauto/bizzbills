@@ -24,10 +24,10 @@ export async function GET() {
 
   let outwardTaxable = 0;
   let outwardGst = 0;
-  let interStateTaxable = 0;
-  let interStateGst = 0;
-  let intraStateTaxable = 0;
-  let intraStateGst = 0;
+  const interStateTaxable = 0;
+  const interStateGst = 0;
+  const intraStateTaxable = 0;
+  const intraStateGst = 0;
   let nilRatedTaxable = 0;
   let exemptTaxable = 0;
 

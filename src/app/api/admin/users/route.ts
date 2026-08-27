@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireSuperAdmin, HttpError } from "@/lib/admin";
 import { prisma } from "@/lib/db";
 import { hashPassword } from "@/lib/password";
+import { validateAdminUserInput } from "@/lib/validation";
 
 // GET /api/admin/users - List all users (super admin only)
 export async function GET() {
@@ -36,14 +37,15 @@ export async function POST(request: Request) {
   try {
     await requireSuperAdmin();
 
-    const { email, password, name, role, orgId } = await request.json();
-
-    if (!email || !password) {
+    const body = await request.json();
+    const result = validateAdminUserInput(body);
+    if (!result.ok || !result.value) {
       return NextResponse.json(
-        { error: "Email and password are required" },
+        { error: "Invalid input", details: result.errors },
         { status: 400 },
       );
     }
+    const { email, password, name, role, orgId } = result.value;
 
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
@@ -53,15 +55,29 @@ export async function POST(request: Request) {
       );
     }
 
+    // If an orgId was supplied, it must reference a real organization.
+    if (orgId) {
+      const org = await prisma.organization.findUnique({
+        where: { id: orgId },
+        select: { id: true },
+      });
+      if (!org) {
+        return NextResponse.json(
+          { error: "Organization not found" },
+          { status: 400 },
+        );
+      }
+    }
+
     const passwordHash = await hashPassword(password);
 
     const user = await prisma.user.create({
       data: {
         email,
-        name: name || email.split("@")[0],
+        name,
         passwordHash,
-        role: role || "VIEWER",
-        orgId: orgId || null,
+        role,
+        orgId,
       },
       select: {
         id: true,

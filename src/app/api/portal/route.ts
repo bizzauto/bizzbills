@@ -176,11 +176,10 @@ export async function GET(request: Request) {
       invoices,
       payments,
     });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Unknown error";
+  } catch {
+    // Never leak internal error text/messages to public portal callers.
     return NextResponse.json(
-      { error: `Failed to load portal data: ${message}` },
+      { error: "Failed to load portal data" },
       { status: 500 }
     );
   }
