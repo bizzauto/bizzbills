@@ -4,18 +4,26 @@ set -e
 
 echo "🚀 Starting BizzBills..."
 
-# Ensure the Prisma client matches the committed schema.
+# Use the locally-installed Prisma binary directly (NOT `npx`), because at
+# container runtime `npx` may try to resolve/install and fail silently with
+# no network — which would skip the schema sync and boot a drifted DB.
+PRISMA="./node_modules/.bin/prisma"
+if [ ! -x "$PRISMA" ]; then
+  PRISMA="prisma"
+fi
+
+# Generate the client matching the committed schema.
 echo "🔧 Generating Prisma client..."
-npx prisma generate
+"$PRISMA" generate
 
 # Apply the schema to the database. This repo uses `prisma db push` (no
 # migrations folder), so the container self-heals on every deploy without a
-# manual `exec`. We retry a few times in case the DB is still starting up,
-# and we DO NOT swallow a real failure — if the schema can't be applied the
-# container must not start serving a drifted database.
+# manual `exec`. Retry a few times in case the DB is still starting up, and
+# DO NOT swallow a real failure — if the schema can't be applied the container
+# must not start serving a drifted database (P2022 on User.role/orgId, etc.).
 echo "🔧 Applying database schema (prisma db push)..."
 apply_schema() {
-  npx prisma db push --skip-generate --accept-data-loss
+  "$PRISMA" db push --skip-generate --accept-data-loss
 }
 
 MAX_TRIES=5
