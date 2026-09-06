@@ -7,8 +7,6 @@ import { Prisma } from "@prisma/client";
 import { calculateInvoiceSummary, sanitizeInvoiceDraft, type InvoiceDraft } from "@/lib/invoicing";
 import { snapshotFromInvoice, diffSnapshots } from "@/lib/diff";
 
-
-
 async function getAuthInvoice(id: string, userId: string) {
   const orgId = await getSessionOrgId(userId);
 
@@ -65,6 +63,33 @@ export async function PATCH(
     const clean = sanitizeInvoiceDraft(body);
     const summary = calculateInvoiceSummary(clean);
 
+    if (!summary.isValid) {
+      return NextResponse.json(
+        { error: summary.warnings.join(" • ") },
+        { status: 400 },
+      );
+    }
+
+    const changeComment =
+      typeof body.changeComment === "string" && body.changeComment.trim()
+        ? body.changeComment.trim()
+        : "Updated invoice";
+
+    // Ensure the invoice number stays unique (mirrors the POST route)
+    let invoiceNumber = clean.invoiceNumber;
+    if (invoiceNumber !== invoice.invoiceNumber) {
+      const collision = await prisma.invoice.findFirst({
+        where: {
+          orgId: invoice.orgId ?? undefined,
+          invoiceNumber,
+          id: { not: id },
+        },
+      });
+      if (collision) {
+        invoiceNumber = `${invoiceNumber}-${Date.now().toString(36).toUpperCase()}`;
+      }
+    }
+
     const beforeSnapshot = snapshotFromInvoice(invoice);
 
     // Wrap mutation + versioning in a single transaction
@@ -76,15 +101,45 @@ export async function PATCH(
       const updated = await tx.invoice.update({
         where: { id },
         data: {
-          invoiceNumber: clean.invoiceNumber,
+          invoiceNumber,
           customerName: clean.customerName,
           customerGstin: clean.customerGstin,
           currency: clean.currency,
           dueDate: clean.dueDate,
+          status: clean.status ?? invoice.status,
           subtotal: summary.subtotal,
           taxTotal: summary.taxTotal,
           total: summary.total,
           version: { increment: 1 },
+          discountPercent: clean.discountPercent ?? invoice.discountPercent,
+          discountAmount: summary.discountAmount,
+          shippingCharges: clean.shippingCharges ?? invoice.shippingCharges,
+          adjustment: clean.adjustment ?? invoice.adjustment,
+          roundOff: summary.roundOff,
+          amountInWords: clean.amountInWords ?? invoice.amountInWords,
+          isTaxInclusive: clean.isTaxInclusive ?? invoice.isTaxInclusive,
+          customerAddress: clean.customerAddress ?? invoice.customerAddress,
+          customerEmail: clean.customerEmail ?? invoice.customerEmail,
+          customerPhone: clean.customerPhone ?? invoice.customerPhone,
+          customerState: clean.customerState ?? invoice.customerState,
+          shippingSameAsBilling: clean.shippingSameAsBilling ?? invoice.shippingSameAsBilling,
+          shippingName: clean.shippingName ?? invoice.shippingName,
+          shippingAddress: clean.shippingAddress ?? invoice.shippingAddress,
+          shippingPhone: clean.shippingPhone ?? invoice.shippingPhone,
+          placeOfSupply: clean.placeOfSupply ?? invoice.placeOfSupply,
+          reverseCharge: clean.reverseCharge ?? invoice.reverseCharge,
+          poNumber: clean.poNumber ?? invoice.poNumber,
+          referenceNumber: clean.referenceNumber ?? invoice.referenceNumber,
+          notes: clean.notes ?? invoice.notes,
+          terms: clean.terms ?? invoice.terms,
+          bankName: clean.bankName ?? invoice.bankName,
+          bankAccountName: clean.bankAccountName ?? invoice.bankAccountName,
+          bankAccountNumber: clean.bankAccountNumber ?? invoice.bankAccountNumber,
+          bankIfsc: clean.bankIfsc ?? invoice.bankIfsc,
+          bankBranch: clean.bankBranch ?? invoice.bankBranch,
+          upiId: clean.upiId ?? invoice.upiId,
+          signatureName: clean.signatureName ?? invoice.signatureName,
+          signatureDesignation: clean.signatureDesignation ?? invoice.signatureDesignation,
           lines: {
             create: clean.lines.map((line) => ({
               description: line.description,
@@ -92,6 +147,7 @@ export async function PATCH(
               quantity: line.quantity,
               unitPrice: line.unitPrice,
               taxRate: line.taxRate,
+              discount: line.discount,
             })),
           },
         },
@@ -107,7 +163,7 @@ export async function PATCH(
           invoiceId: id,
           version: updated.version,
           snapshot: JSON.stringify(afterSnapshot),
-          changeComment: body.changeComment || `${changes.length} change(s) made`,
+          changeComment,
         },
       });
 
@@ -122,4 +178,3 @@ export async function PATCH(
     return NextResponse.json({ error: "Failed to update invoice" }, { status: 500 });
   }
 }
-

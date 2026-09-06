@@ -133,6 +133,7 @@ export default function NewInvoicePage() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState("");
   const [orgSettings, setOrgSettings] = useState<Record<string, unknown>>({});
 
   const [form, setForm] = useState<InvoiceForm>({
@@ -191,20 +192,28 @@ export default function NewInvoicePage() {
           bankAccountName: data.accountName || "",
           bankIfsc: data.ifscCode || "",
           upiId: data.upiId || "",
+          invoiceTitle: data.invoiceTitle || prev.invoiceTitle,
+          terms: data.footerNotes || prev.terms,
         }));
       })
       .catch(() => {});
   }, [status, router]);
 
-  // Auto-generate invoice number when the prefix/postfix change.
-  // This is a one-time sync of a derived default, not a cascading render.
+  // Auto-generate the next sequential invoice number whenever the prefix or
+  // postfix changes (INV-0001, INV-0002, ...). Typing in the number field
+  // never triggers a re-fetch — only prefix/postfix edits do.
   useEffect(() => {
-    const timestamp = Date.now().toString().slice(-6);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setForm((prev) => ({
-      ...prev,
-      invoiceNumber: `${prev.invoicePrefix}${timestamp}${prev.invoicePostfix}`,
-    }));
+    const t = setTimeout(() => {
+      fetch(`/api/invoices/next-number?prefix=${encodeURIComponent(form.invoicePrefix)}&postfix=${encodeURIComponent(form.invoicePostfix)}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (data?.nextNumber) {
+            setForm((prev) => ({ ...prev, invoiceNumber: data.nextNumber }));
+          }
+        })
+        .catch(() => {});
+    }, 250);
+    return () => clearTimeout(t);
   }, [form.invoicePrefix, form.invoicePostfix]);
 
   const updateField = useCallback(<K extends keyof InvoiceForm>(key: K, value: InvoiceForm[K]) => {
@@ -232,7 +241,7 @@ export default function NewInvoicePage() {
     }));
   }, []);
 
-  // ── Party (customer) autocomplete ──
+  // ── Party (customer) dropdown ──
   const [partySearch, setPartySearch] = useState("");
   const [partyResults, setPartyResults] = useState<{
     id: string;
@@ -250,37 +259,45 @@ export default function NewInvoicePage() {
   const [showProductDropdown, setShowProductDropdown] = useState(false);
   const [activeProductLine, setActiveProductLine] = useState<string | null>(null);
 
-  // Debounced party search against /api/parties
-  useEffect(() => {
-    const term = partySearch.trim();
-    if (term.length < 2) {
-      setPartyResults([]);
-      setShowPartyDropdown(false);
-      return;
-    }
-    const t = setTimeout(() => {
-      fetch(`/api/parties?search=${encodeURIComponent(term)}`)
-        .then((r) => r.json())
-        .then((data) => {
-          const parties = Array.isArray(data) ? data : data?.parties ?? [];
-          setPartyResults(parties.slice(0, 8));
-          setShowPartyDropdown(parties.length > 0);
-        })
-        .catch(() => setPartyResults([]));
-    }, 300);
-    return () => clearTimeout(t);
-  }, [partySearch]);
+  // Load all parties on first focus so the dropdown can open with zero typing.
+  // Fetched in the focus handler (not an effect) to avoid cascading renders.
+  const [partyLoaded, setPartyLoaded] = useState(false);
+  const loadParties = useCallback(() => {
+    if (partyLoaded) return;
+    setPartyLoaded(true);
+    fetch("/api/parties")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((parties) => setPartyResults(Array.isArray(parties) ? parties.slice(0, 50) : []))
+      .catch(() => {});
+  }, [partyLoaded]);
 
-  // Debounced product search against /api/products (scoped to the focused line)
+  // Filter the loaded list as the user types (client-side, instant).
+  const filteredParties = partySearch.trim().length >= 2
+    ? partyResults.filter((p) => {
+        const term = partySearch.trim().toLowerCase();
+        return (
+          p.name.toLowerCase().includes(term) ||
+          (p.gstin || "").toLowerCase().includes(term) ||
+          (p.phone || "").includes(term) ||
+          (p.email || "").toLowerCase().includes(term)
+        );
+      })
+    : partyResults;
+
+  // Debounced product search against /api/products (scoped to the focused line).
+  // On focus (empty term) it lists all products so the user can pick one without
+  // typing; once 2+ chars are entered it filters by name/SKU — i.e. the same
+  // autocomplete behaviour the party field already has.
   useEffect(() => {
-    const term = productSearch.trim();
-    if (term.length < 2 || !activeProductLine) {
+    if (!activeProductLine) {
       setProductResults([]);
       setShowProductDropdown(false);
       return;
     }
+    const term = productSearch.trim();
+    const url = term.length >= 2 ? `/api/products?search=${encodeURIComponent(term)}` : "/api/products";
     const t = setTimeout(() => {
-      fetch(`/api/products?search=${encodeURIComponent(term)}`)
+      fetch(url)
         .then((r) => r.json())
         .then((data) => {
           const products = data?.products ?? [];
@@ -309,7 +326,10 @@ export default function NewInvoicePage() {
     if (addr) {
       const parts = [addr.address, addr.city, addr.pincode].filter(Boolean);
       updateField("customerAddress", parts.join(", "));
-      if (addr.state) updateField("customerState", addr.state);
+      if (addr.state) {
+        updateField("customerState", addr.state);
+        updateField("placeOfSupply", addr.state);
+      }
     }
     setPartySearch("");
     setShowPartyDropdown(false);
@@ -330,20 +350,26 @@ export default function NewInvoicePage() {
 
   // Renders the product dropdown for the line that is currently focused.
   const productDropdown = (lineId: string) =>
-    showProductDropdown && activeProductLine === lineId && productResults.length > 0 ? (
+    showProductDropdown && activeProductLine === lineId ? (
       <div className="absolute z-50 mt-1 w-full rounded-xl border border-[var(--card-border)] bg-[var(--card)] shadow-xl max-h-40 overflow-y-auto">
-        {productResults.map((prod) => (
-          <button
-            key={prod.id}
-            type="button"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => selectProduct(lineId, prod)}
-            className="w-full px-3 py-2 text-left text-sm transition hover:bg-[var(--badge-bg)]"
-          >
-            <p className="font-medium text-default">{prod.name}</p>
-            <p className="text-xs text-muted">₹{prod.sellingPrice.toLocaleString("en-IN")} · {prod.taxRate}% GST</p>
-          </button>
-        ))}
+        {productResults.length > 0 ? (
+          productResults.map((prod) => (
+            <button
+              key={prod.id}
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => selectProduct(lineId, prod)}
+              className="w-full px-3 py-2 text-left text-sm transition hover:bg-[var(--badge-bg)]"
+            >
+              <p className="font-medium text-default">{prod.name}</p>
+              <p className="text-xs text-muted">₹{prod.sellingPrice.toLocaleString("en-IN")} · {prod.taxRate}% GST</p>
+            </button>
+          ))
+        ) : (
+          <p className="px-3 py-2.5 text-sm text-muted">
+            No matching product. Keep typing to add <span className="font-medium text-default">&ldquo;{productSearch || "this item"}&rdquo;</span> as a new line item.
+          </p>
+        )}
       </div>
     ) : null;
 
@@ -392,7 +418,19 @@ export default function NewInvoicePage() {
   })();
 
   const handleSubmit = useCallback(async (asDraft: boolean) => {
+    // Client-side check so the user gets a fast, specific error instead of a
+    // failed POST. Mirrors the server-side validation in lib/invoicing.
+    const problems: string[] = [];
+    if (!form.invoiceNumber.trim()) problems.push("Invoice number is required");
+    if (!form.customerName.trim()) problems.push("Customer name is required");
+    if (!form.lines.some((l) => l.description.trim())) problems.push("Add at least one line item");
+    if (problems.length > 0) {
+      setFormError(problems.join(" • "));
+      return;
+    }
+
     setSaving(true);
+    setFormError("");
     try {
       const payload = {
         ...form,
@@ -421,10 +459,10 @@ export default function NewInvoicePage() {
           const data = await res.json();
           if (data?.error) msg = data.error;
         } catch { /* ignore */ }
-        alert(msg);
+        setFormError(msg);
       }
     } catch (e) {
-      alert("Failed to create invoice: " + (e instanceof Error ? e.message : String(e)));
+      setFormError("Failed to create invoice: " + (e instanceof Error ? e.message : String(e)));
     } finally {
       setSaving(false);
     }
@@ -452,6 +490,9 @@ export default function NewInvoicePage() {
             </button>
           </div>
         </div>
+        {formError && (
+          <p className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-2.5 text-sm text-danger">{formError}</p>
+        )}
       </section>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
@@ -506,21 +547,29 @@ export default function NewInvoicePage() {
               <label className="text-sm text-muted">
                 Customer Name *
                 <div className="relative mt-1">
-                  <input value={partySearch || form.customerName} onChange={(e) => { setPartySearch(e.target.value); updateField("customerName", e.target.value); }} onFocus={() => { if (partyResults.length > 0) setShowPartyDropdown(true); }} onBlur={() => setTimeout(() => setShowPartyDropdown(false), 200)} className="input w-full" placeholder="Customer / Company name" autoComplete="off" />
-                  {showPartyDropdown && partyResults.length > 0 && (
+                  <input value={partySearch || form.customerName} onChange={(e) => { setPartySearch(e.target.value); updateField("customerName", e.target.value); }} onFocus={() => { loadParties(); setPartySearch(""); setShowPartyDropdown(true); }} onBlur={() => setTimeout(() => setShowPartyDropdown(false), 200)} className="input w-full" placeholder="Pick a saved party from the dropdown or type a new name" autoComplete="off" />
+                  {showPartyDropdown && (
                     <div className="absolute z-50 mt-1 w-full rounded-xl border border-[var(--card-border)] bg-[var(--card)] shadow-xl max-h-48 overflow-y-auto">
-                      {partyResults.map((p) => (
-                        <button
-                          key={p.id}
-                          type="button"
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => selectParty(p)}
-                          className="w-full px-4 py-2.5 text-left text-sm transition hover:bg-[var(--badge-bg)]"
-                        >
-                          <p className="font-medium text-default">{p.name}</p>
-                          <p className="text-xs text-muted">{p.gstin && `GSTIN: ${p.gstin}`}{p.phone && ` · ${p.phone}`}</p>
-                        </button>
-                      ))}
+                      {filteredParties.length > 0 ? (
+                        filteredParties.map((p) => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => selectParty(p)}
+                            className="w-full px-4 py-2.5 text-left text-sm transition hover:bg-[var(--badge-bg)]"
+                          >
+                            <p className="font-medium text-default">{p.name}</p>
+                            <p className="text-xs text-muted">{p.gstin && `GSTIN: ${p.gstin}`}{p.phone && ` · ${p.phone}`}</p>
+                          </button>
+                        ))
+                      ) : (
+                        <p className="px-4 py-2.5 text-xs text-muted">
+                          {partyResults.length === 0
+                            ? "No saved parties yet. Type the details below to add a new customer."
+                            : "No matching party. Keep typing to add a new customer."}
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>
@@ -628,12 +677,12 @@ export default function NewInvoicePage() {
                         <span className="text-xs text-muted font-medium w-5">{i + 1}.</span>
                         <div className="relative flex-1">
                           <input
-                            value={activeProductLine === line.id ? productSearch : line.description}
+                            value={line.description}
                             onChange={(e) => { setActiveProductLine(line.id); setProductSearch(e.target.value); updateLine(line.id, { description: e.target.value }); }}
-                            onFocus={() => { setActiveProductLine(line.id); if (productResults.length > 0) setShowProductDropdown(true); }}
+                            onFocus={() => { setActiveProductLine(line.id); setProductSearch(""); setShowProductDropdown(true); }}
                             onBlur={() => setTimeout(() => { setShowProductDropdown(false); setActiveProductLine(null); }, 200)}
                             className="input w-full text-sm font-medium"
-                            placeholder={`Item name`}
+                            placeholder="Item name — search or pick from list"
                             autoComplete="off"
                           />
                           {productDropdown(line.id)}
@@ -677,7 +726,7 @@ export default function NewInvoicePage() {
                     {/* Desktop: Full grid layout */}
                     <div className="hidden md:grid grid-cols-[1fr_80px_100px_80px_100px_80px_100px_40px] gap-2 items-start">
                       <div className="relative">
-                        <input value={activeProductLine === line.id ? productSearch : line.description} onChange={(e) => { setActiveProductLine(line.id); setProductSearch(e.target.value); updateLine(line.id, { description: e.target.value }); }} onFocus={() => { setActiveProductLine(line.id); if (productResults.length > 0) setShowProductDropdown(true); }} onBlur={() => setTimeout(() => { setShowProductDropdown(false); setActiveProductLine(null); }, 200)} className="input w-full" placeholder={`Item ${i + 1}`} autoComplete="off" />
+                        <input value={line.description} onChange={(e) => { setActiveProductLine(line.id); setProductSearch(e.target.value); updateLine(line.id, { description: e.target.value }); }} onFocus={() => { setActiveProductLine(line.id); setProductSearch(""); setShowProductDropdown(true); }} onBlur={() => setTimeout(() => { setShowProductDropdown(false); setActiveProductLine(null); }, 200)} className="input w-full" placeholder={`Item ${i + 1} — search or pick`} autoComplete="off" />
                         {productDropdown(line.id)}
                       </div>
                       <input value={line.hsnCode} onChange={(e) => updateLine(line.id, { hsnCode: e.target.value })} className="input w-full text-center" placeholder="HSN" />

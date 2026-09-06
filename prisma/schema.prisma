@@ -241,6 +241,7 @@ model Invoice {
   customerName  String
   customerGstin String   @default("")
   currency      String   @default("INR")
+  date          String   @default("")
   dueDate       String
   status        String   @default("draft")
   subtotal      Float    @default(0)
@@ -254,6 +255,8 @@ model Invoice {
   customerAddress   String   @default("")
   customerEmail     String   @default("")
   customerPhone     String   @default("")
+  customerState     String   @default("")
+  shippingSameAsBilling Boolean @default(true)
   shippingName      String   @default("")
   shippingAddress   String   @default("")
   shippingPhone     String   @default("")
@@ -310,6 +313,7 @@ model InvoiceLine {
   quantity    Float
   unitPrice   Float
   taxRate     Float  @default(0)
+  discount    Float  @default(0)
   hsnCode     String  @default("")
 
   invoiceId String

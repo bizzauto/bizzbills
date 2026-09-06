@@ -25,7 +25,27 @@ export async function POST(request: Request) {
   if (!orgId) return NextResponse.json({ error: "No organization" }, { status: 400 });
 
   const data = await request.json();
-  const warehouse = await prisma.warehouse.create({ data: { ...data, orgId } });
+
+  // Whitelist fields — never spread the raw request body into the DB.
+  const warehouseData: Record<string, unknown> = {};
+  const stringField = (key: string) => {
+    if (typeof data[key] === "string") warehouseData[key] = data[key];
+  };
+  const boolField = (key: string) => {
+    if (typeof data[key] === "boolean") warehouseData[key] = data[key];
+  };
+  stringField("name");
+  stringField("address");
+  stringField("city");
+  stringField("state");
+  boolField("isActive");
+
+  const name = warehouseData.name as string | undefined;
+  if (!name) {
+    return NextResponse.json({ error: "Warehouse name is required" }, { status: 400 });
+  }
+
+  const warehouse = await prisma.warehouse.create({ data: { ...warehouseData, name, orgId } });
   return NextResponse.json(warehouse, { status: 201 });
 }
 

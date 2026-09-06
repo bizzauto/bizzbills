@@ -8,7 +8,7 @@ const baseSnapshot: InvoiceSnapshot = {
   currency: "INR",
   dueDate: "2026-07-20",
   status: "draft",
-  lines: [{ description: "Consulting", quantity: 1, unitPrice: 24000, taxRate: 18 }],
+  lines: [{ description: "Consulting", quantity: 1, unitPrice: 24000, taxRate: 18, discount: 0 }],
 };
 
 describe("diff engine", () => {
@@ -32,7 +32,7 @@ describe("diff engine", () => {
       ...baseSnapshot,
       lines: [
         ...baseSnapshot.lines,
-        { description: "Software license", quantity: 2, unitPrice: 5000, taxRate: 18 },
+        { description: "Software license", quantity: 2, unitPrice: 5000, taxRate: 18, discount: 0 },
       ],
     };
     const changes = diffSnapshots(baseSnapshot, after);
@@ -43,8 +43,8 @@ describe("diff engine", () => {
     const before = {
       ...baseSnapshot,
       lines: [
-        { description: "Item A", quantity: 1, unitPrice: 100, taxRate: 18 },
-        { description: "Item B", quantity: 2, unitPrice: 200, taxRate: 5 },
+        { description: "Item A", quantity: 1, unitPrice: 100, taxRate: 18, discount: 0 },
+        { description: "Item B", quantity: 2, unitPrice: 200, taxRate: 5, discount: 0 },
       ],
     };
     const after = { ...baseSnapshot, lines: before.lines.slice(0, 1) };
@@ -74,7 +74,7 @@ describe("diff engine", () => {
       customerName: "Updated Corp",
       dueDate: "2026-08-01",
       lines: [
-        { description: "Consulting", quantity: 2, unitPrice: 24000, taxRate: 18 },
+        { description: "Consulting", quantity: 2, unitPrice: 24000, taxRate: 18, discount: 0 },
       ],
     };
     const changes = diffSnapshots(baseSnapshot, after);
@@ -93,7 +93,7 @@ describe("snapshotFromInvoice", () => {
       currency: "INR",
       dueDate: "2026-07-25",
       status: "draft",
-      lines: [{ description: "Service", quantity: 1, unitPrice: 1000, taxRate: 18 }],
+      lines: [{ description: "Service", quantity: 1, unitPrice: 1000, taxRate: 18, discount: 0 }],
     };
     const snap = snapshotFromInvoice(invoice);
     expect(snap.invoiceNumber).toBe("INV-001");

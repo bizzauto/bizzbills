@@ -9,7 +9,7 @@ export async function GET() {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const orgId = await getSessionOrgId(session.user.id);
-    const where: any = orgId ? { orgId } : { userId: session.user.id };
+    const where: { orgId?: string; userId?: string } = orgId ? { orgId } : { userId: session.user.id };
     const invoices = await prisma.proformaInvoice.findMany({ where, orderBy: { createdAt: "desc" }, include: { lines: true } });
     return NextResponse.json(invoices);
   } catch (error) {
@@ -25,15 +25,38 @@ export async function POST(request: Request) {
     const orgId = await getSessionOrgId(session.user.id);
     const body = await request.json();
 
-    const { proformaNumber, customerName, customerGstin, currency, validUntil, notes, lines, subtotal, taxTotal, total } = body;
+    const { proformaNumber, customerName, customerGstin, currency, validUntil, notes, lines } = body;
 
     if (!customerName || !lines?.length) {
       return NextResponse.json({ error: "Customer name and at least one line item required" }, { status: 400 });
     }
 
-    // Auto-generate number if not provided
-    const count = await prisma.proformaInvoice.count({ where: orgId ? { orgId } : { userId: session.user.id } });
-    const number = proformaNumber || `PI-${String(count + 1).padStart(3, "0")}`;
+    // Auto-generate number if not provided, with collision fallback
+    let number = proformaNumber;
+    if (!number) {
+      const count = await prisma.proformaInvoice.count({ where: orgId ? { orgId } : { userId: session.user.id } });
+      number = `PI-${String(count + 1).padStart(3, "0")}`;
+      const collision = await prisma.proformaInvoice.findFirst({
+        where: { ...(orgId ? { orgId } : { userId: session.user.id }), proformaNumber: number },
+        select: { id: true },
+      });
+      if (collision) {
+        number = `${number}-${Date.now().toString(36).toUpperCase()}`;
+      }
+    }
+
+    // Server-side totals (single source of truth) — never trust client math
+    let subtotal = 0;
+    let taxTotal = 0;
+    const cleanLines = lines.map((l: { description?: string; quantity?: number; unitPrice?: number; taxRate?: number; hsnCode?: string }) => {
+      const qty = Number(l.quantity) || 0;
+      const rate = Number(l.unitPrice) || 0;
+      const taxRate = Number(l.taxRate) || 0;
+      const lineTotal = Math.round(qty * rate * 100) / 100;
+      subtotal = Math.round((subtotal + lineTotal) * 100) / 100;
+      taxTotal = Math.round((taxTotal + (lineTotal * taxRate) / 100) * 100) / 100;
+      return { ...l, quantity: qty, unitPrice: rate, taxRate };
+    });
 
     const invoice = await prisma.proformaInvoice.create({
       data: {
@@ -43,18 +66,18 @@ export async function POST(request: Request) {
         currency: currency || "INR",
         validUntil: validUntil || "",
         notes: notes || "",
-        subtotal: subtotal || 0,
-        taxTotal: taxTotal || 0,
-        total: total || 0,
+        subtotal,
+        taxTotal,
+        total: Math.round((subtotal + taxTotal) * 100) / 100,
         status: "draft",
         userId: session.user.id,
         orgId: orgId || null,
         lines: {
-          create: lines.map((l: any) => ({
+          create: cleanLines.map((l: { description?: string; quantity: number; unitPrice: number; taxRate: number; hsnCode?: string }) => ({
             description: l.description || "",
-            quantity: l.quantity || 0,
-            unitPrice: l.unitPrice || 0,
-            taxRate: l.taxRate || 0,
+            quantity: l.quantity,
+            unitPrice: l.unitPrice,
+            taxRate: l.taxRate,
             hsnCode: l.hsnCode || "",
           })),
         },

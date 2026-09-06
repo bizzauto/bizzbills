@@ -60,7 +60,14 @@ export async function POST(request: Request) {
     }
 
     const count = await prisma.debitNote.count({ where: { orgId } });
-    const debitNoteNumber = `DN-${String(count + 1).padStart(3, "0")}`;
+    let debitNoteNumber = `DN-${String(count + 1).padStart(3, "0")}`;
+    const numberCollision = await prisma.debitNote.findFirst({
+      where: { orgId, debitNoteNumber },
+      select: { id: true },
+    });
+    if (numberCollision) {
+      debitNoteNumber = `${debitNoteNumber}-${Date.now().toString(36).toUpperCase()}`;
+    }
 
     let subtotal = 0;
     let taxTotal = 0;
@@ -123,10 +130,10 @@ export async function POST(request: Request) {
       await prisma.journalEntry.create({
         data: {
           orgId,
-          entryNumber: `JE-${debitNoteNumber}`,
+          entryNumber: `JE-DN-${debitNoteNumber}`,
           date: new Date(date),
           description: `Auto-posted for Debit Note ${debitNoteNumber} from ${supplierName}`,
-          reference: `DN-${debitNoteNumber}`,
+          reference: `DEBIT-NOTE-${debitNoteNumber}`,
           isPosted: true,
           lines: { create: jeLines },
         },

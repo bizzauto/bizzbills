@@ -18,43 +18,43 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email or Phone", type: "text" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials, req) {
-        if (!credentials?.email || !credentials?.password) return null;
+  async authorize(credentials, req) {
+    if (!credentials?.email || !credentials?.password) return null;
 
-        const identifier = credentials.email.trim().toLowerCase();
-        const rl = rateLimit({ key: `signin:${identifier}`, limit: 20 });
-        if (!rl.allowed) return null;
+    const identifier = credentials.email.trim().toLowerCase();
+    const rl = rateLimit({ key: `signin:${identifier}`, limit: 20 });
+    if (!rl.allowed) return null;
 
-        // Support both email and phone number login
-        const isPhone = /^\d{10,15}$/.test(identifier.replace(/[\s\-+]/g, ""));
-        const cleanPhone = identifier.replace(/[\s\-+]/g, "");
+    // Support both email and phone number login
+    const isPhone = /^\d{10,15}$/.test(identifier.replace(/[\s\-+]/g, ""));
+    const cleanPhone = identifier.replace(/[\s\-+]/g, "");
 
-        const user = isPhone
-          ? await prisma.user.findFirst({ where: { phone: cleanPhone } })
-          : await prisma.user.findUnique({ where: { email: identifier } });
+    const user = isPhone
+      ? await prisma.user.findFirst({ where: { phone: cleanPhone } })
+      : await prisma.user.findUnique({ where: { email: identifier } });
 
-        if (!user || !user.passwordHash) return null;
+    if (!user || !user.passwordHash) return null;
 
-        const isValid = await verifyPassword(credentials.password, user.passwordHash);
-        if (!isValid) return null;
+    const isValid = await verifyPassword(credentials.password, user.passwordHash);
+    if (!isValid) return null;
 
-        let orgId: string | undefined;
-        let role: string = "VIEWER";
+    let orgId: string | undefined;
+    let role: string = "VIEWER";
 
-        if (user.orgId) {
-          orgId = user.orgId;
-          role = user.role;
-        }
+    if (user.orgId) {
+      orgId = user.orgId;
+      role = user.role;
+    }
 
-        return {
-          id: user.id,
-          email: user.email ?? undefined,
-          name: user.name,
-          image: user.image,
-          orgId,
-          role,
-        };
-      },
+    return {
+      id: user.id,
+      email: user.email ?? undefined,
+      name: user.name,
+      image: user.image,
+      orgId,
+      role,
+    };
+  },
     }),
   ],
   callbacks: {

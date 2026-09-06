@@ -25,6 +25,7 @@ export type InvoiceSnapshot = {
     quantity: number;
     unitPrice: number;
     taxRate: number;
+    discount: number;
   }>;
 };
 
@@ -110,6 +111,7 @@ export function diffSnapshots(
       "quantity",
       "unitPrice",
       "taxRate",
+      "discount",
     ];
     for (const f of lineFields) {
       if (beforeLine![f] !== afterLine![f]) {
@@ -139,6 +141,7 @@ export function snapshotFromInvoice(invoice: {
     quantity: number;
     unitPrice: number;
     taxRate: number;
+    discount: number;
   }>;
 }): InvoiceSnapshot {
   return {
@@ -153,6 +156,7 @@ export function snapshotFromInvoice(invoice: {
       quantity: l.quantity,
       unitPrice: l.unitPrice,
       taxRate: l.taxRate,
+      discount: l.discount,
     })),
   };
 }

@@ -64,8 +64,16 @@ export async function POST() {
       }
     }
 
-    const count = await prisma.invoice.count({ where: { orgId: ri.orgId } });
-    const invoiceNumber = `INV-${String(count + 1).padStart(4, "0")}`;
+    // Generate a unique invoice number: try the padded sequence, fall back
+    // to a timestamp suffix when a collision is detected (mirrors POST /api/invoices).
+    let invoiceNumber = `INV-${String(await prisma.invoice.count({ where: { orgId: ri.orgId } }) + 1).padStart(4, "0")}`;
+    const existingNumber = await prisma.invoice.findFirst({
+      where: { orgId: ri.orgId, invoiceNumber },
+      select: { id: true },
+    });
+    if (existingNumber) {
+      invoiceNumber = `${invoiceNumber}-${Date.now().toString(36).toUpperCase()}`;
+    }
 
     const invoice = await prisma.invoice.create({
       data: {
@@ -74,7 +82,7 @@ export async function POST() {
         customerGstin: ri.customerGstin ?? "",
         currency: ri.currency,
         dueDate: new Date(Date.now() + 15 * 86400000).toISOString().split("T")[0],
-        status: "sent",
+        status: "pending",
         subtotal: ri.subtotal,
         taxTotal: ri.taxTotal,
         total: ri.total,
@@ -92,7 +100,14 @@ export async function POST() {
       },
     });
 
-    const existingIds: string[] = JSON.parse(ri.invoiceIds);
+    // invoiceIds may be "" or a JSON array; never let an empty/legacy value crash the cron.
+    let existingIds: string[] = [];
+    try {
+      const parsed = JSON.parse(ri.invoiceIds || "[]");
+      existingIds = Array.isArray(parsed) ? parsed : [];
+    } catch {
+      existingIds = [];
+    }
     existingIds.push(invoice.id);
 
     const nextRun = calcNextRunDate(new Date(ri.nextRunDate), ri.frequency, ri.interval);

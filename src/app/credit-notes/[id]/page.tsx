@@ -139,7 +139,7 @@ export default function CreditNoteDetailPage() {
               note.status === "issued" ? "bg-emerald-500/10 text-emerald-300" : "bg-slate-500/10 text-slate-300"
             }`}>{note.status}</span>
           </div>
-          <p className="mt-4 text-xs text-slate-500">Credit notes are created with "issued" status and automatically post reversing journal entries.</p>
+          <p className="mt-4 text-xs text-slate-500">Credit notes are created with &quot;issued&quot; status and automatically post reversing journal entries.</p>
         </div>
       </section>
     </main>

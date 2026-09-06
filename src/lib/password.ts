@@ -22,7 +22,16 @@ export async function verifyPassword(password: string, stored: string): Promise<
   return new Promise((resolve, reject) => {
     crypto.pbkdf2(password, salt, ITERATIONS, KEY_LENGTH, HASH_ALGO, (err, derivedKey) => {
       if (err) reject(err);
-      else resolve(derivedKey.toString("hex") === key);
+      else {
+        // Constant-time comparison of the raw derived key against the
+        // stored hex-decoded hash (both 64 raw bytes) — prevents timing
+        // attacks. Plain string === would leak via early-exit comparison.
+        const expected = Buffer.from(key, "hex");
+        resolve(
+          derivedKey.length === expected.length &&
+            crypto.timingSafeEqual(derivedKey, expected),
+        );
+      }
     });
   });
 }

@@ -23,7 +23,7 @@ const emptyDraft: InvoiceDraft = {
   invoiceNumber: "",
   dueDate: new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0],
   lines: [
-    { id: "1", description: "", quantity: 1, unitPrice: 0, taxRate: 18, hsnCode: "" },
+    { id: "1", description: "", quantity: 1, unitPrice: 0, taxRate: 18, discount: 0, hsnCode: "" },
   ],
 };
 
@@ -144,7 +144,7 @@ export default function BillingPage() {
   function addLine() {
     setDraft((prev) => ({
       ...prev,
-      lines: [...prev.lines, { id: String(Date.now()), description: "", quantity: 1, unitPrice: 0, taxRate: 18, hsnCode: "" }],
+      lines: [...prev.lines, { id: String(Date.now()), description: "", quantity: 1, unitPrice: 0, taxRate: 18, discount: 0, hsnCode: "" }],
     }));
   }
 
@@ -168,10 +168,9 @@ export default function BillingPage() {
       const res = await fetch("/api/invoices", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(sanitizedDraft) });
       if (!res.ok) { const d = await res.json(); throw new Error(d.error || "Failed to save"); }
       const invoice = await res.json();
-      fetch("/api/accounting/journal-entries", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ entryNumber: `JE-${invoice.invoiceNumber}`, date: new Date().toISOString().split("T")[0], description: `Invoice ${invoice.invoiceNumber} for ${sanitizedDraft.customerName}`, reference: `INV-${invoice.invoiceNumber}`, lines: [{ accountId: "revenue", debit: 0, credit: summary.total, description: "Revenue" }, { accountId: "receivable", debit: summary.total, credit: 0, description: "Receivable" }] }),
-      }).catch(() => {});
+      // Journal entries are auto-posted server-side inside the invoice
+      // creation transaction (see src/lib/journal.ts) — no client-side
+      // accounting calls here.
       router.push(`/invoices/${invoice.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save");

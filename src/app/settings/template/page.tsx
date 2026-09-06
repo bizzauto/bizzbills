@@ -16,6 +16,12 @@ type TemplateSettings = {
   showGstin: boolean;
   showSignature: boolean;
   showQrCode: boolean;
+  // Bank details — saved once here (or on first invoice) and pre-filled everywhere.
+  bankName: string;
+  accountName: string;
+  accountNumber: string;
+  ifscCode: string;
+  upiId: string;
 };
 
 const DEFAULTS: TemplateSettings = {
@@ -27,6 +33,11 @@ const DEFAULTS: TemplateSettings = {
   showGstin: true,
   showSignature: true,
   showQrCode: false,
+  bankName: "",
+  accountName: "",
+  accountNumber: "",
+  ifscCode: "",
+  upiId: "",
 };
 
 const HEADER_PRESETS = ["Tax Invoice", "Invoice", "Bill", "Tax Bill", "Proforma Invoice"];
@@ -50,6 +61,11 @@ export default function TemplateSettingsPage() {
           showGstin: data.showGstin !== false,
           showSignature: data.showSignature !== false,
           showQrCode: data.showQrCode === true,
+          bankName: data.bankName || "",
+          accountName: data.accountName || "",
+          accountNumber: data.accountNumber || "",
+          ifscCode: data.ifscCode || "",
+          upiId: data.upiId || "",
         });
       })
       .catch(() => {})
@@ -165,6 +181,61 @@ export default function TemplateSettingsPage() {
               className="input resize-none"
               placeholder="Payment due within 7 days. Thank you for your business."
             />
+          </div>
+
+          {/* Bank Details */}
+          <div className="section-card">
+            <h2 className="section-label">Bank Details</h2>
+            <p className="mb-4 text-sm text-muted">
+              Saved once and pre-filled on every invoice. You can also edit these when creating an invoice.
+            </p>
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="text-sm text-muted">
+                Bank Name
+                <input
+                  value={settings.bankName}
+                  onChange={(e) => update("bankName", e.target.value)}
+                  className="input mt-1 w-full"
+                  placeholder="State Bank of India"
+                />
+              </label>
+              <label className="text-sm text-muted">
+                Account Name
+                <input
+                  value={settings.accountName}
+                  onChange={(e) => update("accountName", e.target.value)}
+                  className="input mt-1 w-full"
+                  placeholder="Your Business Name"
+                />
+              </label>
+              <label className="text-sm text-muted">
+                Account Number
+                <input
+                  value={settings.accountNumber}
+                  onChange={(e) => update("accountNumber", e.target.value)}
+                  className="input mt-1 w-full"
+                  placeholder="XXXXXXXXXXX"
+                />
+              </label>
+              <label className="text-sm text-muted">
+                IFSC Code
+                <input
+                  value={settings.ifscCode}
+                  onChange={(e) => update("ifscCode", e.target.value.toUpperCase())}
+                  className="input mt-1 w-full"
+                  placeholder="SBIN0001234"
+                />
+              </label>
+              <label className="text-sm text-muted md:col-span-2">
+                UPI ID
+                <input
+                  value={settings.upiId}
+                  onChange={(e) => update("upiId", e.target.value)}
+                  className="input mt-1 w-full"
+                  placeholder="name@upi"
+                />
+              </label>
+            </div>
           </div>
         </div>
 

@@ -29,7 +29,32 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
   const { id } = await params;
   const data = await request.json();
-  const product = await prisma.product.updateMany({ where: { id, orgId }, data });
+
+  // Whitelist fields — never spread the raw request body into the DB.
+  const productData: Record<string, unknown> = {};
+  const stringField = (key: string) => {
+    if (typeof data[key] === "string") productData[key] = data[key];
+  };
+  const numberField = (key: string) => {
+    if (typeof data[key] === "number") productData[key] = data[key];
+  };
+  const boolField = (key: string) => {
+    if (typeof data[key] === "boolean") productData[key] = data[key];
+  };
+  stringField("name");
+  stringField("description");
+  stringField("sku");
+  stringField("hsnCode");
+  stringField("unit");
+  stringField("category");
+  stringField("brand");
+  stringField("image");
+  numberField("sellingPrice");
+  numberField("purchasePrice");
+  numberField("taxRate");
+  boolField("isActive");
+
+  const product = await prisma.product.updateMany({ where: { id, orgId }, data: productData });
   return NextResponse.json({ success: true });
 }
 

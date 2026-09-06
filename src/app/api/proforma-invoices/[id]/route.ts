@@ -6,7 +6,7 @@ import { getSessionOrgId } from "@/lib/org";
 
 async function getProformaInvoice(id: string, userId: string) {
   const orgId = await getSessionOrgId(userId);
-  const where: any = { id };
+  const where: { id: string; orgId?: string; userId?: string } = { id };
   if (orgId) where.orgId = orgId;
   else where.userId = userId;
   return prisma.proformaInvoice.findFirst({ where, include: { lines: true } });
@@ -47,7 +47,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
           ...fields,
           ...(lines ? {
             lines: {
-              create: lines.map((l: any) => ({
+              create: lines.map((l: { description?: string; quantity?: number; unitPrice?: number; taxRate?: number; hsnCode?: string }) => ({
                 description: l.description || "",
                 quantity: l.quantity || 0,
                 unitPrice: l.unitPrice || 0,

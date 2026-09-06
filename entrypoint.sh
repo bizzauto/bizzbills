@@ -18,12 +18,13 @@ echo "🔧 Generating Prisma client..."
 
 # Apply the schema to the database. This repo uses `prisma db push` (no
 # migrations folder), so the container self-heals on every deploy without a
-# manual `exec`. Retry a few times in case the DB is still starting up, and
-# DO NOT swallow a real failure — if the schema can't be applied the container
-# must not start serving a drifted database (P2022 on User.role/orgId, etc.).
-echo "🔧 Applying database schema (prisma db push)..."
+# manual `exec`. Retry a few times in case the DB is still starting up.
+#
+# NOTE: `--accept-data-loss` is deliberately NOT used — in production a
+# destructive schema drift must FAIL LOUDLY (container refuses to start) so a
+# human can review the data loss, never silently destroy live invoices.
 apply_schema() {
-  "$PRISMA" db push --skip-generate --accept-data-loss
+  "$PRISMA" db push --skip-generate
 }
 
 MAX_TRIES=5

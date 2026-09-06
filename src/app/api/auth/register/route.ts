@@ -20,7 +20,18 @@ export async function POST(request: Request) {
       );
     }
 
-    const existing = await prisma.user.findUnique({ where: { email } });
+    // Normalize email to lowercase to avoid case-sensitivity issues
+    const normalizedEmail = String(email).toLowerCase().trim();
+
+    // Password strength: minimum 8 characters
+    if (typeof password !== "string" || password.length < 8) {
+      return NextResponse.json(
+        { error: "Password must be at least 8 characters long" },
+        { status: 400 },
+      );
+    }
+
+    const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (existing) {
       return NextResponse.json(
         { error: "A user with this email already exists" },
@@ -52,7 +63,7 @@ export async function POST(request: Request) {
 
     const user = await prisma.user.create({
       data: {
-        email,
+        email: normalizedEmail,
         name: name || email.split("@")[0],
         phone: phone || null,
         passwordHash,

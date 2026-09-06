@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { getSessionOrgId } from "@/lib/org";
 import { prisma } from "@/lib/db";
 import { diffSnapshots } from "@/lib/diff";
 
@@ -14,9 +15,10 @@ export async function GET(
   }
 
   const { id, versionId } = await params;
+  const orgId = await getSessionOrgId(session.user.id);
 
   const invoice = await prisma.invoice.findFirst({
-    where: { id, userId: session.user.id },
+    where: { id, ...(orgId ? { orgId } : { userId: session.user.id }) },
   });
 
   if (!invoice) {

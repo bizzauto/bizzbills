@@ -10,6 +10,21 @@ function escapeCsv(value: string | number): string {
   return `"${str.replace(/"/g, '""')}"`;
 }
 
+/**
+ * Neutralise CSV/Excel formula injection: values beginning with = + - @ or a
+ * tab/CR would otherwise execute as a formula or formula prefix when opened
+ * in Excel/LibreOffice. Prefixing with a single quote renders them inert.
+ */
+function safeCsvCell(value: string | number): string {
+  const str = String(value);
+  return /^[=+\-@\t\r]/.test(str) ? `'${str}` : str;
+}
+
+/** Strip characters that would break the Content-Disposition header. */
+function safeFilename(name: string): string {
+  return name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 80) || "invoice";
+}
+
 function escapeMarkdownTable(value: string | number): string {
   return String(value).replace(/\|/g, "\\|");
 }
@@ -75,9 +90,10 @@ export async function GET(
   }
 
   if (format === "csv") {
+    const filename = safeFilename(data.invoiceNumber);
     let csv = "description,hsnCode,quantity,unitPrice,taxRate,lineTotal\n";
     for (const line of data.lines) {
-      csv += `${escapeCsv(line.description)},${escapeCsv(line.hsnCode)},${line.quantity},${line.unitPrice},${line.taxRate},${line.lineTotal.toFixed(2)}\n`;
+      csv += `${escapeCsv(safeCsvCell(line.description))},${escapeCsv(safeCsvCell(line.hsnCode))},${line.quantity},${line.unitPrice},${line.taxRate},${line.lineTotal.toFixed(2)}\n`;
     }
     csv += `,,,,"${data.subtotal.toFixed(2)}"\n`;
     csv += `,,,,"${data.taxTotal.toFixed(2)}"\n`;
@@ -85,7 +101,7 @@ export async function GET(
     return new Response(csv, {
       headers: {
         "Content-Type": "text/csv",
-        "Content-Disposition": `attachment; filename="${data.invoiceNumber}.csv"`,
+        "Content-Disposition": `attachment; filename="${filename}.csv"`,
       },
     });
   }
@@ -111,7 +127,7 @@ ${data.lines.map((l) => `| ${escapeMarkdownTable(l.description)} | ${escapeMarkd
   return new Response(markdown, {
     headers: {
       "Content-Type": "text/markdown",
-      "Content-Disposition": `inline; filename="${data.invoiceNumber}.md"`,
+      "Content-Disposition": `inline; filename="${safeFilename(data.invoiceNumber)}.md"`,
     },
   });
 }

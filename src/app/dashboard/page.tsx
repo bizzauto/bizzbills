@@ -64,6 +64,8 @@ export default function DashboardPage() {
   const [invoices, setInvoices] = useState<InvoiceSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [aiInsights, setAiInsights] = useState<AiInsights | null>(null);
+  const [chartTextColor, setChartTextColor] = useState("#94a3b8");
 
   useEffect(() => {
     if (status === "unauthenticated") { router.push("/auth/signin"); return; }
@@ -91,7 +93,8 @@ export default function DashboardPage() {
 
   const totals = useMemo(() => invoices.reduce((acc, inv) => ({
     revenue: acc.revenue + inv.total,
-    sent: acc.sent + (inv.status === "sent" ? inv.total : 0),
+    // "pending" is the stored status for a sent invoice awaiting payment
+    sent: acc.sent + (inv.status === "sent" || inv.status === "pending" ? inv.total : 0),
     overdue: acc.overdue + (inv.status === "overdue" ? inv.total : 0),
     draft: acc.draft + (inv.status === "draft" ? 1 : 0),
     paid: acc.paid + (inv.status === "paid" ? 1 : 0),
@@ -126,13 +129,12 @@ export default function DashboardPage() {
     return Object.entries(cust).sort(([, a], [, b]) => b - a).slice(0, 5);
   }, [invoices]);
 
-  const [chartTextColor, setChartTextColor] = useState("#94a3b8");
   const [chartGridColor, setChartGridColor] = useState("rgba(255,255,255,0.05)");
-  const [aiInsights, setAiInsights] = useState<AiInsights | null>(null);
 
   // Update chart colors on theme change
   useEffect(() => {
     const isLight = document.documentElement.classList.contains("light");
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time theme sync (see rule rationale)
     setChartTextColor(isLight ? "#64748b" : "#94a3b8");
     setChartGridColor(isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.05)");
   }, []);

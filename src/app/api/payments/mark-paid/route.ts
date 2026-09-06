@@ -40,6 +40,28 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
     }
 
+    // Money-integrity guard: when the client supplies an amount (online
+    // payment flow), it must match the invoice total. Without this, a caller
+    // could mark an invoice paid for any arbitrary amount.
+    if (amount !== undefined && Math.abs(amount - invoice.total) > 0.01) {
+      return NextResponse.json(
+        { error: "Payment amount does not match the invoice total" },
+        { status: 400 },
+      );
+    }
+
+    // Don't double-record payments on an already-paid invoice.
+    const existingPaid = await prisma.payment.findFirst({
+      where: { invoiceId: invoice.id, status: "completed" },
+      select: { id: true },
+    });
+    if (existingPaid) {
+      return NextResponse.json(
+        { error: "Invoice is already paid" },
+        { status: 409 },
+      );
+    }
+
     const payment = await prisma.payment.create({
       data: {
         orgId,

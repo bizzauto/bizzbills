@@ -55,3 +55,9 @@ tmp-*.py
 # Claude
 .claude/
 screenshot-*.png
+
+# Generated reports / harness state
+eslint-report.json
+.claude/
+build-out.log
+dev-server.log

@@ -3,23 +3,33 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getSessionOrg } from "@/lib/org";
 import { prisma } from "@/lib/db";
-import { type AccountType } from "@prisma/client";
 import { calculateInvoiceSummary, sanitizeInvoiceDraft, type InvoiceDraft } from "@/lib/invoicing";
+import { autoPostInvoiceJournal } from "@/lib/journal";
 import { snapshotFromInvoice } from "@/lib/diff";
 import { getPlanLimit, invoiceCountWhere } from "@/lib/planLimits";
 
+/**
+ * Returns `base` unchanged when available; otherwise keeps incrementing the
+ * trailing number (INV-0001 -> INV-0002) until a free number is found. Falls
+ * back to a timestamp suffix only for numbers with no trailing digits.
+ */
+async function ensureUniqueInvoiceNumber(base: string | null | undefined, orgId: string | null | undefined): Promise<string> {
+  const taken = (n: string) =>
+    prisma.invoice.findFirst({ where: { orgId: orgId ?? undefined, invoiceNumber: n }, select: { id: true } });
 
+  if (!base || !(await taken(base))) return base || `${Date.now().toString(36).toUpperCase()}`;
 
-async function findAccount(orgId: string, types: AccountType[], preferredCode?: string) {
-  const accounts = await prisma.chartOfAccount.findMany({
-    where: { orgId, type: { in: types }, isActive: true },
-    orderBy: { code: "asc" },
-  });
-  if (preferredCode) {
-    const found = accounts.find((a) => a.code === preferredCode);
-    if (found) return found;
-  }
-  return accounts[0] ?? null;
+  const m = base.match(/^(.*?)(\d+)(\D*)$/);
+  if (!m) return `${base}-${Date.now().toString(36).toUpperCase()}`;
+
+  const [, head, digits, tail] = m;
+  let seq = parseInt(digits, 10);
+  let candidate = base;
+  do {
+    seq += 1;
+    candidate = `${head}${String(seq).padStart(digits.length, "0")}${tail}`;
+  } while (await taken(candidate));
+  return candidate;
 }
 
 export async function GET() {
@@ -53,9 +63,21 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = (await request.json()) as InvoiceDraft;
+    let body: InvoiceDraft;
+    try {
+      body = (await request.json()) as InvoiceDraft;
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
     const clean = sanitizeInvoiceDraft(body);
     const summary = calculateInvoiceSummary(clean);
+
+    if (!summary.isValid) {
+      return NextResponse.json(
+        { error: summary.warnings.join(" • ") },
+        { status: 400 },
+      );
+    }
 
     const { orgId } = (await getSessionOrg()) ?? {};
 
@@ -83,55 +105,120 @@ export async function POST(request: Request) {
       }
     }
 
-    // Generate unique invoice number
-    let invoiceNumber = clean.invoiceNumber;
-    const existing = await prisma.invoice.findFirst({
-      where: { orgId: orgId ?? undefined, invoiceNumber },
-    });
-    if (existing) {
-      // Append timestamp to make unique
-      invoiceNumber = `${invoiceNumber}-${Date.now().toString(36).toUpperCase()}`;
-    }
+    // Ensure a unique invoice number. When the client-supplied number already
+    // exists, bump its trailing number instead of appending an ugly timestamp:
+    // INV-0001 -> INV-0002.
+    const invoiceNumber = await ensureUniqueInvoiceNumber(clean.invoiceNumber ?? "", orgId);
 
-    const invoice = await prisma.invoice.create({
-      data: {
-        invoiceNumber,
-        customerName: clean.customerName,
-        customerGstin: clean.customerGstin,
-        currency: clean.currency,
-        dueDate: clean.dueDate,
-        subtotal: summary.subtotal,
-        taxTotal: summary.taxTotal,
-        total: summary.total,
-        version: 1,
-        userId: session.user.id,
-        orgId: orgId ?? undefined,
-        lines: {
-          create: clean.lines.map((line) => ({
-            description: line.description,
-            hsnCode: line.hsnCode,
-            quantity: line.quantity,
-            unitPrice: line.unitPrice,
-            taxRate: line.taxRate,
-          })),
+    // Create the invoice, its lines, the version-1 snapshot, and the
+    // auto-posted journal entry in a single transaction.
+    const invoice = await prisma.$transaction(async (tx) => {
+      const created = await tx.invoice.create({
+        data: {
+          invoiceNumber,
+          customerName: clean.customerName,
+          customerGstin: clean.customerGstin,
+          currency: clean.currency,
+          date: clean.date ?? new Date().toISOString().split("T")[0],
+          dueDate: clean.dueDate,
+          status: clean.status ?? "draft",
+          subtotal: summary.subtotal,
+          taxTotal: summary.taxTotal,
+          total: summary.total,
+          version: 1,
+          userId: session.user.id,
+          orgId: orgId ?? undefined,
+          discountPercent: clean.discountPercent ?? 0,
+          discountAmount: summary.discountAmount,
+          shippingCharges: clean.shippingCharges ?? 0,
+          adjustment: clean.adjustment ?? 0,
+          roundOff: summary.roundOff,
+          amountInWords: clean.amountInWords ?? "",
+          isTaxInclusive: clean.isTaxInclusive ?? false,
+          customerAddress: clean.customerAddress ?? "",
+          customerEmail: clean.customerEmail ?? "",
+          customerPhone: clean.customerPhone ?? "",
+          customerState: clean.customerState ?? "",
+          shippingSameAsBilling: clean.shippingSameAsBilling ?? true,
+          shippingName: clean.shippingName ?? "",
+          shippingAddress: clean.shippingAddress ?? "",
+          shippingPhone: clean.shippingPhone ?? "",
+          placeOfSupply: clean.placeOfSupply ?? "",
+          reverseCharge: clean.reverseCharge ?? false,
+          poNumber: clean.poNumber ?? "",
+          referenceNumber: clean.referenceNumber ?? "",
+          notes: clean.notes ?? "",
+          terms: clean.terms ?? "",
+          bankName: clean.bankName ?? "",
+          bankAccountName: clean.bankAccountName ?? "",
+          bankAccountNumber: clean.bankAccountNumber ?? "",
+          bankIfsc: clean.bankIfsc ?? "",
+          bankBranch: clean.bankBranch ?? "",
+          upiId: clean.upiId ?? "",
+          signatureName: clean.signatureName ?? "",
+          signatureDesignation: clean.signatureDesignation ?? "",
+          lines: {
+            create: clean.lines.map((line) => ({
+              description: line.description,
+              hsnCode: line.hsnCode,
+              quantity: line.quantity,
+              unitPrice: line.unitPrice,
+              taxRate: line.taxRate,
+              discount: line.discount,
+            })),
+          },
         },
-      },
-      include: { lines: true },
-    });
+        include: { lines: true },
+      });
 
-    const snapshot = snapshotFromInvoice(invoice);
-    await prisma.invoiceVersion.create({
-      data: {
-        invoiceId: invoice.id,
-        version: 1,
-        snapshot: JSON.stringify(snapshot),
-        changeComment: "Invoice created",
-      },
-    });
+      const snapshot = snapshotFromInvoice(created);
+      await tx.invoiceVersion.create({
+        data: {
+          invoiceId: created.id,
+          version: 1,
+          snapshot: JSON.stringify(snapshot),
+          changeComment: "Invoice created",
+        },
+      });
 
-    if (orgId) {
-      await autoPostJournalEntries(orgId, invoice, clean, summary);
-    }
+      if (orgId) {
+        await autoPostInvoiceJournal(orgId, created, clean, summary, tx);
+
+        // Persist entered bank details into the org so they pre-fill every
+        // future invoice (saved once, reused everywhere). Only overwrite a
+        // field when the invoice actually carries a value, so a blank invoice
+        // can never wipe previously saved details.
+        const org = await tx.organization.findUnique({
+          where: { id: orgId },
+          select: { settings: true, upiId: true },
+        });
+
+        let orgSettings: Record<string, unknown> = {};
+        try {
+          orgSettings = org?.settings ? JSON.parse(org.settings) : {};
+        } catch {
+          orgSettings = {};
+        }
+
+        const orgUpdates: Record<string, unknown> = {};
+        if (clean.bankName) orgSettings.bankName = clean.bankName;
+        if (clean.bankAccountName) orgSettings.accountName = clean.bankAccountName;
+        if (clean.bankAccountNumber) orgSettings.accountNumber = clean.bankAccountNumber;
+        if (clean.bankIfsc) orgSettings.ifscCode = clean.bankIfsc;
+        if (clean.upiId) {
+          orgSettings.upiId = clean.upiId;
+          orgUpdates.upiId = clean.upiId;
+        }
+        orgUpdates.settings = JSON.stringify(orgSettings);
+
+        await tx.organization.update({
+          where: { id: orgId },
+          data: orgUpdates,
+        });
+      }
+
+      return created;
+    });
 
     return NextResponse.json(invoice, { status: 201 });
   } catch (e) {
@@ -140,108 +227,5 @@ export async function POST(request: Request) {
       { error: e instanceof Error ? e.message : "Failed to create invoice" },
       { status: 500 },
     );
-  }
-}
-
-async function autoPostJournalEntries(
-  orgId: string,
-  invoice: { invoiceNumber: string; customerName: string; total: number; subtotal: number; taxTotal: number; id: string },
-  clean: { lines: { description: string; quantity: number; unitPrice: number; taxRate: number }[] },
-  summary: { subtotal: number; taxTotal: number; total: number },
-) {
-  // Try to create ChartOfAccount table first if it doesn't exist
-  let revenueAccount: any = null;
-  let receivableAccount: any = null;
-  let taxAccount: any = null;
-
-  try {
-    // Check if ChartOfAccount table exists
-    const existingChartAccounts = await prisma.chartOfAccount.findMany({
-      where: { orgId },
-    });
-    
-    if (existingChartAccounts.length === 0) {
-      // Create default accounts if none exist
-      await prisma.chartOfAccount.createMany({
-        data: [
-          {
-            orgId,
-            code: "REV",
-            name: "Revenue",
-            type: "INCOME",
-          },
-          {
-            orgId,
-            code: "AR",
-            name: "Accounts Receivable",
-            type: "ASSET",
-          },
-          {
-            orgId,
-            code: "GST-PAY",
-            name: "GST Payable",
-            type: "LIABILITY",
-          },
-        ],
-      });
-    }
-
-    // Get the accounts
-    revenueAccount = await findAccount(orgId, ["INCOME"], "REV");
-    receivableAccount = await findAccount(orgId, ["ASSET"], "AR");
-    taxAccount = await findAccount(orgId, ["LIABILITY"], "GST-PAY");
-  } catch (error) {
-    console.warn("[invoices] ChartOfAccount operations failed:", error);
-    // Continue with existing fallback logic
-  }
-
-  // If ChartOfAccount creation fails, fall back to hardcoded account IDs
-  if (!revenueAccount || !receivableAccount) {
-    revenueAccount = revenueAccount || { id: "fallback-revenue", code: "REV", name: "Revenue", type: "INCOME" };
-    receivableAccount = receivableAccount || { id: "fallback-ar", code: "AR", name: "Accounts Receivable", type: "ASSET" };
-    taxAccount = taxAccount || { id: "fallback-gst", code: "GST-PAY", name: "GST Payable", type: "LIABILITY" };
-  }
-
-  // Correct double-entry for a sales invoice:
-  //   Debit  Accounts Receivable  (total — what customer owes)
-  //   Credit Revenue              (subtotal — actual income)
-  //   Credit GST Payable          (taxTotal — tax collected)
-  const lines: { accountId: string; debit: number; credit: number; description: string }[] = [];
-
-  if (receivableAccount) {
-    lines.push({ accountId: receivableAccount.id, debit: summary.total, credit: 0, description: `Invoice ${invoice.invoiceNumber} - Receivable` });
-  }
-
-  if (revenueAccount) {
-    lines.push({ accountId: revenueAccount.id, debit: 0, credit: summary.subtotal, description: `Invoice ${invoice.invoiceNumber} - Revenue` });
-  }
-
-  if (taxAccount && summary.taxTotal > 0) {
-    lines.push({ accountId: taxAccount.id, debit: 0, credit: summary.taxTotal, description: `Invoice ${invoice.invoiceNumber} - GST Payable` });
-  }
-
-  const totalDebit = lines.reduce((s, l) => s + l.debit, 0);
-  const totalCredit = lines.reduce((s, l) => s + l.credit, 0);
-
-  if (Math.abs(totalDebit - totalCredit) < 0.01 && lines.length > 0) {
-    try {
-      await prisma.journalEntry.create({
-        data: {
-          orgId,
-          entryNumber: `JE-${invoice.invoiceNumber}`,
-          date: new Date(),
-          description: `Auto-posted for Invoice ${invoice.invoiceNumber} to ${invoice.customerName}`,
-          reference: `INV-${invoice.invoiceNumber}`,
-          isPosted: true,
-          lines: { create: lines },
-        },
-      });
-      console.log(`[invoices] Successfully auto-posted journal entries for invoice ${invoice.invoiceNumber}`);
-    } catch (journalError) {
-      console.error("[invoices] Failed to auto-post journal entries:", journalError);
-      // Don't throw this error to user - journal posting failure should not block invoice creation
-    }
-  } else {
-    console.warn(`[invoices] Journal entry imbalance for invoice ${invoice.invoiceNumber}: debit=${totalDebit}, credit=${totalCredit}`);
   }
 }

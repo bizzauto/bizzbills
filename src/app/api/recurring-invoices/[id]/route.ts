@@ -72,7 +72,7 @@ export async function PATCH(
     if (customerName) updateData.customerName = customerName;
     if (customerGstin !== undefined) updateData.customerGstin = customerGstin;
     if (frequency) updateData.frequency = frequency;
-    if (interval) updateData.interval = interval;
+    if (typeof interval === "number") updateData.interval = interval;
     if (endDate !== undefined) updateData.endDate = endDate ? new Date(endDate) : null;
 
     if (lines) {

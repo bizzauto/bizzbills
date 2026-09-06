@@ -60,7 +60,14 @@ export async function POST(request: Request) {
     }
 
     const count = await prisma.creditNote.count({ where: { orgId } });
-    const creditNoteNumber = `CN-${String(count + 1).padStart(3, "0")}`;
+    let creditNoteNumber = `CN-${String(count + 1).padStart(3, "0")}`;
+    const numberCollision = await prisma.creditNote.findFirst({
+      where: { orgId, creditNoteNumber },
+      select: { id: true },
+    });
+    if (numberCollision) {
+      creditNoteNumber = `${creditNoteNumber}-${Date.now().toString(36).toUpperCase()}`;
+    }
 
     let subtotal = 0;
     let taxTotal = 0;
@@ -119,10 +126,10 @@ export async function POST(request: Request) {
       await prisma.journalEntry.create({
         data: {
           orgId,
-          entryNumber: `JE-${creditNoteNumber}`,
+          entryNumber: `JE-CN-${creditNoteNumber}`,
           date: new Date(date),
           description: `Auto-posted for Credit Note ${creditNoteNumber} to ${customerName}`,
-          reference: `CN-${creditNoteNumber}`,
+          reference: `CREDIT-NOTE-${creditNoteNumber}`,
           isPosted: true,
           lines: { create: jeLines },
         },
