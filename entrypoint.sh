@@ -4,17 +4,19 @@ set -e
 
 echo "🚀 Starting BizzBills..."
 
-# Use the locally-installed Prisma binary directly (NOT `npx`), because at
-# container runtime `npx` may try to resolve/install and fail silently with
-# no network — which would skip the schema sync and boot a drifted DB.
+# Use the locally-installed Prisma CLI (NOT `npx`/global `prisma`) — the
+# runner image has no global install, and `npx` would try to download from
+# the registry at container start. The Dockerfile copies node_modules/.bin.
 PRISMA="./node_modules/.bin/prisma"
 if [ ! -x "$PRISMA" ]; then
-  PRISMA="prisma"
+  echo "❌ Prisma CLI not found at $PRISMA — the Docker image is missing node_modules/.bin. Refusing to start." >&2
+  exit 1
 fi
 
-# Generate the client matching the committed schema.
-echo "🔧 Generating Prisma client..."
-"$PRISMA" generate
+# NOTE: no runtime `prisma generate` — the client is already generated during
+# docker build (RUN npx prisma generate) from the same schema and copied into
+# the image via node_modules/.prisma. Regenerating at startup only adds a
+# failure mode.
 
 # Apply the schema to the database. This repo uses `prisma db push` (no
 # migrations folder), so the container self-heals on every deploy without a
