@@ -31,6 +31,25 @@ export default function InvoicesListPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  async function handleDelete(inv: Invoice) {
+    if (!window.confirm(`Delete invoice ${inv.invoiceNumber}? This cannot be undone.`)) return;
+    setDeletingId(inv.id);
+    try {
+      const res = await fetch(`/api/invoices/${inv.id}`, { method: "DELETE" });
+      if (res.ok) {
+        setInvoices((prev) => prev.filter((i) => i.id !== inv.id));
+      } else {
+        const data = await res.json().catch(() => ({}));
+        window.alert(data.error || "Failed to delete invoice");
+      }
+    } catch {
+      window.alert("Failed to delete invoice");
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -183,12 +202,24 @@ export default function InvoicesListPage() {
                       })}
                     </td>
                     <td className="px-4 py-3">
-                      <Link
-                        href={`/invoices/${inv.id}`}
-                        className="text-accent hover:text-accent/80 text-sm font-medium"
-                      >
-                        View
-                      </Link>
+                      <div className="flex items-center gap-3">
+                        <Link
+                          href={`/invoices/${inv.id}`}
+                          className="text-accent hover:text-accent/80 text-sm font-medium"
+                        >
+                          View
+                        </Link>
+                        {(inv.status === "draft" || inv.status === "pending") && (
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(inv)}
+                            disabled={deletingId === inv.id}
+                            className="text-danger/70 hover:text-danger text-sm font-medium disabled:opacity-50"
+                          >
+                            {deletingId === inv.id ? "Deleting…" : "Delete"}
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

@@ -4,6 +4,18 @@ Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-s
 
 **Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 
+## 0. PRODUCTION SAFETY RULES (from project owner — always applies)
+
+This app runs LIVE at https://invoice.bizzautoai.com (Coolify on VPS root@87.76.169.6, SSH key ~/.ssh/vps_key).
+
+- **Double-check before deleting anything** — verify TWICE (code, data, containers, files, env vars) that it is unused/safe before removal. When in doubt, ask.
+- **Never break working code.** If something works, changes must be proven safe first (tests + local verification) before touching production.
+- **Real user data exists.** The production `postgres` database belongs to another/legacy app — NEVER touch, drop, or run destructive commands against it. The BizzBills app uses the dedicated `bizzbills` database.
+- **Never run `--accept-data-loss`** anywhere against production.
+- **Container is live:** before stopping/recreating anything, confirm the replacement works (image built, env correct) — no downtime windows without reason.
+- **Env vars in Coolify are the source of truth** (encrypted in coolify-db). Changing only the on-disk .env file gets overwritten on next deploy — update via Coolify (artisan tinker on the coolify container) instead.
+- Prefer additive fixes over rewrites. If a fix needs to delete code, list what and why, and get confirmation for anything non-trivial.
+
 ## 1. Think Before Coding
 
 **Don't assume. Don't hide confusion. Surface tradeoffs.**

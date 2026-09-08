@@ -178,3 +178,55 @@ export async function PATCH(
     return NextResponse.json({ error: "Failed to update invoice" }, { status: 500 });
   }
 }
+
+/**
+ * DELETE an invoice. Financial-integrity rules:
+ * - only DRAFT or PENDING invoices are deletable (paid/overdue/cancelled
+ *   invoices are accounting records and must not disappear);
+ * - invoices with payments, credit notes, or debit notes attached are
+ *   refused — those references must be removed first.
+ * Lines and versions cascade with the invoice row.
+ */
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await params;
+  const invoice = await getAuthInvoice(id, session.user.id);
+
+  if (!invoice) {
+    return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
+  }
+
+  if (invoice.status !== "draft" && invoice.status !== "pending") {
+    return NextResponse.json(
+      { error: `Only draft or pending invoices can be deleted (this one is "${invoice.status}")` },
+      { status: 409 },
+    );
+  }
+
+  const [paymentCount, creditNoteCount, debitNoteCount] = await Promise.all([
+    prisma.payment.count({ where: { invoiceId: id } }),
+    prisma.creditNote.count({ where: { invoiceId: id } }),
+    prisma.debitNote.count({ where: { invoiceId: id } }),
+  ]);
+
+  if (paymentCount > 0 || creditNoteCount > 0 || debitNoteCount > 0) {
+    return NextResponse.json(
+      { error: "This invoice has payments or notes attached and cannot be deleted" },
+      { status: 409 },
+    );
+  }
+
+  try {
+    await prisma.invoice.delete({ where: { id } });
+    return NextResponse.json({ ok: true });
+  } catch {
+    return NextResponse.json({ error: "Failed to delete invoice" }, { status: 500 });
+  }
+}
