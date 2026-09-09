@@ -115,6 +115,7 @@ function toTemplateData(data: DocumentData): TemplateData {
       quantity: l.quantity,
       unitPrice: l.unitPrice,
       taxRate: l.taxRate,
+      discount: l.discount || 0,
     })),
     subtotal: data.subtotal,
     taxTotal: data.taxTotal,

@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { formatAmount } from "@/lib/currency";
 
 /* ───────────────────────────────────────────────
@@ -86,6 +87,7 @@ export interface TemplateLine {
   quantity: number;
   unitPrice: number;
   taxRate: number;
+  discount?: number;
 }
 
 /* ───────────────────────────────────────────────
@@ -387,209 +389,300 @@ function accentGradient(d: TemplateData, fallback = "#06b6d4"): string {
 }
 
 /* ===================================================================
-   CLASSIC GST TEMPLATE
+   CLASSIC GST TEMPLATE — complete Tally-style Tax Invoice
+   (double outer border, boxed buyer/consignee, rate-wise tax summary,
+    declaration + signature — mirrors Tally's printed Tax Invoice)
    =================================================================== */
 function ClassicGSTTemplate({ data }: { data: TemplateData }) {
   const cur = currency(data);
+  const frame = `2px solid ${accent(data, "#0f172a")}`;
+  const inner = "1px solid #64748b";
+  const cell = "1px solid #94a3b8";
+  const cellPad = "5px 7px";
+  const label = { fontSize: "9px", fontWeight: 700, color: "#334155", margin: "0 0 2px", textTransform: "uppercase", letterSpacing: "0.06em" };
+
+  // Rate-wise tax computation (taxable = qty*rate − line discount)
+  const byRate: Record<number, { taxable: number; cgst: number; sgst: number; igst: number }> = {};
+  let grandTaxable = 0;
+  for (const l of data.lines) {
+    const taxable = taxableOf(l);
+    grandTaxable += taxable;
+    const r = l.taxRate;
+    if (!byRate[r]) byRate[r] = { taxable: 0, cgst: 0, sgst: 0, igst: 0 };
+    byRate[r].taxable += taxable;
+    const tax = taxable * (r / 100);
+    if (data.isInterState) byRate[r].igst += tax;
+    else { byRate[r].cgst += tax / 2; byRate[r].sgst += tax / 2; }
+  }
+  const r2 = (x: number) => Math.round(x * 100) / 100;
+
   return (
-    <div className="invoice-template" style={{ fontFamily: fontFamily(data), background: "white", color: "#1e293b", padding: "40px", maxWidth: "800px", margin: "0 auto" }}>
-      {/* Header with accent bar */}
-      <div style={{ background: accentGradient(data), height: "6px", borderRadius: "3px 3px 0 0", margin: "-40px -40px 0" }} />
-
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", paddingTop: "28px" }}>
-        <div>
-          <h1 style={{ fontSize: "20px", fontWeight: "700", color: "#0f172a", margin: 0, letterSpacing: "-0.02em" }}>{data.orgName}</h1>
-          {data.orgAddress && <p style={{ fontSize: "11px", color: "#64748b", margin: "4px 0 0", lineHeight: 1.5 }}>{data.orgAddress}</p>}
-          {data.orgGstin && <p style={{ fontSize: "11px", color: "#64748b", margin: "2px 0 0" }}><strong>GSTIN:</strong> {data.orgGstin}</p>}
-          {data.orgEmail && <p style={{ fontSize: "11px", color: "#64748b", margin: "2px 0 0" }}>{data.orgEmail}</p>}
-          {data.orgPhone && <p style={{ fontSize: "11px", color: "#64748b", margin: "2px 0 0" }}>{data.orgPhone}</p>}
-        </div>
-        <div style={{ textAlign: "right" }}>
-          <div style={{ background: accentGradient(data), color: "white", padding: "8px 20px", borderRadius: "6px", marginBottom: "8px" }}>
-            <p style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.1em", margin: 0, opacity: 0.9 }}>{data.title}</p>
-            <p style={{ fontSize: "16px", fontWeight: "700", margin: "2px 0 0", letterSpacing: "-0.01em" }}>{data.number}</p>
+    <div className="invoice-template" style={{ fontFamily: fontFamily(data), background: "white", color: "#0f172a", maxWidth: "800px", margin: "0 auto", fontSize: "11px" }}>
+      {/* Double outer frame — Tally signature look */}
+      <div style={{ border: `3px double ${accent(data, "#0f172a")}`, padding: "1px" }}>
+        <div style={{ border: inner, padding: "14px 16px" }}>
+          {/* Company header (centered) */}
+          <div style={{ textAlign: "center", borderBottom: inner, paddingBottom: "8px", marginBottom: "8px" }}>
+            <h1 style={{ fontSize: "19px", fontWeight: 700, margin: 0, color: accent(data, "#0f172a"), letterSpacing: "0.02em" }}>{data.orgName}</h1>
+            {data.orgAddress && <p style={{ fontSize: "10px", color: "#475569", margin: "2px 0 0", lineHeight: 1.5 }}>{data.orgAddress}</p>}
+            <p style={{ fontSize: "10px", color: "#475569", margin: "2px 0 0" }}>
+              {[data.orgGstin && `GSTIN: ${data.orgGstin}`, data.orgPhone, data.orgEmail].filter(Boolean).join("  •  ")}
+            </p>
+            <p style={{ fontSize: "12px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.14em", margin: "6px 0 0", color: "#0f172a" }}>
+              {data.title}
+            </p>
+            <p style={{ fontSize: "9px", color: "#64748b", margin: "1px 0 0" }}>(Copy — Original for Recipient)</p>
           </div>
-          {data.poNumber && <p style={{ fontSize: "11px", color: "#64748b", margin: "4px 0 0" }}>PO: {data.poNumber}</p>}
-        </div>
-      </div>
 
-      {/* Divider */}
-      <div style={{ borderTop: "2px solid #e2e8f0", margin: "20px 0" }} />
-
-      {/* Bill To + Ship To + Dates */}
-      <div style={{ display: "grid", gridTemplateColumns: data.shippingAddress ? "1fr 1fr 1fr" : "1fr 1fr", gap: "16px", marginBottom: "24px" }}>
-        <div style={{ background: "#f8fafc", padding: "14px", borderRadius: "8px" }}>
-          <p style={{ fontSize: "9px", textTransform: "uppercase", letterSpacing: "0.12em", color: "#94a3b8", margin: "0 0 6px", fontWeight: 600 }}>Bill To</p>
-          <p style={{ fontSize: "14px", fontWeight: "600", color: "#0f172a", margin: 0 }}>{data.customerName}</p>
-          {data.customerAddress && <p style={{ fontSize: "11px", color: "#64748b", margin: "4px 0 0", lineHeight: 1.4 }}>{data.customerAddress}</p>}
-          {data.customerGstin && <p style={{ fontSize: "11px", color: "#475569", margin: "4px 0 0" }}>GSTIN: {data.customerGstin}</p>}
-          {data.customerPhone && <p style={{ fontSize: "11px", color: "#64748b", margin: "2px 0 0" }}>{data.customerPhone}</p>}
-          {data.customerEmail && <p style={{ fontSize: "11px", color: "#64748b", margin: "2px 0 0" }}>{data.customerEmail}</p>}
-        </div>
-        {data.shippingAddress && (
-          <div style={{ background: "#f8fafc", padding: "14px", borderRadius: "8px" }}>
-            <p style={{ fontSize: "9px", textTransform: "uppercase", letterSpacing: "0.12em", color: "#94a3b8", margin: "0 0 6px", fontWeight: 600 }}>Ship To</p>
-            {data.shippingName && <p style={{ fontSize: "13px", fontWeight: "600", color: "#0f172a", margin: 0 }}>{data.shippingName}</p>}
-            <p style={{ fontSize: "11px", color: "#64748b", margin: "4px 0 0", lineHeight: 1.4 }}>{data.shippingAddress}</p>
-            {data.shippingPhone && <p style={{ fontSize: "11px", color: "#64748b", margin: "2px 0 0" }}>{data.shippingPhone}</p>}
-          </div>
-        )}
-        <div style={{ textAlign: "right", paddingTop: "4px" }}>
-          <table style={{ marginLeft: "auto", borderCollapse: "collapse", fontSize: "12px" }}>
+          {/* Meta rows: invoice no/date/due + supply terms */}
+          <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "8px", fontSize: "10px" }}>
             <tbody>
-              {[
-                ["Invoice Date:", data.date] as const,
-                ["Due Date:", data.dueDate || "—"] as const,
-                ...(data.poNumber ? [["PO No:", data.poNumber] as const] : []),
-                ...(data.referenceNumber ? [["Ref No:", data.referenceNumber] as const] : []),
-                ...(data.placeOfSupply ? [["Place of Supply:", data.placeOfSupply] as const] : []),
-                ...(data.reverseCharge ? [["Reverse Charge:", "Yes"] as const] : []),
-              ].map(([label, val]) => (
-                <tr key={String(label)}>
-                  <td style={{ padding: "2px 12px 2px 0", color: "#94a3b8", textAlign: "right", whiteSpace: "nowrap" }}>{label}</td>
-                  <td style={{ padding: "2px 0", color: "#0f172a", fontWeight: 600, whiteSpace: "nowrap" }}>{val as string}</td>
+              <tr>
+                <td style={{ padding: cellPad, border: cell, width: "25%" }}><strong>Invoice No:</strong> {data.number}</td>
+                <td style={{ padding: cellPad, border: cell, width: "25%" }}><strong>Dated:</strong> {data.date}</td>
+                <td style={{ padding: cellPad, border: cell, width: "25%" }}><strong>Delivery Note:</strong> —</td>
+                <td style={{ padding: cellPad, border: cell, width: "25%" }}><strong>Mode/Terms of Payment:</strong> {data.isPaid ? "Paid" : "Credit"}</td>
+              </tr>
+              <tr>
+                <td style={{ padding: cellPad, border: cell }}><strong>Reference No:</strong> {data.referenceNumber || "—"}</td>
+                <td style={{ padding: cellPad, border: cell }}><strong>Buyer&apos;s Order No:</strong> {data.poNumber || "—"}</td>
+                <td style={{ padding: cellPad, border: cell }}><strong>Dispatch Doc No:</strong> —</td>
+                <td style={{ padding: cellPad, border: cell }}><strong>Due Date:</strong> {data.dueDate || "—"}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* Buyer / Consignee boxed row */}
+          <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "8px", fontSize: "10px" }}>
+            <tbody>
+              <tr>
+                <td style={{ width: "50%", border: cell, padding: cellPad, verticalAlign: "top" }}>
+                  <p style={label}>Buyer (Bill To)</p>
+                  <p style={{ fontSize: "12px", fontWeight: 700, margin: "0 0 2px", color: "#0f172a" }}>{data.customerName}</p>
+                  {data.customerAddress && <p style={{ margin: 0, lineHeight: 1.5, color: "#475569" }}>{data.customerAddress}</p>}
+                  {data.customerGstin && <p style={{ margin: "2px 0 0" }}><strong>GSTIN:</strong> {data.customerGstin}</p>}
+                  {data.customerState && <p style={{ margin: 0 }}><strong>State:</strong> {data.customerState}</p>}
+                  {data.customerPhone && <p style={{ margin: 0 }}><strong>Ph:</strong> {data.customerPhone}</p>}
+                </td>
+                <td style={{ width: "50%", border: cell, padding: cellPad, verticalAlign: "top", borderLeft: "none" }}>
+                  <p style={label}>Consignee (Ship To)</p>
+                  {data.shippingAddress ? (
+                    <>
+                      {data.shippingName && <p style={{ fontSize: "12px", fontWeight: 700, margin: "0 0 2px", color: "#0f172a" }}>{data.shippingName}</p>}
+                      <p style={{ margin: 0, lineHeight: 1.5, color: "#475569" }}>{data.shippingAddress}</p>
+                      {data.shippingPhone && <p style={{ margin: "2px 0 0" }}><strong>Ph:</strong> {data.shippingPhone}</p>}
+                    </>
+                  ) : (
+                    <>
+                      <p style={{ fontSize: "12px", fontWeight: 700, margin: "0 0 2px", color: "#0f172a" }}>{data.customerName}</p>
+                      {data.customerAddress && <p style={{ margin: 0, lineHeight: 1.5, color: "#475569" }}>{data.customerAddress}</p>}
+                      {data.customerGstin && <p style={{ margin: "2px 0 0" }}><strong>GSTIN:</strong> {data.customerGstin}</p>}
+                    </>
+                  )}
+                  {data.placeOfSupply && <p style={{ margin: "4px 0 0" }}><strong>Place of Supply:</strong> {data.placeOfSupply}</p>}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* Items grid — full borders */}
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "10px", marginBottom: "0" }}>
+            <thead>
+              <tr style={{ background: "#f1f5f9" }}>
+                {["#", "Description of Goods", "HSN/SAC", "GST%", "Quantity", "Rate", "Amount"].map((h) => (
+                  <th key={h} style={{ padding: "6px", border: cell, fontWeight: 700, fontSize: "9px", textTransform: "uppercase", textAlign: h === "Description of Goods" ? "left" : "center", color: "#334155" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {data.lines.map((line, i) => (
+                <tr key={i}>
+                  <td style={{ padding: cellPad, border: cell, textAlign: "center" }}>{i + 1}</td>
+                  <td style={{ padding: cellPad, border: cell, fontWeight: 500 }}>{line.description}</td>
+                  <td style={{ padding: cellPad, border: cell, textAlign: "center", fontFamily: "monospace" }}>{line.hsnCode || "—"}</td>
+                  <td style={{ padding: cellPad, border: cell, textAlign: "center" }}>{line.taxRate}%</td>
+                  <td style={{ padding: cellPad, border: cell, textAlign: "center" }}>{line.quantity}</td>
+                  <td style={{ padding: cellPad, border: cell, textAlign: "right" }}>{formatAmount(line.unitPrice, cur)}</td>
+                  <td style={{ padding: cellPad, border: cell, textAlign: "right", fontWeight: 600 }}>{formatAmount(taxableOf(line), cur)}</td>
+                </tr>
+              ))}
+              {data.lines.length < 4 && Array.from({ length: 4 - data.lines.length }).map((_, i) => (
+                <tr key={`pad-${i}`} style={{ height: "26px" }}>
+                  {Array.from({ length: 7 }).map((_, j) => <td key={j} style={{ border: cell }}>&nbsp;</td>)}
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
-      </div>
 
-      {/* Line Items Table */}
-      <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "20px", fontSize: "12px" }}>
-        <thead>
-          <tr style={{ background: accentBg(data) }}>
-            <th style={{ padding: "10px 12px", textAlign: "left", color: "#475569", fontWeight: 600, fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.06em", borderBottom: "2px solid #cbd5e1" }}>#</th>
-            <th style={{ padding: "10px 12px", textAlign: "left", color: "#475569", fontWeight: 600, fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.06em", borderBottom: "2px solid #cbd5e1" }}>Description</th>
-            <th style={{ padding: "10px 12px", textAlign: "left", color: "#475569", fontWeight: 600, fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.06em", borderBottom: "2px solid #cbd5e1" }}>HSN/SAC</th>
-            <th style={{ padding: "10px 12px", textAlign: "right", color: "#475569", fontWeight: 600, fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.06em", borderBottom: "2px solid #cbd5e1" }}>Qty</th>
-            <th style={{ padding: "10px 12px", textAlign: "right", color: "#475569", fontWeight: 600, fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.06em", borderBottom: "2px solid #cbd5e1" }}>Rate</th>
-            <th style={{ padding: "10px 12px", textAlign: "right", color: "#475569", fontWeight: 600, fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.06em", borderBottom: "2px solid #cbd5e1" }}>GST%</th>
-            <th style={{ padding: "10px 12px", textAlign: "right", color: "#475569", fontWeight: 600, fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.06em", borderBottom: "2px solid #cbd5e1" }}>Amount</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.lines.map((line, i) => (
-            <tr key={i} style={{ borderBottom: "1px solid #f1f5f9" }}>
-              <td style={{ padding: "10px 12px", color: "#94a3b8", fontSize: "11px" }}>{i + 1}</td>
-              <td style={{ padding: "10px 12px", color: "#0f172a", fontWeight: 500 }}>{line.description}</td>
-              <td style={{ padding: "10px 12px", color: "#64748b", fontFamily: "'Courier New', monospace", fontSize: "11px" }}>{line.hsnCode || "—"}</td>
-              <td style={{ padding: "10px 12px", textAlign: "right", color: "#475569" }}>{line.quantity}</td>
-              <td style={{ padding: "10px 12px", textAlign: "right", color: "#475569" }}>{formatAmount(line.unitPrice, cur)}</td>
-              <td style={{ padding: "10px 12px", textAlign: "right", color: "#475569" }}>{line.taxRate}%</td>
-              <td style={{ padding: "10px 12px", textAlign: "right", color: "#0f172a", fontWeight: 600 }}>{formatAmount(lineTotal(line), cur)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+          {/* Totals row — Grand Total left, tax summary right (Tally layout) */}
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "10px" }}>
+            <tbody>
+              <tr>
+                {/* Amount in words box */}
+                <td style={{ width: "55%", border: cell, padding: cellPad, verticalAlign: "top", borderRight: "none" }}>
+                  <p style={{ ...label, marginBottom: "3px" }}>Amount in Words</p>
+                  <p style={{ margin: 0, fontWeight: 600, lineHeight: 1.5, fontSize: "10px", color: "#0f172a" }}>
+                    {data.amountInWords || `Rupees ${numberToWords(data.total)} Only`}
+                  </p>
+                </td>
+                {/* Grand total */}
+                <td style={{ width: "45%", border: cell, padding: 0, verticalAlign: "top" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "10px" }}>
+                    <tbody>
+                      <tr>
+                        <td style={{ padding: cellPad, borderBottom: cell }}>Taxable Value</td>
+                        <td style={{ padding: cellPad, borderBottom: cell, textAlign: "right" }}>{formatAmount(r2(grandTaxable), cur)}</td>
+                      </tr>
+                      {data.discountAmount ? (
+                        <tr>
+                          <td style={{ padding: cellPad, borderBottom: cell }}>Discount</td>
+                          <td style={{ padding: cellPad, borderBottom: cell, textAlign: "right" }}>-{formatAmount(data.discountAmount, cur)}</td>
+                        </tr>
+                      ) : null}
+                      <tr>
+                        <td style={{ padding: cellPad, borderBottom: cell }}>Total Tax (GST)</td>
+                        <td style={{ padding: cellPad, borderBottom: cell, textAlign: "right" }}>{formatAmount(data.taxTotal, cur)}</td>
+                      </tr>
+                      {data.shippingCharges ? (
+                        <tr>
+                          <td style={{ padding: cellPad, borderBottom: cell }}>Shipping</td>
+                          <td style={{ padding: cellPad, borderBottom: cell, textAlign: "right" }}>{formatAmount(data.shippingCharges, cur)}</td>
+                        </tr>
+                      ) : null}
+                      {data.roundOff ? (
+                        <tr>
+                          <td style={{ padding: cellPad, borderBottom: cell }}>Round Off</td>
+                          <td style={{ padding: cellPad, borderBottom: cell, textAlign: "right" }}>{formatAmount(data.roundOff, cur)}</td>
+                        </tr>
+                      ) : null}
+                      <tr style={{ background: accentBg(data, "#0f172a", 0.08) }}>
+                        <td style={{ padding: "8px", fontWeight: 700, fontSize: "12px" }}>GRAND TOTAL</td>
+                        <td style={{ padding: "8px", textAlign: "right", fontWeight: 700, fontSize: "13px", color: accent(data, "#0f172a") }}>{formatAmount(data.total, cur)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </td>
+              </tr>
+            </tbody>
+          </table>
 
-      {/* Totals */}
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "20px" }}>
-        <div style={{ width: "320px" }}>
-          {[
-            ["Subtotal:", formatAmount(data.subtotal, cur)],
-            ...(data.discountAmount ? [["Discount:", `-${formatAmount(data.discountAmount, cur)}`]] : []),
-          ].map(([label, val], i) => (
-            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: "12px", color: "#64748b" }}>
-              <span>{label}</span>
-              <span style={{ color: "#475569", fontWeight: 500 }}>{val}</span>
-            </div>
-          ))}
+          {/* Rate-wise tax summary — Tally hallmark */}
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "9px", marginTop: "8px" }}>
+            <thead>
+              <tr style={{ background: "#f1f5f9" }}>
+                <th style={{ padding: "5px 6px", border: cell, textAlign: "left" }}>GST Rate</th>
+                <th style={{ padding: "5px 6px", border: cell, textAlign: "right" }}>Taxable Amount</th>
+                <th style={{ padding: "5px 6px", border: cell, textAlign: "right" }}>CGST Rate</th>
+                <th style={{ padding: "5px 6px", border: cell, textAlign: "right" }}>CGST Amt</th>
+                <th style={{ padding: "5px 6px", border: cell, textAlign: "right" }}>SGST Rate</th>
+                <th style={{ padding: "5px 6px", border: cell, textAlign: "right" }}>SGST Amt</th>
+                <th style={{ padding: "5px 6px", border: cell, textAlign: "right" }}>IGST Rate</th>
+                <th style={{ padding: "5px 6px", border: cell, textAlign: "right" }}>IGST Amt</th>
+                <th style={{ padding: "5px 6px", border: cell, textAlign: "right" }}>Total Tax</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Object.entries(byRate).map(([rate, v]) => {
+                const total = data.isInterState ? v.igst : v.cgst + v.sgst;
+                return (
+                  <tr key={rate}>
+                    <td style={{ padding: cellPad, border: cell, fontWeight: 600 }}>{rate}%</td>
+                    <td style={{ padding: cellPad, border: cell, textAlign: "right" }}>{formatAmount(r2(v.taxable), cur)}</td>
+                    {data.isInterState ? (
+                      <>
+                        <td style={{ padding: cellPad, border: cell, textAlign: "center", color: "#cbd5e1" }}>—</td>
+                        <td style={{ padding: cellPad, border: cell, textAlign: "right", color: "#cbd5e1" }}>—</td>
+                        <td style={{ padding: cellPad, border: cell, textAlign: "center", color: "#cbd5e1" }}>—</td>
+                        <td style={{ padding: cellPad, border: cell, textAlign: "right", color: "#cbd5e1" }}>—</td>
+                        <td style={{ padding: cellPad, border: cell, textAlign: "center" }}>{rate}%</td>
+                        <td style={{ padding: cellPad, border: cell, textAlign: "right" }}>{formatAmount(r2(v.igst), cur)}</td>
+                      </>
+                    ) : (
+                      <>
+                        <td style={{ padding: cellPad, border: cell, textAlign: "center" }}>{Number(rate) / 2}%</td>
+                        <td style={{ padding: cellPad, border: cell, textAlign: "right" }}>{formatAmount(r2(v.cgst), cur)}</td>
+                        <td style={{ padding: cellPad, border: cell, textAlign: "center" }}>{Number(rate) / 2}%</td>
+                        <td style={{ padding: cellPad, border: cell, textAlign: "right" }}>{formatAmount(r2(v.sgst), cur)}</td>
+                        <td style={{ padding: cellPad, border: cell, textAlign: "center", color: "#cbd5e1" }}>—</td>
+                        <td style={{ padding: cellPad, border: cell, textAlign: "right", color: "#cbd5e1" }}>—</td>
+                      </>
+                    )}
+                    <td style={{ padding: cellPad, border: cell, textAlign: "right", fontWeight: 600 }}>{formatAmount(r2(total), cur)}</td>
+                  </tr>
+                );
+              })}
+              <tr style={{ background: "#f8fafc", fontWeight: 700 }}>
+                <td style={{ padding: cellPad, border: cell }}>Total</td>
+                <td style={{ padding: cellPad, border: cell, textAlign: "right" }}>{formatAmount(r2(grandTaxable), cur)}</td>
+                {data.isInterState ? (
+                  <>
+                    <td style={{ padding: cellPad, border: cell }} />
+                    <td style={{ padding: cellPad, border: cell }} />
+                    <td style={{ padding: cellPad, border: cell }} />
+                    <td style={{ padding: cellPad, border: cell }} />
+                    <td style={{ padding: cellPad, border: cell }} />
+                    <td style={{ padding: cellPad, border: cell, textAlign: "right" }}>{formatAmount(data.taxTotal, cur)}</td>
+                  </>
+                ) : (
+                  <>
+                    <td style={{ padding: cellPad, border: cell }} />
+                    <td style={{ padding: cellPad, border: cell, textAlign: "right" }}>{formatAmount(data.taxTotal / 2, cur)}</td>
+                    <td style={{ padding: cellPad, border: cell }} />
+                    <td style={{ padding: cellPad, border: cell, textAlign: "right" }}>{formatAmount(data.taxTotal / 2, cur)}</td>
+                    <td style={{ padding: cellPad, border: cell }} />
+                    <td style={{ padding: cellPad, border: cell }} />
+                  </>
+                )}
+                <td style={{ padding: cellPad, border: cell, textAlign: "right" }}>{formatAmount(data.taxTotal, cur)}</td>
+              </tr>
+            </tbody>
+          </table>
 
-          {/* CGST/SGST Breakup */}
-          {data.isInterState ? (
-            <div style={{ padding: "4px 0", fontSize: "12px", color: "#64748b" }}>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span>IGST</span>
-                <span style={{ color: "#475569", fontWeight: 500 }}>{formatAmount(data.igstTotal || data.taxTotal, cur)}</span>
-              </div>
-              {data.igstBreakup && Object.entries(data.igstBreakup).map(([rate, amt]) => (
-                <div key={rate} style={{ display: "flex", justifyContent: "space-between", paddingLeft: "16px", fontSize: "10px", color: "#94a3b8" }}>
-                  <span>@ {rate}%</span>
-                  <span>{formatAmount(amt as number, cur)}</span>
-                </div>
-              ))}
+          {/* Bank + Declaration + Signature */}
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "9px", marginTop: "8px" }}>
+            <tbody>
+              <tr>
+                <td style={{ width: "62%", border: cell, padding: cellPad, verticalAlign: "top" }}>
+                  {(data.bankName || data.upiId) && (
+                    <>
+                      <p style={label}>Bank Details</p>
+                      <p style={{ margin: 0, lineHeight: 1.7, color: "#475569" }}>
+                        {[
+                          data.bankName && `Bank: ${data.bankName}`,
+                          data.bankAccountName && `A/C Name: ${data.bankAccountName}`,
+                          data.bankAccount && `A/C No: ${data.bankAccount}`,
+                          data.bankIfsc && `IFSC: ${data.bankIfsc}`,
+                          data.upiId && `UPI: ${data.upiId}`,
+                        ].filter(Boolean).join("  •  ")}
+                      </p>
+                    </>
+                  )}
+                </td>
+                <td style={{ width: "38%", border: cell, padding: cellPad, borderLeft: "none", textAlign: "right", verticalAlign: "top" }}>
+                  {data.upiId && <UpiQrBlock data={data} amount={data.total} box={64} />}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <DeclarationSignBlock data={data} accentColor={accent(data, "#0f172a")} />
+
+          {/* "Received in good condition" — buyer acknowledgement (Tally hallmark) */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginTop: "16px", fontSize: "9px" }}>
+            <div style={{ borderTop: inner, width: "200px", paddingTop: "3px", color: "#64748b" }}>
+              Receiver&apos;s Signature
             </div>
-          ) : (
-            <div style={{ padding: "4px 0", fontSize: "12px", color: "#64748b" }}>
-              {(data.cgstBreakup ? Object.keys(data.cgstBreakup) : data.sgstBreakup ? Object.keys(data.sgstBreakup) : []).map((rate) => (
-                <div key={rate} style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span>CGST @ {Number(rate) / 2}%</span>
-                  <span style={{ color: "#475569", fontWeight: 500 }}>{formatAmount(data.cgstBreakup?.[Number(rate)] || 0, cur)}</span>
-                </div>
-              ))}
-              {(data.sgstBreakup ? Object.keys(data.sgstBreakup) : data.cgstBreakup ? Object.keys(data.cgstBreakup) : []).map((rate) => (
-                <div key={`sgst-${rate}`} style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span>SGST @ {Number(rate) / 2}%</span>
-                  <span style={{ color: "#475569", fontWeight: 500 }}>{formatAmount(data.sgstBreakup?.[Number(rate)] || 0, cur)}</span>
-                </div>
-              ))}
+            <div style={{ color: "#94a3b8" }}>
+              {data.isPaid ? <strong style={{ color: "#16a34a" }}>✓ PAID{data.paymentMethod ? ` — ${data.paymentMethod}` : ""}</strong> : <span>Subject to {data.placeOfSupply || data.customerState || "Indian"} jurisdiction</span>}
             </div>
+          </div>
+
+          {data.poweredByBizzBills !== false && (
+            <p style={{ textAlign: "center", fontSize: "8px", color: "#cbd5e1", margin: "10px 0 0" }}>
+              Generated by BizzBills
+            </p>
           )}
-
-          {[
-            ...(data.shippingCharges ? [["Shipping:", formatAmount(data.shippingCharges, cur)]] : []),
-            ...(data.adjustment ? [["Adjustment:", `-₹${data.adjustment.toFixed(2)}`]] : []),
-            ...(data.roundOff ? [["Round Off:", `₹${data.roundOff.toFixed(2)}`]] : []),
-          ].map(([label, val], i) => (
-            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: "12px", color: "#64748b" }}>
-              <span>{label}</span>
-              <span style={{ color: "#475569", fontWeight: 500 }}>{val}</span>
-            </div>
-          ))}
-
-          <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0 0", marginTop: "4px", borderTop: `2px solid ${accent(data)}`, fontSize: "15px", fontWeight: "700", color: "#0f172a" }}>
-            <span>Total</span>
-            <span style={{ color: accent(data) }}>{formatAmount(data.total, cur)}</span>
-          </div>
-          <div style={{ fontSize: "10px", color: "#94a3b8", textAlign: "right", marginTop: "2px" }}>
-            {data.isPaid ? "✓ Paid" : "Amount in " + cur}
-          </div>
         </div>
-      </div>
-
-      {/* Amount in Words placeholder */}
-      <div style={{ fontSize: "11px", color: "#64748b", marginBottom: "16px", padding: "10px 14px", background: accentBg(data, "#06b6d4", 0.05), borderRadius: "6px", borderLeft: `3px solid ${accent(data)}` }}>
-        <strong>Amount in Words:</strong> Rupees {numberToWords(data.total)} only
-      </div>
-
-      {/* Notes */}
-      {data.notes && (
-        <div style={{ marginBottom: "16px", padding: "12px", background: "#fffbeb", borderRadius: "6px", fontSize: "11px", color: "#92400e", border: "1px solid #fde68a" }}>
-          <strong>Notes:</strong> {data.notes}
-        </div>
-      )}
-
-      {/* Terms */}
-      {data.terms && (
-        <div style={{ marginBottom: "16px", fontSize: "11px", color: "#64748b" }}>
-          <strong>Terms & Conditions:</strong> {data.terms}
-        </div>
-      )}
-
-      {/* Bank Details */}
-      {data.bankName && (
-        <div style={{ marginTop: "20px", paddingTop: "16px", borderTop: "1px solid #e2e8f0", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", fontSize: "11px", color: "#64748b" }}>
-          <div><strong>Bank:</strong> {data.bankName}</div>
-          <div><strong>A/C No:</strong> {data.bankAccount}</div>
-          <div><strong>IFSC:</strong> {data.bankIfsc}</div>
-          {data.upiId && <div><strong>UPI:</strong> {data.upiId}</div>}
-        </div>
-      )}
-
-      {/* Signature */}
-      {(data.signature || data.signatureName) && (
-        <div style={{ marginTop: "24px", textAlign: "right", fontSize: "12px", color: "#475569" }}>
-          <div style={{ marginBottom: "6px" }}>Authorized Signatory</div>
-          {data.signature && <div style={{ fontFamily: "'Brush Script MT', cursive", fontSize: "18px", color: "#0f172a", marginBottom: "4px" }}>{data.signature}</div>}
-          {data.signatureName && <div style={{ fontWeight: 600, color: "#0f172a" }}>{data.signatureName}</div>}
-          {data.signatureDesignation && <div style={{ fontSize: "11px", color: "#94a3b8" }}>{data.signatureDesignation}</div>}
-        </div>
-      )}
-
-      {/* Footer */}
-      <div style={{ marginTop: "32px", paddingTop: "12px", borderTop: "1px solid #e2e8f0", fontSize: "9px", color: "#94a3b8", textAlign: "center" }}>
-        Generated by BizzBills • {data.isPaid && data.paymentMethod ? `Paid via ${data.paymentMethod}` : ""} • {new Date().toLocaleDateString()}
       </div>
     </div>
   );
@@ -918,18 +1011,19 @@ function PremiumTemplate({ data }: { data: TemplateData }) {
 }
 
 /* ───────────────────────────────────────────────
-   Number to Words (Indian format)
+   Number to Words (Indian format, with paise)
    ─────────────────────────────────────────────── */
 function numberToWords(n: number): string {
   if (n === 0) return "Zero";
   const a = ["", "One ", "Two ", "Three ", "Four ", "Five ", "Six ", "Seven ", "Eight ", "Nine ", "Ten ", "Eleven ", "Twelve ", "Thirteen ", "Fourteen ", "Fifteen ", "Sixteen ", "Seventeen ", "Eighteen ", "Nineteen "];
   const b = ["", "", "Twenty ", "Thirty ", "Forty ", "Fifty ", "Sixty ", "Seventy ", "Eighty ", "Ninety "];
-  const units = ["", "Thousand ", "Lakh ", "Crore "];
-  
+
   // Indian numbering: ones, tens/hundreds, thousand, lakh, crore
-  const num = Math.round(n);
-  if (num === 0) return "Zero";
-  
+  const total = Math.round(n * 100) / 100;
+  const whole = Math.floor(total);
+  const paise = Math.round((total - whole) * 100);
+  if (whole === 0 && paise === 0) return "Zero";
+
   function convertBelow1000(x: number): string {
     let s = "";
     if (x >= 100) { s += a[Math.floor(x / 100)] + "Hundred "; x %= 100; }
@@ -937,21 +1031,204 @@ function numberToWords(n: number): string {
     if (x > 0) s += a[x];
     return s;
   }
-  
-  if (num < 1000) return convertBelow1000(num).trim();
-  
-  const crores = Math.floor(num / 10000000);
-  const lakhs = Math.floor((num % 10000000) / 100000);
-  const thousands = Math.floor((num % 100000) / 1000);
-  const hundreds = num % 1000;
-  
+
   let result = "";
-  if (crores > 0) result += convertBelow1000(crores) + "Crore ";
-  if (lakhs > 0) result += convertBelow1000(lakhs) + "Lakh ";
-  if (thousands > 0) result += convertBelow1000(thousands) + "Thousand ";
-  if (hundreds > 0) result += convertBelow1000(hundreds);
-  
-  return result.trim();
+  if (whole > 0) {
+    const crores = Math.floor(whole / 10000000);
+    const lakhs = Math.floor((whole % 10000000) / 100000);
+    const thousands = Math.floor((whole % 100000) / 1000);
+    const hundreds = whole % 1000;
+    if (crores > 0) result += convertBelow1000(crores) + "Crore ";
+    if (lakhs > 0) result += convertBelow1000(lakhs) + "Lakh ";
+    if (thousands > 0) result += convertBelow1000(thousands) + "Thousand ";
+    if (hundreds > 0) result += convertBelow1000(hundreds);
+    result = result.trim() + " Rupees";
+  }
+  if (paise > 0) {
+    result += (result ? " and " : "") + convertBelow1000(paise).trim() + " Paise";
+  }
+  if (!result) result = "Zero Rupees";
+  return result;
+}
+
+/* ───────────────────────────────────────────────
+   Shared professional sections (Tally/MyBillBook-grade)
+   ─────────────────────────────────────────────── */
+
+/** UPI intent QR payload (works with GPay/PhonePe/Paytm/BHIM scanners). */
+export function upiQrPayload(d: TemplateData, amount?: number): string | null {
+  if (!d.upiId) return null;
+  const params = new URLSearchParams({
+    pa: d.upiId,
+    pn: d.orgName || "Merchant",
+    cu: "INR",
+  });
+  if (amount && amount > 0) params.set("am", amount.toFixed(2));
+  if (d.number) params.set("tn", `Invoice ${d.number}`);
+  return `upi://pay?${params.toString()}`;
+}
+
+/** Per-line taxable value (after line discount). */
+const taxableOf = (l: TemplateLine) => {
+  const gross = l.quantity * l.unitPrice;
+  return gross - gross * ((l.discount || 0) / 100);
+};
+
+/** HSN-wise summary table (Tally format): HSN | taxable | tax-rate | cgst | sgst | igst. */
+function HsnSummaryTable({ data, compact = false }: { data: TemplateData; compact?: boolean }) {
+  const cur = currency(data);
+  const byHsn: Record<string, { taxable: number; rate: number; cgst: number; sgst: number; igst: number }> = {};
+  for (const l of data.lines) {
+    const key = l.hsnCode || "—";
+    if (!byHsn[key]) byHsn[key] = { taxable: 0, rate: l.taxRate, cgst: 0, sgst: 0, igst: 0 };
+    const taxable = taxableOf(l);
+    const tax = taxable * (l.taxRate / 100);
+    byHsn[key].taxable += taxable;
+    if (data.isInterState) byHsn[key].igst += tax;
+    else { byHsn[key].cgst += tax / 2; byHsn[key].sgst += tax / 2; }
+  }
+  const rows = Object.entries(byHsn);
+  if (rows.length === 0) return null;
+  const cell = "1px solid #94a3b8";
+  const th = { padding: "5px 6px", border: cell, fontSize: "9px", fontWeight: 700, background: "#f1f5f9", textAlign: "center" as const };
+  const td = { padding: "5px 6px", border: cell, fontSize: "9px", textAlign: "right" as const };
+  return (
+    <div style={{ marginTop: compact ? "10px" : "14px" }}>
+      <p style={{ fontSize: "9px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 4px", color: "#475569" }}>
+        HSN/SAC Tax Summary
+      </p>
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <thead>
+          <tr>
+            <th style={{ ...th, textAlign: "left" }}>HSN/SAC</th>
+            <th style={th}>Taxable Value</th>
+            <th style={th}>Rate</th>
+            {!data.isInterState && <th style={th}>CGST</th>}
+            {!data.isInterState && <th style={th}>SGST</th>}
+            {data.isInterState && <th style={th}>IGST</th>}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(([hsn, r]) => (
+            <tr key={hsn}>
+              <td style={{ ...td, textAlign: "left" }}>{hsn}</td>
+              <td style={td}>{formatAmount(Math.round(r.taxable * 100) / 100, cur)}</td>
+              <td style={{ ...td, textAlign: "center" }}>{r.rate}%</td>
+              {!data.isInterState && <td style={td}>{formatAmount(Math.round(r.cgst * 100) / 100, cur)}</td>}
+              {!data.isInterState && <td style={td}>{formatAmount(Math.round(r.sgst * 100) / 100, cur)}</td>}
+              {data.isInterState && <td style={td}>{formatAmount(Math.round(r.igst * 100) / 100, cur)}</td>}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/** Full-rate tax summary with exact CGST/SGST/IGST split (Tally style). */
+function TaxSummaryRows({ data }: { data: TemplateData }) {
+  const cur = currency(data);
+  if (data.isInterState) {
+    return (
+      <>
+        {data.igstBreakup && Object.entries(data.igstBreakup).map(([rate, amt]) => (
+          <div key={rate} style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", fontSize: "11px", color: "#475569" }}>
+            <span>IGST @ {rate}%</span>
+            <span style={{ fontWeight: 500 }}>{formatAmount(amt as number, cur)}</span>
+          </div>
+        ))}
+        {!data.igstBreakup && (
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", fontSize: "11px", color: "#475569" }}>
+            <span>IGST</span><span style={{ fontWeight: 500 }}>{formatAmount(data.igstTotal || data.taxTotal, cur)}</span>
+          </div>
+        )}
+      </>
+    );
+  }
+  const rates = data.cgstBreakup ? Object.keys(data.cgstBreakup) : data.sgstBreakup ? Object.keys(data.sgstBreakup) : [];
+  if (rates.length === 0) {
+    return (
+      <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", fontSize: "11px", color: "#475569" }}>
+        <span>CGST + SGST</span>
+        <span style={{ fontWeight: 500 }}>{formatAmount(data.taxTotal, cur)}</span>
+      </div>
+    );
+  }
+  return (
+    <>
+      {rates.map((rate) => (
+        <div key={`c${rate}`} style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", fontSize: "11px", color: "#475569" }}>
+          <span>CGST @ {Number(rate) / 2}%</span>
+          <span style={{ fontWeight: 500 }}>{formatAmount(data.cgstBreakup?.[Number(rate)] || 0, cur)}</span>
+        </div>
+      ))}
+      {rates.map((rate) => (
+        <div key={`s${rate}`} style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", fontSize: "11px", color: "#475569" }}>
+          <span>SGST @ {Number(rate) / 2}%</span>
+          <span style={{ fontWeight: 500 }}>{formatAmount(data.sgstBreakup?.[Number(rate)] || 0, cur)}</span>
+        </div>
+      ))}
+    </>
+  );
+}
+
+/** UPI payment QR block (real scannable QR via qrcode.react). */
+function UpiQrBlock({ data, amount, box = 84 }: { data: TemplateData; amount?: number; box?: number }) {
+  const payload = upiQrPayload(data, amount);
+  if (!payload) return null;
+  return (
+    <div style={{ textAlign: "center" }}>
+      <div style={{ padding: "6px", background: "white", border: "1px solid #cbd5e1", borderRadius: "6px", display: "inline-block" }}>
+        <QRCodeSVG value={payload} size={box} level="M" />
+      </div>
+      <p style={{ fontSize: "8px", color: "#64748b", margin: "4px 0 0" }}>Scan &amp; Pay via UPI</p>
+      <p style={{ fontSize: "10px", fontWeight: 600, color: "#0f172a", margin: "1px 0 0" }}>{data.upiId}</p>
+    </div>
+  );
+}
+
+/** Declaration + For <org> Authorised Signatory block (both templates). */
+function DeclarationSignBlock({ data, accentColor = "#0f172a" }: { data: TemplateData; accentColor?: string }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginTop: "18px", gap: "24px" }}>
+      <div style={{ fontSize: "9px", color: "#64748b", maxWidth: "55%", lineHeight: 1.6 }}>
+        <p style={{ fontWeight: 700, margin: "0 0 3px", color: "#334155" }}>Declaration</p>
+        <p style={{ margin: 0 }}>
+          We declare that this invoice shows the actual price of the goods/services described and that all
+          particulars are true and correct. Interest @18% p.a. will be charged on overdue payments.
+        </p>
+        {data.terms && <p style={{ margin: "4px 0 0" }}><strong>Terms:</strong> {data.terms}</p>}
+      </div>
+      <div style={{ textAlign: "center", minWidth: "190px" }}>
+        <p style={{ fontSize: "10px", margin: "0 0 2px", color: "#475569" }}>For {data.orgName}</p>
+        <div style={{ height: "42px" }} />
+        <div style={{ borderTop: `1px solid ${accentColor}`, width: "170px", margin: "0 auto", paddingTop: "4px" }}>
+          <p style={{ fontSize: "10px", fontWeight: 700, margin: 0, color: "#0f172a" }}>{data.signatureName || "Authorised Signatory"}</p>
+          {data.signatureDesignation && <p style={{ fontSize: "9px", color: "#94a3b8", margin: 0 }}>{data.signatureDesignation}</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Bank details + UPI QR side-by-side card (MyBillBook style). */
+function BankQrCard({ data, amount }: { data: TemplateData; amount?: number }) {
+  if (!data.bankName && !data.upiId) return null;
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: data.bankName && data.upiId ? "1fr auto" : "1fr", gap: "14px", alignItems: "center" }}>
+      {data.bankName && (
+        <div style={{ padding: "10px 12px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "10px", color: "#334155", lineHeight: 1.7 }}>
+          <p style={{ fontWeight: 700, fontSize: "9px", textTransform: "uppercase", letterSpacing: "0.08em", color: "#64748b", margin: "0 0 4px" }}>Bank &amp; Payment Details</p>
+          {data.bankName && <div><strong>Bank:</strong> {data.bankName}{data.bankBranch ? `, ${data.bankBranch}` : ""}</div>}
+          {data.bankAccountName && <div><strong>A/C Name:</strong> {data.bankAccountName}</div>}
+          {data.bankAccount && <div><strong>A/C No:</strong> {data.bankAccount}</div>}
+          {data.bankIfsc && <div><strong>IFSC:</strong> {data.bankIfsc}</div>}
+          {data.upiId && <div><strong>UPI:</strong> {data.upiId}</div>}
+        </div>
+      )}
+      {data.upiId && <UpiQrBlock data={data} amount={amount} />}
+    </div>
+  );
 }
 
 /* ===================================================================
@@ -1040,14 +1317,19 @@ function MyBillBookTemplate({ data }: { data: TemplateData }) {
         <div style={{ width: "280px" }}>
           {[
             ["Subtotal", formatAmount(data.subtotal, cur)],
-            ["GST", formatAmount(data.taxTotal, cur)],
-            ...(data.discount ? [["Discount", `-${formatAmount(data.discount, cur)}`]] : []),
+            ...(data.discountAmount ? [["Discount", `-${formatAmount(data.discountAmount, cur)}`]] : []),
             ...(data.shippingCharges ? [["Shipping", formatAmount(data.shippingCharges, cur)]] : []),
           ].map(([label, val]) => (
             <div key={label} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: "12px", color: "#6b7280" }}>
               <span>{label}</span><span style={{ fontWeight: 500, color: "#4b5563" }}>{val}</span>
             </div>
           ))}
+          <TaxSummaryRows data={data} />
+          {data.roundOff ? (
+            <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: "12px", color: "#6b7280" }}>
+              <span>Round Off</span><span style={{ fontWeight: 500, color: "#4b5563" }}>{formatAmount(data.roundOff, cur)}</span>
+            </div>
+          ) : null}
           <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0 0", marginTop: "4px", borderTop: `3px solid ${accent(data, "#2563eb")}`, fontSize: "16px", fontWeight: "700" }}>
             <span>Total</span><span style={{ color: accent(data, "#2563eb") }}>{formatAmount(data.total, cur)}</span>
           </div>
@@ -1058,20 +1340,30 @@ function MyBillBookTemplate({ data }: { data: TemplateData }) {
       </div>
 
       {/* Amount in Words */}
-      <div style={{ fontSize: "11px", color: "#4b5563", marginBottom: "16px", padding: "10px 14px", background: accentBg(data, "#2563eb", 0.06), borderRadius: "8px", borderLeft: `3px solid ${accent(data, "#2563eb")}` }}>
-        <strong>In words:</strong> Rupees {numberToWords(data.total)} only
+      <div style={{ display: "flex", justifyContent: "space-between", gap: "14px", alignItems: "stretch", marginBottom: "14px" }}>
+        <div style={{ flex: 1, fontSize: "11px", color: "#334155", padding: "10px 14px", background: accentBg(data, "#2563eb", 0.06), borderRadius: "8px", borderLeft: `3px solid ${accent(data, "#2563eb")}`, display: "flex", alignItems: "center" }}>
+          <span><strong>In words:</strong> {data.amountInWords || `Rupees ${numberToWords(data.total)} Only`}</span>
+        </div>
+        {data.upiId && (
+          <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "6px" }}>
+            <UpiQrBlock data={data} amount={data.total} box={72} />
+          </div>
+        )}
       </div>
 
+      {/* HSN summary (GST compliance) */}
+      <HsnSummaryTable data={data} compact />
+
       {/* Bank Details + Notes */}
-      <div style={{ display: "grid", gridTemplateColumns: data.bankName ? "1fr 1fr" : "1fr", gap: "16px", marginBottom: "16px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: data.bankName && data.notes ? "1fr 1fr" : "1fr", gap: "16px", margin: "14px 0 0" }}>
         {data.bankName && (
           <div style={{ padding: "12px", background: "#f8fafc", borderRadius: "10px", fontSize: "11px" }}>
             <p style={{ fontWeight: 600, margin: "0 0 6px", color: "#374151" }}>Bank Details</p>
             <div style={{ color: "#6b7280", lineHeight: 1.8 }}>
-              <div><strong>Bank:</strong> {data.bankName}</div>
+              <div><strong>Bank:</strong> {data.bankName}{data.bankBranch ? `, ${data.bankBranch}` : ""}</div>
+              {data.bankAccountName && <div><strong>A/C Name:</strong> {data.bankAccountName}</div>}
               <div><strong>A/C:</strong> {data.bankAccount}</div>
               <div><strong>IFSC:</strong> {data.bankIfsc}</div>
-              {data.upiId && <div><strong>UPI:</strong> {data.upiId}</div>}
             </div>
           </div>
         )}
@@ -1083,16 +1375,11 @@ function MyBillBookTemplate({ data }: { data: TemplateData }) {
         )}
       </div>
 
-      {/* QR Code placeholder + UPI */}
-      {data.upiId && (
-        <div style={{ textAlign: "center", marginBottom: "16px", padding: "12px", background: "#f0f7ff", borderRadius: "10px" }}>
-          <p style={{ fontSize: "10px", color: "#6b7280", margin: "0 0 4px" }}>Scan to Pay via UPI</p>
-          <div style={{ width: "80px", height: "80px", margin: "0 auto", background: "white", borderRadius: "8px", border: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "10px", color: "#9ca3af" }}>QR Code</div>
-          <p style={{ fontSize: "12px", fontWeight: 600, color: "#2563eb", margin: "4px 0 0" }}>{data.upiId}</p>
-        </div>
-      )}
+      {/* Declaration + Signature */}
+      <DeclarationSignBlock data={data} accentColor={accent(data, "#2563eb")} />
 
       <div style={{ marginTop: "16px", paddingTop: "12px", borderTop: "1px solid #e5e7eb", fontSize: "9px", color: "#9ca3af", textAlign: "center" }}>
+        <p style={{ margin: "0 0 3px", fontWeight: 600, color: accent(data, "#2563eb"), fontSize: "11px" }}>Thank you for your business!</p>
         {data.poweredByBizzBills !== false && <span>Powered by BizzBills • </span>}
         {data.orgName} • {new Date().toLocaleDateString()}
       </div>
@@ -1194,11 +1481,15 @@ function BestTemplate({ data }: { data: TemplateData }) {
           <table style={{ width: "100%", borderCollapse: "collapse", border: `1px solid ${accent(data, "#1a1a1a")}`, fontSize: "11px" }}>
             <tbody>
               <tr><td style={{ padding: "6px 8px", fontWeight: 700, borderBottom: "1px solid #ddd" }}>Sub Total</td><td style={{ padding: "6px 8px", textAlign: "right", borderBottom: "1px solid #ddd" }}>{formatAmount(data.subtotal, cur)}</td></tr>
-              <tr><td style={{ padding: "6px 8px", fontWeight: 700, borderBottom: "1px solid #ddd" }}>CGST</td><td style={{ padding: "6px 8px", textAlign: "right", borderBottom: "1px solid #ddd" }}>{formatAmount(data.taxTotal / 2, cur)}</td></tr>
-              <tr><td style={{ padding: "6px 8px", fontWeight: 700, borderBottom: "1px solid #ddd" }}>SGST</td><td style={{ padding: "6px 8px", textAlign: "right", borderBottom: "1px solid #ddd" }}>{formatAmount(data.taxTotal / 2, cur)}</td></tr>
+              {data.discountAmount ? <tr><td style={{ padding: "6px 8px", fontWeight: 700, borderBottom: "1px solid #ddd" }}>Discount</td><td style={{ padding: "6px 8px", textAlign: "right", borderBottom: "1px solid #ddd" }}>-{formatAmount(data.discountAmount, cur)}</td></tr> : null}
+              {data.shippingCharges ? <tr><td style={{ padding: "6px 8px", fontWeight: 700, borderBottom: "1px solid #ddd" }}>Shipping</td><td style={{ padding: "6px 8px", textAlign: "right", borderBottom: "1px solid #ddd" }}>{formatAmount(data.shippingCharges, cur)}</td></tr> : null}
+              {data.roundOff ? <tr><td style={{ padding: "6px 8px", fontWeight: 700, borderBottom: "1px solid #ddd" }}>Round Off</td><td style={{ padding: "6px 8px", textAlign: "right", borderBottom: "1px solid #ddd" }}>{formatAmount(data.roundOff, cur)}</td></tr> : null}
               <tr style={{ background: accentBg(data, "#1a1a1a", 0.1) }}><td style={{ padding: "8px", fontWeight: 700, fontSize: "13px" }}>GRAND TOTAL</td><td style={{ padding: "8px", textAlign: "right", fontWeight: 700, fontSize: "13px", color: accent(data) }}>{formatAmount(data.total, cur)}</td></tr>
             </tbody>
           </table>
+          <div style={{ border: `1px solid ${accent(data, "#1a1a1a")}`, borderTop: "none", padding: "6px 8px", fontSize: "10px" }}>
+            <TaxSummaryRows data={data} />
+          </div>
         </div>
       </div>
 
@@ -1215,9 +1506,49 @@ function BestTemplate({ data }: { data: TemplateData }) {
         </div>
       )}
 
+      {/* Rate-wise tax summary (exact CGST/SGST/IGST split) */}
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "9px", marginBottom: "14px", border: `1px solid ${accent(data, "#1a1a1a")}` }}>
+        <thead>
+          <tr style={{ background: accentBg(data, "#1a1a1a", 0.1) }}>
+            {["GST Rate", "Taxable Amt", "CGST Rate", "CGST Amt", "SGST Rate", "SGST Amt", "IGST Rate", "IGST Amt", "Total Tax"].map((h) => (
+              <th key={h} style={{ padding: "5px 6px", border: "1px solid #ccc", fontSize: "9px", fontWeight: 700, textAlign: h === "GST Rate" ? "left" : "right" }}>{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style={{ padding: "5px 6px", border: "1px solid #ccc", fontWeight: 700 }}>{data.isInterState ? "IGST" : "CGST+SGST"}</td>
+            <td style={{ padding: "5px 6px", border: "1px solid #ccc", textAlign: "right" }}>{formatAmount(data.subtotal, cur)}</td>
+            {data.isInterState ? (
+              <>
+                <td style={{ padding: "5px 6px", border: "1px solid #ccc", textAlign: "center", color: "#bbb" }}>—</td>
+                <td style={{ padding: "5px 6px", border: "1px solid #ccc", textAlign: "right", color: "#bbb" }}>—</td>
+                <td style={{ padding: "5px 6px", border: "1px solid #ccc", textAlign: "center", color: "#bbb" }}>—</td>
+                <td style={{ padding: "5px 6px", border: "1px solid #ccc", textAlign: "right", color: "#bbb" }}>—</td>
+                <td style={{ padding: "5px 6px", border: "1px solid #ccc", textAlign: "center" }}>—</td>
+                <td style={{ padding: "5px 6px", border: "1px solid #ccc", textAlign: "right" }}>{formatAmount(data.taxTotal, cur)}</td>
+              </>
+            ) : (
+              <>
+                <td style={{ padding: "5px 6px", border: "1px solid #ccc", textAlign: "center" }}>1/2</td>
+                <td style={{ padding: "5px 6px", border: "1px solid #ccc", textAlign: "right" }}>{formatAmount(data.taxTotal / 2, cur)}</td>
+                <td style={{ padding: "5px 6px", border: "1px solid #ccc", textAlign: "center" }}>1/2</td>
+                <td style={{ padding: "5px 6px", border: "1px solid #ccc", textAlign: "right" }}>{formatAmount(data.taxTotal / 2, cur)}</td>
+                <td style={{ padding: "5px 6px", border: "1px solid #ccc", textAlign: "center", color: "#bbb" }}>—</td>
+                <td style={{ padding: "5px 6px", border: "1px solid #ccc", textAlign: "right", color: "#bbb" }}>—</td>
+              </>
+            )}
+            <td style={{ padding: "5px 6px", border: "1px solid #ccc", textAlign: "right", fontWeight: 700 }}>{formatAmount(data.taxTotal, cur)}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* Declaration + Signature */}
+      <DeclarationSignBlock data={data} accentColor={accent(data, "#1a1a1a")} />
+
       {/* Notes */}
       {data.notes && (
-        <div style={{ padding: "8px", background: accentBg(data, "#f9a825", 0.1), fontSize: "11px", marginBottom: "12px", borderLeft: `3px solid ${accent(data, "#f9a825")}` }}>
+        <div style={{ padding: "8px", background: accentBg(data, "#f9a825", 0.1), fontSize: "11px", marginTop: "12px", marginBottom: "12px", borderLeft: `3px solid ${accent(data, "#f9a825")}` }}>
           <strong>Notes:</strong> {data.notes}
         </div>
       )}
