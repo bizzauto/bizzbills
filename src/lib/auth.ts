@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "@/lib/db";
 import { verifyPassword } from "@/lib/password";
 import { rateLimit } from "@/lib/rate-limit";
+import { slugifyForOrg } from "@/lib/bridge";
 
 export const authOptions: NextAuthOptions = {
   session: {
@@ -55,6 +56,63 @@ export const authOptions: NextAuthOptions = {
       role,
     };
   },
+    }),
+    /**
+     * CRM Bridge Provider (Option A token bridge).
+     * The CRM signs a short-lived one-time token with a shared BRIDGE_SECRET.
+     * The bridge page (/auth/bridge) POSTs it here with credentials instead of
+     * email/password. We find-or-create the BizzBills user+org from the
+     * verified payload — the user never sees this form.
+     */
+    CredentialsProvider({
+      id: "crm-bridge",
+      name: "CRM Bridge",
+      credentials: {
+        token: { label: "Bridge Token", type: "text" },
+      },
+      async authorize(credentials) {
+        if (!credentials?.token) return null;
+        const { verifyBridgeToken } = await import("@/lib/bridge");
+        const payload = verifyBridgeToken(credentials.token);
+        if (!payload) return null;
+
+        const email = payload.email.toLowerCase().trim();
+
+        // Find existing user (by email, else by CRM id in TenantUser metadata —
+        // simplest reliable match is email; CRM is the source of truth)
+        let user = await prisma.user.findUnique({ where: { email } });
+
+        if (!user) {
+          // Auto-provision: org + user (mirrors register/route.ts)
+          const org = await prisma.organization.create({
+            data: {
+              name: payload.businessName || payload.name || email.split("@")[0],
+              slug: slugifyForOrg(payload.businessName || payload.name || email.split("@")[0]),
+            },
+          });
+          user = await prisma.user.create({
+            data: {
+              email,
+              name: payload.name || email.split("@")[0],
+              orgId: org.id,
+              role: "ORG_ADMIN",
+              // passwordHash stays null — this user signs in via bridge/CRM
+            },
+          });
+          await prisma.tenantUser.create({
+            data: { userId: user.id, orgId: org.id, role: "ORG_ADMIN" },
+          });
+        }
+
+        return {
+          id: user.id,
+          email: user.email ?? undefined,
+          name: user.name,
+          image: user.image,
+          orgId: user.orgId ?? undefined,
+          role: user.role,
+        };
+      },
     }),
   ],
   callbacks: {

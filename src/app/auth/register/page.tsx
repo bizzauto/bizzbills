@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -12,6 +12,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -25,7 +26,7 @@ export default function RegisterPage() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, phone: phone || undefined, password }),
+        body: JSON.stringify({ name, email, phone: phone || undefined, password, inviteCode: inviteCode || undefined }),
       });
 
       if (!res.ok) {
@@ -53,6 +54,17 @@ await signIn("credentials", { email, password, redirect: false });
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <label className="block text-sm text-muted">
+            <span className="mb-1 block text-muted">Invite Code</span>
+            <input
+              type="text"
+              value={inviteCode}
+              onChange={(e) => setInviteCode(e.target.value)}
+              className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-default"
+              placeholder="Provided by the BizzBills team"
+              required
+            />
+          </label>
           <label className="block text-sm text-muted">
             <span className="mb-1 block text-muted">Name</span>
             <input
@@ -132,7 +144,7 @@ await signIn("credentials", { email, password, redirect: false });
             disabled={loading}
             className="w-full rounded-full bg-cyan-500 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:opacity-50"
           >
-            {loading ? "Creating account…" : "Create account"}
+            {loading ? "Creating accountâ€¦" : "Create account"}
           </button>
         </form>
 

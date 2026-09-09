@@ -11,7 +11,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Too many registration attempts. Try again later." }, { status: 429, headers: { "Retry-After": String(Math.ceil(rl.resetIn / 1000)) } });
     }
 
-    const { email, password, name, phone } = await request.json();
+    const { email, password, name, phone, inviteCode } = await request.json();
+
+    // Invite-gate: BizzBills is sold, not self-served. Without BIZZBILLS_INVITE_CODES
+    // set, self-serve signup is CLOSED entirely (bridge is the only account path).
+    const INVITE_CODES = (process.env.BIZZBILLS_INVITE_CODES || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (INVITE_CODES.length === 0) {
+      return NextResponse.json(
+        { error: "Self-serve registration is closed. BizzBills is available via sales or through the CRM bundle." },
+        { status: 403 }
+      );
+    }
+    if (!inviteCode || !INVITE_CODES.includes(String(inviteCode).trim())) {
+      return NextResponse.json({ error: "A valid invite code is required to register." }, { status: 403 });
+    }
 
     if (!email || !password) {
       return NextResponse.json(
