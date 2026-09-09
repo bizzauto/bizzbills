@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { formatAmount } from "@/lib/currency";
 import { calculateInvoiceSummary, type InvoiceDraft } from "@/lib/invoicing";
@@ -134,6 +135,9 @@ export default function NewInvoicePage() {
   const { data: session, status } = useSession();
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
+  // MyBillBook-style invoice numbering: auto (locked) by default, user can
+  // unlock to type a custom number.
+  const [autoNumber, setAutoNumber] = useState(true);
   const [orgSettings, setOrgSettings] = useState<Record<string, unknown>>({});
 
   const [form, setForm] = useState<InvoiceForm>({
@@ -200,9 +204,11 @@ export default function NewInvoicePage() {
   }, [status, router]);
 
   // Auto-generate the next sequential invoice number whenever the prefix or
-  // postfix changes (INV-0001, INV-0002, ...). Typing in the number field
-  // never triggers a re-fetch — only prefix/postfix edits do.
+  // postfix changes (INV-0001, INV-0002, ...). Skipped in manual mode — the
+  // user's typed number is never overwritten. Prefix/postfix edits still
+  // re-fetch; editing the number field itself never does.
   useEffect(() => {
+    if (!autoNumber) return;
     const t = setTimeout(() => {
       fetch(`/api/invoices/next-number?prefix=${encodeURIComponent(form.invoicePrefix)}&postfix=${encodeURIComponent(form.invoicePostfix)}`)
         .then((r) => (r.ok ? r.json() : null))
@@ -214,7 +220,7 @@ export default function NewInvoicePage() {
         .catch(() => {});
     }, 250);
     return () => clearTimeout(t);
-  }, [form.invoicePrefix, form.invoicePostfix]);
+  }, [form.invoicePrefix, form.invoicePostfix, autoNumber]);
 
   const updateField = useCallback(<K extends keyof InvoiceForm>(key: K, value: InvoiceForm[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -514,10 +520,25 @@ export default function NewInvoicePage() {
                 </select>
               </label>
               <label className="text-sm text-muted">
-                Invoice Number
+                <span className="flex items-center justify-between">
+                  <span>
+                    Invoice Number {autoNumber ? "(auto)" : "(manual)"}
+                  </span>
+                  {/* MyBillBook-style lock: auto-increments every new invoice,
+                      unlock to type a custom number */}
+                  <button
+                    type="button"
+                    onClick={() => setAutoNumber((v) => !v)}
+                    aria-label={autoNumber ? "Switch to manual invoice number" : "Switch to auto invoice number"}
+                    title={autoNumber ? "Auto-number ON — click to edit manually" : "Manual number — click to resume auto-numbering"}
+                    className="text-accent hover:text-accent/80"
+                  >
+                    {autoNumber ? "🔒" : "🔓"}
+                  </button>
+                </span>
                 <div className="flex gap-2 mt-1">
                   <input value={form.invoicePrefix} onChange={(e) => updateField("invoicePrefix", e.target.value)} className="input w-24" placeholder="INV-" />
-                  <input value={form.invoiceNumber} onChange={(e) => updateField("invoiceNumber", e.target.value)} className="input flex-1" />
+                  <input value={form.invoiceNumber} onChange={(e) => updateField("invoiceNumber", e.target.value)} className="input flex-1" readOnly={autoNumber} />
                   <input value={form.invoicePostfix} onChange={(e) => updateField("invoicePostfix", e.target.value)} className="input w-20" placeholder="/24-25" />
                 </div>
               </label>
@@ -823,29 +844,22 @@ export default function NewInvoicePage() {
               </label>
             </div>
 
-            {/* Bank Details */}
-            <div className="mt-4 space-y-3 border-t border-[var(--card-border)] pt-4">
-              <p className="text-xs font-medium text-default">Bank Details</p>
-              <label className="text-xs text-muted">
-                Bank Name
-                <input value={form.bankName} onChange={(e) => updateField("bankName", e.target.value)} className="input mt-1 w-full" />
-              </label>
-              <label className="text-xs text-muted">
-                Account Name
-                <input value={form.bankAccountName} onChange={(e) => updateField("bankAccountName", e.target.value)} className="input mt-1 w-full" />
-              </label>
-              <label className="text-xs text-muted">
-                Account Number
-                <input value={form.bankAccountNumber} onChange={(e) => updateField("bankAccountNumber", e.target.value)} className="input mt-1 w-full" />
-              </label>
-              <label className="text-xs text-muted">
-                IFSC Code
-                <input value={form.bankIfsc} onChange={(e) => updateField("bankIfsc", e.target.value.toUpperCase())} className="input mt-1 w-full" />
-              </label>
-              <label className="text-xs text-muted">
-                UPI ID
-                <input value={form.upiId} onChange={(e) => updateField("upiId", e.target.value)} className="input mt-1 w-full" placeholder="name@upi" />
-              </label>
+            {/* Bank details: intentionally NOT editable here — they live in
+                Settings → Template Settings, prefill automatically into every
+                invoice (kept in form state below for the printable PDF), and
+                match MyBillBook's flow where bank info is business-level. */}
+            <div className="mt-4 border-t border-[var(--card-border)] pt-4">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs text-muted">
+                  Bank &amp; UPI details {form.bankName ? `(${form.bankName})` : "not set"} are printed from your saved settings.
+                </p>
+                <Link
+                  href="/settings/template"
+                  className="shrink-0 text-xs font-medium text-accent hover:text-accent/80"
+                >
+                  Edit in Settings
+                </Link>
+              </div>
             </div>
 
             {/* Signature */}
