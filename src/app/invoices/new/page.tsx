@@ -13,9 +13,11 @@ type LineItem = {
   description: string;
   hsnCode: string;
   quantity: number;
+  unit: string;
   unitPrice: number;
   taxRate: number;
   discount: number;
+  discountType: "percent" | "amount";
 };
 
 type InvoiceForm = {
@@ -56,6 +58,7 @@ type InvoiceForm = {
   shippingCharges: number;
   adjustment: number;
   isTaxInclusive: boolean;
+  amountPaid: number;
 
   // Notes & Terms
   notes: string;
@@ -75,6 +78,7 @@ type InvoiceForm = {
 };
 
 const TAX_RATES = [0, 5, 12, 18, 28];
+const UNITS = ["PCS", "KG", "G", "LTR", "ML", "MTR", "FT", "BOX", "SET", "BAG", "DOZ", "HRS", "DAY", "NOS"];
 const INDIAN_STATES = [
   "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
   "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka",
@@ -161,12 +165,13 @@ export default function NewInvoicePage() {
     shippingPhone: "",
     placeOfSupply: "",
     reverseCharge: false,
-    lines: [{ id: generateId(), description: "", hsnCode: "", quantity: 1, unitPrice: 0, taxRate: 18, discount: 0 }],
+    lines: [{ id: generateId(), description: "", hsnCode: "", quantity: 1, unit: "PCS", unitPrice: 0, taxRate: 18, discount: 0, discountType: "percent" as const }],
     discountPercent: 0,
     discountAmount: 0,
     shippingCharges: 0,
     adjustment: 0,
     isTaxInclusive: false,
+    amountPaid: 0,
     notes: "",
     terms: "Payment due within 7 days. Thank you for your business.",
     bankName: "",
@@ -236,7 +241,7 @@ export default function NewInvoicePage() {
   const addLine = useCallback(() => {
     setForm((prev) => ({
       ...prev,
-      lines: [...prev.lines, { id: generateId(), description: "", hsnCode: "", quantity: 1, unitPrice: 0, taxRate: 18, discount: 0 }],
+      lines: [...prev.lines, { id: generateId(), description: "", hsnCode: "", quantity: 1, unit: "PCS", unitPrice: 0, taxRate: 18, discount: 0, discountType: "percent" as const }],
     }));
   }, []);
 
@@ -395,7 +400,7 @@ export default function NewInvoicePage() {
 
     form.lines.forEach((line) => {
       const lineTotal = line.quantity * line.unitPrice;
-      const lineDiscount = lineTotal * (line.discount / 100);
+      const lineDiscount = line.discountType === "amount" ? line.discount : lineTotal * (line.discount / 100);
       const taxAmount = (lineTotal - lineDiscount) * (line.taxRate / 100);
 
       if (isInterState) {
@@ -672,12 +677,13 @@ export default function NewInvoicePage() {
             <h2 className="section-label">Line Items</h2>
             <div className="space-y-2">
               {/* Desktop Header */}
-              <div className="hidden md:grid grid-cols-[1fr_80px_100px_80px_100px_80px_100px_40px] gap-2 text-xs font-medium text-muted px-1">
+              <div className="hidden md:grid grid-cols-[1fr_80px_80px_60px_100px_90px_70px_100px_80px_40px] gap-2 text-xs font-medium text-muted px-1">
                 <span>Description</span>
                 <span>HSN/SAC</span>
                 <span className="text-right">Qty</span>
+                <span>Unit</span>
                 <span className="text-right">Rate (₹)</span>
-                <span className="text-right">Disc %</span>
+                <span className="text-right">Discount</span>
                 <span className="text-center">GST %</span>
                 <span className="text-right">Amount</span>
                 <span />
@@ -685,7 +691,7 @@ export default function NewInvoicePage() {
 
               {form.lines.map((line, i) => {
                 const lineAmount = line.quantity * line.unitPrice;
-                const lineDiscount = lineAmount * (line.discount / 100);
+                const lineDiscount = line.discountType === "amount" ? line.discount : lineAmount * (line.discount / 100);
                 const taxable = lineAmount - lineDiscount;
                 const tax = taxable * (line.taxRate / 100);
                 const total = taxable + tax;
@@ -722,6 +728,14 @@ export default function NewInvoicePage() {
                           min="0.01"
                           step="0.01"
                         />
+                        <select
+                          value={line.unit}
+                          onChange={(e) => updateLine(line.id, { unit: e.target.value })}
+                          className="input w-16 text-center text-xs py-1"
+                          aria-label="Unit"
+                        >
+                          {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+                        </select>
                         <span className="text-muted text-xs">×</span>
                         <input
                           type="number"
@@ -752,8 +766,17 @@ export default function NewInvoicePage() {
                       </div>
                       <input value={line.hsnCode} onChange={(e) => updateLine(line.id, { hsnCode: e.target.value })} className="input w-full text-center" placeholder="HSN" />
                       <input type="number" value={line.quantity} onChange={(e) => updateLine(line.id, { quantity: Number(e.target.value) || 1 })} className="input w-full text-right" min="0.01" step="0.01" />
+                      <select value={line.unit} onChange={(e) => updateLine(line.id, { unit: e.target.value })} className="input w-full text-center text-xs">
+                        {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+                      </select>
                       <input type="number" value={line.unitPrice} onChange={(e) => updateLine(line.id, { unitPrice: Number(e.target.value) || 0 })} className="input w-full text-right" min="0" step="0.01" />
-                      <input type="number" value={line.discount} onChange={(e) => updateLine(line.id, { discount: Number(e.target.value) || 0 })} className="input w-full text-right" min="0" max="100" step="0.01" />
+                      <div className="flex gap-1">
+                        <input type="number" value={line.discount} onChange={(e) => updateLine(line.id, { discount: Number(e.target.value) || 0 })} className="input w-full text-right" min="0" step="0.01" />
+                        <select value={line.discountType} onChange={(e) => updateLine(line.id, { discountType: e.target.value as "percent" | "amount" })} className="input w-14 text-center text-xs" aria-label="Discount type">
+                          <option value="percent">%</option>
+                          <option value="amount">₹</option>
+                        </select>
+                      </div>
                       <select value={line.taxRate} onChange={(e) => updateLine(line.id, { taxRate: Number(e.target.value) })} className="input w-full text-center">
                         {TAX_RATES.map((r) => <option key={r} value={r}>{r}%</option>)}
                       </select>
@@ -820,6 +843,27 @@ export default function NewInvoicePage() {
                 <span>Total</span>
                 <span className="text-accent">₹{calculations.grandTotal.toFixed(2)}</span>
               </div>
+
+              {/* Payment status (My BillBook style) */}
+              <label className="flex items-center justify-between gap-2 pt-2">
+                <span className="text-muted text-sm">Amount Paid</span>
+                <input
+                  type="number"
+                  value={form.amountPaid || ""}
+                  onChange={(e) => updateField("amountPaid", Number(e.target.value) || 0)}
+                  className="input w-28 text-right text-sm"
+                  min="0"
+                  step="0.01"
+                  placeholder="0"
+                />
+              </label>
+              {form.amountPaid > 0 && (
+                <div className={`flex justify-between text-sm font-semibold ${form.amountPaid >= calculations.grandTotal ? "text-green-500" : "text-orange-500"}`}>
+                  <span>Balance Due</span>
+                  <span>₹{Math.max(0, calculations.grandTotal - form.amountPaid).toFixed(2)}</span>
+                </div>
+              )}
+
 
               <p className="text-xs text-muted italic mt-2">{calculations.amountInWords}</p>
             </div>

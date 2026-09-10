@@ -281,6 +281,7 @@ model Invoice {
   isTaxInclusive     Boolean  @default(false)
   roundOff          Float    @default(0)
   amountInWords     String   @default("")
+  amountPaid        Float    @default(0)
 
   approvalStatus  String    @default("draft") // draft, pending_approval, approved, rejected
   approvedBy      String?
@@ -311,8 +312,10 @@ model InvoiceLine {
   id          String @id @default(cuid())
   description String
   quantity    Float
+  unit        String @default("PCS")
   unitPrice   Float
   taxRate     Float  @default(0)
+  discountType String @default("percent") // percent | amount
   discount    Float  @default(0)
   hsnCode     String  @default("")
 

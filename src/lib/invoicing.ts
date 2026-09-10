@@ -2,11 +2,14 @@ export type InvoiceLine = {
   id: string;
   description: string;
   quantity: number;
+  unit?: string;
   unitPrice: number;
   taxRate: number;
   hsnCode: string;
-  /** Per-line percentage discount (0–100). */
+  /** Per-line percentage discount (0-100). */
   discount: number;
+  /** "percent" | "amount" — how `discount` is interpreted. */
+  discountType?: "percent" | "amount";
 };
 
 export type InvoiceDraft = {
@@ -53,6 +56,8 @@ export type InvoiceDraft = {
   signatureDesignation?: string;
   roundOff?: number;
   amountInWords?: string;
+  /** Amount already paid by the customer — balance = total - amountPaid. */
+  amountPaid?: number;
 };
 
 export type InvoiceSummary = {
