@@ -94,7 +94,11 @@ export default function InvoiceDetailPage() {
   const [eInvoiceError, setEInvoiceError] = useState<string | null>(null);
   const [irnCopied, setIrnCopied] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>("classic");
-  const [orgSettings, setOrgSettings] = useState<{ name?: string; address?: string; gstin?: string; email?: string; phone?: string } | null>(null);
+  const [orgSettings, setOrgSettings] = useState<{
+    name?: string; address?: string; gstin?: string; email?: string; phone?: string; logo?: string;
+    bankName?: string; accountName?: string; accountNumber?: string; ifscCode?: string; bankBranch?: string; upiId?: string;
+    defaultAccentColor?: string; showBankDetails?: boolean; showQrCode?: boolean; showSignature?: boolean; showGstin?: boolean;
+  } | null>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -119,7 +123,14 @@ export default function InvoiceDetailPage() {
         const sorted = Array.isArray(vers) ? vers.sort((a: VersionEntry, b: VersionEntry) => b.version - a.version) : [];
         setVersions(sorted);
         if (org && org.name) {
-          setOrgSettings({ name: org.name, address: org.address, gstin: org.gstin, email: org.email, phone: org.phone });
+          setOrgSettings({
+            name: org.name, address: org.address, gstin: org.gstin, email: org.email, phone: org.phone,
+            logo: org.logo, bankName: org.bankName, accountName: org.accountName, accountNumber: org.accountNumber,
+            ifscCode: org.ifscCode, bankBranch: org.bankBranch, upiId: org.upiId,
+            defaultAccentColor: org.defaultAccentColor,
+            showBankDetails: org.showBankDetails, showQrCode: org.showQrCode,
+            showSignature: org.showSignature, showGstin: org.showGstin,
+          });
           if (org.defaultTemplate) setSelectedTemplate(org.defaultTemplate);
         }
         setLoading(false);
@@ -294,12 +305,20 @@ export default function InvoiceDetailPage() {
     orgGstin: orgSettings?.gstin,
     orgEmail: orgSettings?.email,
     orgPhone: orgSettings?.phone,
-    bankName: invoice.bankName || undefined,
-    bankAccountName: invoice.bankAccountName || undefined,
-    bankAccount: invoice.bankAccountNumber || undefined,
-    bankIfsc: invoice.bankIfsc || undefined,
-    bankBranch: invoice.bankBranch || undefined,
-    upiId: invoice.upiId || undefined,
+    orgLogo: orgSettings?.logo,
+    accentColor: orgSettings?.defaultAccentColor,
+    showBankDetails: orgSettings?.showBankDetails !== false,
+    showQrCode: orgSettings?.showQrCode !== false,
+    showSignature: orgSettings?.showSignature !== false,
+    showGstin: orgSettings?.showGstin !== false,
+    // Bank/UPI: invoice fields win (as-entered at creation); org settings are
+    // the fallback so invoices created before bank details existed still print.
+    bankName: invoice.bankName || orgSettings?.bankName || undefined,
+    bankAccountName: invoice.bankAccountName || orgSettings?.accountName || undefined,
+    bankAccount: invoice.bankAccountNumber || orgSettings?.accountNumber || undefined,
+    bankIfsc: invoice.bankIfsc || orgSettings?.ifscCode || undefined,
+    bankBranch: invoice.bankBranch || orgSettings?.bankBranch || undefined,
+    upiId: invoice.upiId || orgSettings?.upiId || undefined,
     signatureName: invoice.signatureName || undefined,
     signatureDesignation: invoice.signatureDesignation || undefined,
     isPaid: invoice.status === "paid",

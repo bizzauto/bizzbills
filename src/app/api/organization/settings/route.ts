@@ -113,6 +113,7 @@ export async function GET() {
     id: user.org.id,
     name: user.org.name,
     slug: user.org.slug,
+    logo: user.org.logo,
     gstin: user.org.gstin,
     address: user.org.address,
     phone: user.org.phone,

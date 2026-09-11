@@ -79,6 +79,11 @@ export interface TemplateData {
   poweredByBizzBills?: boolean;
   watermark?: boolean;
   customFields?: string;
+  // Visibility toggles (Settings -> Template)
+  showBankDetails?: boolean;
+  showQrCode?: boolean;
+  showSignature?: boolean;
+  showGstin?: boolean;
 }
 
 export interface TemplateLine {
@@ -423,10 +428,15 @@ function ClassicGSTTemplate({ data }: { data: TemplateData }) {
         <div style={{ border: inner, padding: "14px 16px" }}>
           {/* Company header (centered) */}
           <div style={{ textAlign: "center", borderBottom: inner, paddingBottom: "8px", marginBottom: "8px" }}>
+            {data.orgLogo && <img src={data.orgLogo} alt="Logo" style={{ height: "56px", maxWidth: "180px", objectFit: "contain", margin: "0 auto 6px", display: "block" }} />}
             <h1 style={{ fontSize: "19px", fontWeight: 700, margin: 0, color: accent(data, "#0f172a"), letterSpacing: "0.02em" }}>{data.orgName}</h1>
             {data.orgAddress && <p style={{ fontSize: "10px", color: "#475569", margin: "2px 0 0", lineHeight: 1.5 }}>{data.orgAddress}</p>}
             <p style={{ fontSize: "10px", color: "#475569", margin: "2px 0 0" }}>
-              {[data.orgGstin && `GSTIN: ${data.orgGstin}`, data.orgPhone, data.orgEmail].filter(Boolean).join("  •  ")}
+              {[
+                data.showGstin !== false && data.orgGstin ? `GSTIN: ${data.orgGstin}` : null,
+                data.orgPhone,
+                data.orgEmail,
+              ].filter(Boolean).join("  •  ")}
             </p>
             <p style={{ fontSize: "12px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.14em", margin: "6px 0 0", color: "#0f172a" }}>
               {data.title}
@@ -1187,8 +1197,10 @@ function UpiQrBlock({ data, amount, box = 84 }: { data: TemplateData; amount?: n
   );
 }
 
-/** Declaration + For <org> Authorised Signatory block (both templates). */
+/** Declaration + For <org> Authorised Signatory block (both templates).
+ *  Hidden entirely when the owner turned off showSignature. */
 function DeclarationSignBlock({ data, accentColor = "#0f172a" }: { data: TemplateData; accentColor?: string }) {
+  if (data.showSignature === false) return null;
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginTop: "18px", gap: "24px" }}>
       <div style={{ fontSize: "9px", color: "#64748b", maxWidth: "55%", lineHeight: 1.6 }}>
@@ -1211,22 +1223,28 @@ function DeclarationSignBlock({ data, accentColor = "#0f172a" }: { data: Templat
   );
 }
 
-/** Bank details + UPI QR side-by-side card (MyBillBook style). */
+/** Bank details + UPI QR side-by-side card (MyBillBook style). Respects
+ *  the owner's showBankDetails / showQrCode visibility toggles. */
 function BankQrCard({ data, amount }: { data: TemplateData; amount?: number }) {
   if (!data.bankName && !data.upiId) return null;
+  if (data.showBankDetails === false && data.showQrCode === false) return null;
+  const showBank = data.showBankDetails !== false;
+  const showQr = data.showQrCode !== false;
+  if (showBank && !data.bankName && !showQr) return null;
+  if (showQr && !data.upiId && !showBank) return null;
   return (
-    <div style={{ display: "grid", gridTemplateColumns: data.bankName && data.upiId ? "1fr auto" : "1fr", gap: "14px", alignItems: "center" }}>
-      {data.bankName && (
+    <div style={{ display: "grid", gridTemplateColumns: showBank && data.bankName && data.upiId && showQr ? "1fr auto" : "1fr", gap: "14px", alignItems: "center" }}>
+      {showBank && data.bankName && (
         <div style={{ padding: "10px 12px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "8px", fontSize: "10px", color: "#334155", lineHeight: 1.7 }}>
           <p style={{ fontWeight: 700, fontSize: "9px", textTransform: "uppercase", letterSpacing: "0.08em", color: "#64748b", margin: "0 0 4px" }}>Bank &amp; Payment Details</p>
           {data.bankName && <div><strong>Bank:</strong> {data.bankName}{data.bankBranch ? `, ${data.bankBranch}` : ""}</div>}
           {data.bankAccountName && <div><strong>A/C Name:</strong> {data.bankAccountName}</div>}
           {data.bankAccount && <div><strong>A/C No:</strong> {data.bankAccount}</div>}
           {data.bankIfsc && <div><strong>IFSC:</strong> {data.bankIfsc}</div>}
-          {data.upiId && <div><strong>UPI:</strong> {data.upiId}</div>}
+          {showQr && data.upiId && <div><strong>UPI:</strong> {data.upiId}</div>}
         </div>
       )}
-      {data.upiId && <UpiQrBlock data={data} amount={amount} />}
+      {showQr && data.upiId && <UpiQrBlock data={data} amount={amount} />}
     </div>
   );
 }
@@ -1241,10 +1259,13 @@ function MyBillBookTemplate({ data }: { data: TemplateData }) {
       {/* Blue gradient header */}
       <div style={{ background: accentGradient(data, "#2563eb"), margin: "-36px -36px 28px", padding: "28px 36px", borderRadius: "0 0 20px 20px", color: "white" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div>
-            <h1 style={{ fontSize: "22px", fontWeight: "700", margin: 0 }}>{data.orgName}</h1>
-            {data.orgAddress && <p style={{ fontSize: "11px", margin: "4px 0 0", opacity: 0.8 }}>{data.orgAddress}</p>}
-            {data.orgGstin && <p style={{ fontSize: "11px", margin: "2px 0 0", opacity: 0.8 }}>GSTIN: {data.orgGstin}</p>}
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            {data.orgLogo && <img src={data.orgLogo} alt="Logo" style={{ height: "48px", maxWidth: "120px", objectFit: "contain", background: "white", borderRadius: "8px", padding: "4px" }} />}
+            <div>
+              <h1 style={{ fontSize: "22px", fontWeight: "700", margin: 0 }}>{data.orgName}</h1>
+              {data.orgAddress && <p style={{ fontSize: "11px", margin: "4px 0 0", opacity: 0.8 }}>{data.orgAddress}</p>}
+              {data.showGstin !== false && data.orgGstin && <p style={{ fontSize: "11px", margin: "2px 0 0", opacity: 0.8 }}>GSTIN: {data.orgGstin}</p>}
+            </div>
           </div>
           <div style={{ textAlign: "right" }}>
             <div style={{ background: "rgba(255,255,255,0.2)", padding: "8px 20px", borderRadius: "10px" }}>
@@ -1344,7 +1365,7 @@ function MyBillBookTemplate({ data }: { data: TemplateData }) {
         <div style={{ flex: 1, fontSize: "11px", color: "#334155", padding: "10px 14px", background: accentBg(data, "#2563eb", 0.06), borderRadius: "8px", borderLeft: `3px solid ${accent(data, "#2563eb")}`, display: "flex", alignItems: "center" }}>
           <span><strong>In words:</strong> {data.amountInWords || `Rupees ${numberToWords(data.total)} Only`}</span>
         </div>
-        {data.upiId && (
+        {data.showQrCode !== false && data.upiId && (
           <div style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: "8px", padding: "6px" }}>
             <UpiQrBlock data={data} amount={data.total} box={72} />
           </div>
