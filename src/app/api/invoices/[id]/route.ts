@@ -10,7 +10,10 @@ import { snapshotFromInvoice, diffSnapshots } from "@/lib/diff";
 async function getAuthInvoice(id: string, userId: string) {
   const orgId = await getSessionOrgId(userId);
 
-  const where: { id: string; userId?: string; orgId?: string } = { id };
+  // Multi-tenant pattern: org members see ALL org invoices. Fall back to
+  // userId-only when no org. (Previously AND-ed both — could hide invoices
+  // if session orgId drifted from the creator's userId.)
+  const where: { id: string; orgId?: string; userId?: string } = { id };
   if (orgId) {
     where.orgId = orgId;
   } else {

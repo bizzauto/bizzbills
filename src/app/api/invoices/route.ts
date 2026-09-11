@@ -41,12 +41,14 @@ export async function GET() {
 
   const { orgId } = await getSessionOrg() ?? {};
 
-  const whereClause: { userId?: string; orgId?: string } = {
-    userId: session.user.id,
-  };
-  if (orgId) {
-    whereClause.orgId = orgId;
-  }
+  // Multi-tenant pattern: if the user belongs to an org, show ALL invoices in
+  // that org (regardless of which team member created them). Fall back to
+  // userId-only for users without an org. The previous AND of userId + orgId
+  // could return zero rows when the session orgId drifted from the invoice
+  // creator's userId — hiding invoices that visibly exist in the database.
+  const whereClause: { orgId?: string; userId?: string } = orgId
+    ? { orgId }
+    : { userId: session.user.id };
 
   const invoices = await prisma.invoice.findMany({
     where: whereClause,
