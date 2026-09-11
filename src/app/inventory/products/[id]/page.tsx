@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useOrg } from "@/components/OrgProvider";
 import { formatAmount } from "@/lib/currency";
+import { BarcodeLabel } from "@/components/BarcodeLabel";
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -90,6 +91,41 @@ export default function ProductDetailPage() {
               </div>
             ))}
             {(!product.inventory || product.inventory.length === 0) && <p className="text-sm text-slate-500">No stock records.</p>}
+          </div>
+        </div>
+      </div>
+
+      {/* Barcode */}
+      <div className="mt-6 rounded-[1.5rem] border border-white/10 bg-slate-900/70 p-6">
+        <h2 className="text-lg font-semibold text-white mb-4">Barcode</h2>
+        <div className="flex flex-col sm:flex-row items-start gap-6">
+          <div className="bg-white p-4 rounded-xl">
+            <BarcodeLabel
+              value={product.sku || product.id}
+              showLabel
+              productName={product.name}
+              price={formatAmount(product.sellingPrice, currentOrgCurrency)}
+              hsn={product.hsnCode}
+              unit={product.unit}
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <p className="text-xs text-slate-400">Scan or print this barcode for inventory tracking.</p>
+            <p className="text-xs font-mono text-slate-300">{product.sku || product.id}</p>
+            <button
+              onClick={() => {
+                const el = document.getElementById("product-barcode");
+                if (el) {
+                  const w = window.open("", "_blank");
+                  w?.document.write(`<html><head><title>Barcode – ${product.name}</title><style>body{font-family:monospace;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;margin:0;}</style></head><body>${el.outerHTML}<script>document.getElementById("product-barcode").style.width="300px";document.getElementById("product-barcode").style.height="auto";</script></body></html>`);
+                  w?.document.close();
+                  w?.print();
+                }
+              }}
+              className="rounded-full bg-cyan-500 px-4 py-1.5 text-xs font-semibold text-slate-950 hover:bg-cyan-400 w-fit"
+            >
+              Print Barcode Label
+            </button>
           </div>
         </div>
       </div>
