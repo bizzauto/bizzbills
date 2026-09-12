@@ -129,6 +129,28 @@ export default function DashboardPage() {
     return Object.entries(cust).sort(([, a], [, b]) => b - a).slice(0, 5);
   }, [invoices]);
 
+  // MyBillBook-style quick KPIs
+  const todaySales = useMemo(() => {
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    return invoices
+      .filter((inv) => new Date(inv.createdAt).getTime() >= startOfDay && inv.status !== "draft")
+      .reduce((sum, inv) => sum + inv.total, 0);
+  }, [invoices]);
+
+  const thisMonthSales = useMemo(() => {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    return invoices
+      .filter((inv) => new Date(inv.createdAt).getTime() >= startOfMonth && inv.status !== "draft")
+      .reduce((sum, inv) => sum + inv.total, 0);
+  }, [invoices]);
+
+  const [chartGridColor, setChartGridColor] = useState("rgba(255,255,255,0.05)");
+      .filter((inv) => new Date(inv.createdAt).getTime() >= startOfMonth && inv.status !== "draft")
+      .reduce((sum, inv) => sum + inv.total, 0);
+  }, [invoices]);
+
   const [chartGridColor, setChartGridColor] = useState("rgba(255,255,255,0.05)");
 
   // Update chart colors on theme change
@@ -183,8 +205,12 @@ export default function DashboardPage() {
       {/* KPI Cards */}
       <section className="grid gap-4 md:grid-cols-4">
         <div className="kpi-card">
-          <span className="kpi-label">Total Revenue</span>
-          <span className="kpi-value kpi-accent-cyan">{formatAmount(totals.revenue, currentOrgCurrency)}</span>
+          <span className="kpi-label">Today's Sales</span>
+          <span className="kpi-value kpi-accent-cyan">{formatAmount(todaySales, currentOrgCurrency)}</span>
+        </div>
+        <div className="kpi-card">
+          <span className="kpi-label">This Month Sales</span>
+          <span className="kpi-value kpi-accent-cyan">{formatAmount(thisMonthSales, currentOrgCurrency)}</span>
         </div>
         <div className="kpi-card">
           <span className="kpi-label">Outstanding</span>
@@ -193,10 +219,6 @@ export default function DashboardPage() {
         <div className="kpi-card">
           <span className="kpi-label">Overdue</span>
           <span className="kpi-value kpi-accent-red">{formatAmount(totals.overdue, currentOrgCurrency)}</span>
-        </div>
-        <div className="kpi-card">
-            <span className="kpi-label">Paid / Total</span>
-          <span className="kpi-value kpi-accent-emerald">{totals.paid} <span className="text-sm font-normal text-muted">/ {invoices.length}</span></span>
         </div>
       </section>
 
