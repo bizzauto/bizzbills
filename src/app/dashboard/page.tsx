@@ -147,11 +147,6 @@ export default function DashboardPage() {
   }, [invoices]);
 
   const [chartGridColor, setChartGridColor] = useState("rgba(255,255,255,0.05)");
-      .filter((inv) => new Date(inv.createdAt).getTime() >= startOfMonth && inv.status !== "draft")
-      .reduce((sum, inv) => sum + inv.total, 0);
-  }, [invoices]);
-
-  const [chartGridColor, setChartGridColor] = useState("rgba(255,255,255,0.05)");
 
   // Update chart colors on theme change
   useEffect(() => {
