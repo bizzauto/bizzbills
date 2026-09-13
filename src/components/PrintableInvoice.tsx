@@ -75,6 +75,11 @@ type DocumentData = {
   showQrCode?: boolean;
   showSignature?: boolean;
   showGstin?: boolean;
+  showLogo?: boolean;
+  showHsnSummary?: boolean;
+  showAmountInWords?: boolean;
+  showShipTo?: boolean;
+  showTerms?: boolean;
 };
 
 function toTemplateData(data: DocumentData): TemplateData {
@@ -147,6 +152,11 @@ function toTemplateData(data: DocumentData): TemplateData {
     showQrCode: data.showQrCode,
     showSignature: data.showSignature,
     showGstin: data.showGstin,
+    showLogo: data.showLogo,
+    showHsnSummary: data.showHsnSummary,
+    showAmountInWords: data.showAmountInWords,
+    showShipTo: data.showShipTo,
+    showTerms: data.showTerms,
     bankName: data.bankName,
     bankAccount: data.bankAccount,
     bankAccountName: data.bankAccountName,

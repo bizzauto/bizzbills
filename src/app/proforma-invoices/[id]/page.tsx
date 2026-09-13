@@ -86,6 +86,11 @@ export default function ProformaInvoiceDetailPage() {
     showQrCode: org?.showQrCode,
     showSignature: org?.showSignature,
     showGstin: org?.showGstin,
+    showLogo: org?.showLogo,
+    showHsnSummary: org?.showHsnSummary,
+    showAmountInWords: org?.showAmountInWords,
+    showShipTo: org?.showShipTo,
+    showTerms: org?.showTerms,
   };
 
   return (

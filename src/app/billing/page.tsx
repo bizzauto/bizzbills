@@ -42,12 +42,21 @@ export default function BillingPage() {
 
   // ── Template settings ──
   const [templateSettings, setTemplateSettings] = useState<{
-    invoiceTitle?: string;
-    footerNotes?: string;
-    orgName?: string;
-    orgAddress?: string;
-    orgGstin?: string;
-  } | null>(null);
+      invoiceTitle?: string;
+      footerNotes?: string;
+      orgName?: string;
+      orgAddress?: string;
+      orgGstin?: string;
+      showBankDetails?: boolean;
+      showQrCode?: boolean;
+      showSignature?: boolean;
+      showGstin?: boolean;
+      showLogo?: boolean;
+      showHsnSummary?: boolean;
+      showAmountInWords?: boolean;
+      showShipTo?: boolean;
+      showTerms?: boolean;
+    } | null>(null);
 
   // ── Customer search ──
   const [partySearch, setPartySearch] = useState("");
@@ -68,12 +77,21 @@ export default function BillingPage() {
         if (data.defaultTemplate) setSelectedTemplate(data.defaultTemplate);
         if (data.defaultAccentColor) setAccentColor(data.defaultAccentColor);
         setTemplateSettings({
-          invoiceTitle: data.invoiceTitle,
-          footerNotes: data.footerNotes,
-          orgName: data.name,
-          orgAddress: data.address,
-          orgGstin: data.gstin,
-        });
+            invoiceTitle: data.invoiceTitle,
+            footerNotes: data.footerNotes,
+            orgName: data.name,
+            orgAddress: data.address,
+            orgGstin: data.gstin,
+            showBankDetails: data.showBankDetails,
+            showQrCode: data.showQrCode,
+            showSignature: data.showSignature,
+            showGstin: data.showGstin,
+            showLogo: data.showLogo,
+            showHsnSummary: data.showHsnSummary,
+            showAmountInWords: data.showAmountInWords,
+            showShipTo: data.showShipTo,
+            showTerms: data.showTerms,
+          });
       })
       .catch(() => {});
   }, []);
@@ -121,10 +139,19 @@ export default function BillingPage() {
     subtotal: summary.subtotal, taxTotal: summary.taxTotal, total: summary.total,
     currency: sanitizedDraft.currency,
     notes: templateSettings?.footerNotes || "Payment due within 7 days. Thank you for your business.",
-    orgName: templateSettings?.orgName || "BizzBills",
-    orgAddress: templateSettings?.orgAddress,
-    orgGstin: templateSettings?.orgGstin,
-    isPaid: false, accentColor,
+      orgName: templateSettings?.orgName || "BizzBills",
+      orgAddress: templateSettings?.orgAddress,
+      orgGstin: templateSettings?.orgGstin,
+      showBankDetails: templateSettings?.showBankDetails,
+      showQrCode: templateSettings?.showQrCode,
+      showSignature: templateSettings?.showSignature,
+      showGstin: templateSettings?.showGstin,
+      showLogo: templateSettings?.showLogo,
+      showHsnSummary: templateSettings?.showHsnSummary,
+      showAmountInWords: templateSettings?.showAmountInWords,
+      showShipTo: templateSettings?.showShipTo,
+      showTerms: templateSettings?.showTerms,
+      isPaid: false, accentColor,
   }), [sanitizedDraft, summary, accentColor, templateSettings]);
 
   // ── Helpers ──

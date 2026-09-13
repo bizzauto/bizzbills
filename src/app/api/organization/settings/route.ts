@@ -16,6 +16,7 @@ export async function PUT(request: Request) {
 
   const { name, slug, businessType, gstin, address, phone, email, currency, website, pan, upiId, bankName, accountName, accountNumber, ifscCode, onboardingCompleted,
     defaultTemplate, defaultAccentColor, invoiceTitle, footerNotes, showBankDetails, showGstin, showSignature, showQrCode,
+    showLogo, showHsnSummary, showAmountInWords, showShipTo, showTerms,
     primaryColor, fontFamily, poweredByBizzBills, customFields, logo,
   } = body as {
     name?: string; slug?: string; businessType?: string; gstin?: string; address?: string;
@@ -23,6 +24,7 @@ export async function PUT(request: Request) {
     upiId?: string; bankName?: string; accountName?: string; accountNumber?: string; ifscCode?: string; onboardingCompleted?: boolean;
     defaultTemplate?: string; defaultAccentColor?: string; invoiceTitle?: string; footerNotes?: string;
     showBankDetails?: boolean; showGstin?: boolean; showSignature?: boolean; showQrCode?: boolean;
+    showLogo?: boolean; showHsnSummary?: boolean; showAmountInWords?: boolean; showShipTo?: boolean; showTerms?: boolean;
     primaryColor?: string; fontFamily?: string; poweredByBizzBills?: boolean; customFields?: string;
     logo?: string;
   };
@@ -55,7 +57,7 @@ export async function PUT(request: Request) {
   if (poweredByBizzBills !== undefined) updates.poweredByBizzBills = poweredByBizzBills;
   if (customFields !== undefined) updates.customFields = customFields;
   // Merge into existing settings blob to avoid losing unrelated keys
-  if (onboardingCompleted !== undefined || defaultTemplate !== undefined || defaultAccentColor !== undefined || invoiceTitle !== undefined || footerNotes !== undefined || showBankDetails !== undefined || showGstin !== undefined || showSignature !== undefined || showQrCode !== undefined) {
+  if (onboardingCompleted !== undefined || defaultTemplate !== undefined || defaultAccentColor !== undefined || invoiceTitle !== undefined || footerNotes !== undefined || showBankDetails !== undefined || showGstin !== undefined || showSignature !== undefined || showQrCode !== undefined || showLogo !== undefined || showHsnSummary !== undefined || showAmountInWords !== undefined || showShipTo !== undefined || showTerms !== undefined) {
     let existing: Record<string, unknown> = {};
     try { existing = JSON.parse((user.org as any).settings || "{}"); } catch {}
     const merged = { ...existing };
@@ -74,6 +76,11 @@ export async function PUT(request: Request) {
     if (showGstin !== undefined) merged.showGstin = showGstin;
     if (showSignature !== undefined) merged.showSignature = showSignature;
     if (showQrCode !== undefined) merged.showQrCode = showQrCode;
+    if (showLogo !== undefined) merged.showLogo = showLogo;
+    if (showHsnSummary !== undefined) merged.showHsnSummary = showHsnSummary;
+    if (showAmountInWords !== undefined) merged.showAmountInWords = showAmountInWords;
+    if (showShipTo !== undefined) merged.showShipTo = showShipTo;
+    if (showTerms !== undefined) merged.showTerms = showTerms;
     updates.settings = JSON.stringify(merged);
   }
 
@@ -140,6 +147,11 @@ export async function GET() {
     showGstin: s.showGstin !== false,
     showSignature: s.showSignature !== false,
     showQrCode: s.showQrCode !== false,
+    showLogo: s.showLogo !== false,
+    showHsnSummary: s.showHsnSummary !== false,
+    showAmountInWords: s.showAmountInWords !== false,
+    showShipTo: s.showShipTo !== false,
+    showTerms: s.showTerms !== false,
     // Branding settings (Phase 17)
     primaryColor: (user.org as any).primaryColor || "#06b6d4",
     fontFamily: (user.org as any).fontFamily || "Inter",

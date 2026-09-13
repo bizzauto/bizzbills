@@ -84,6 +84,11 @@ export interface TemplateData {
   showQrCode?: boolean;
   showSignature?: boolean;
   showGstin?: boolean;
+  showLogo?: boolean;
+  showHsnSummary?: boolean;
+  showAmountInWords?: boolean;
+  showShipTo?: boolean;
+  showTerms?: boolean;
 }
 
 export interface TemplateLine {
@@ -1620,6 +1625,11 @@ function BorderedTemplate({ data }: { data: TemplateData }) {
   const qrPayload = upiQrPayload(data, data.total);
   const showQr = data.showQrCode !== false && !!qrPayload;
   const showSignCell = showQr || showSign;
+  const showLogo = data.showLogo !== false;
+  const showHsn = data.showHsnSummary !== false;
+  const showWords = data.showAmountInWords !== false;
+  const showShip = data.showShipTo !== false;
+  const showTerms = data.showTerms !== false;
 
   /* Rate-wise tax split (CGST/SGST halves, IGST when inter-state) */
   const rateRows: { rate: number; cgst: number; sgst: number; igst: number }[] = [];
@@ -1708,7 +1718,7 @@ function BorderedTemplate({ data }: { data: TemplateData }) {
           <tr>
             <td colSpan={3} style={tdBase}>
               <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
-                {data.orgLogo && <img src={data.orgLogo} alt="Logo" style={{ height: "54px", maxWidth: "130px", objectFit: "contain" }} />}
+                {showLogo && data.orgLogo && <img src={data.orgLogo} alt="Logo" style={{ height: "54px", maxWidth: "130px", objectFit: "contain" }} />}
                 <div>
                   <p style={{ fontSize: "17px", fontWeight: 800, color: "#1f6fb2", margin: 0 }}>{data.orgName}</p>
                   {data.orgAddress && <p style={{ fontSize: "11px", margin: "3px 0 0", lineHeight: 1.5 }}>{data.orgAddress}</p>}
@@ -1740,7 +1750,7 @@ function BorderedTemplate({ data }: { data: TemplateData }) {
 
           {/* Bill to / Ship to */}
           <tr>
-            <td colSpan={3} style={tdBase}>
+            <td colSpan={showShip ? 3 : 6} style={tdBase}>
               <p style={{ fontSize: "11px", fontWeight: 800, margin: "0 0 3px" }}>BILL TO</p>
               <p style={{ fontSize: "13px", fontWeight: 800, margin: 0 }}>{data.customerName}</p>
               {data.customerAddress && <p style={{ fontSize: "11px", margin: "3px 0 0", lineHeight: 1.5 }}><strong>Address:</strong> {data.customerAddress}</p>}
@@ -1752,12 +1762,14 @@ function BorderedTemplate({ data }: { data: TemplateData }) {
               )}
               {data.customerPhone && <p style={{ fontSize: "11px", margin: "2px 0 0" }}><strong>Mobile:</strong> {data.customerPhone}</p>}
             </td>
-            <td colSpan={3} style={tdBase}>
-              <p style={{ fontSize: "11px", fontWeight: 800, margin: "0 0 3px" }}>SHIP TO</p>
-              <p style={{ fontSize: "13px", fontWeight: 800, margin: 0 }}>{shipName}</p>
-              {shipAddr && <p style={{ fontSize: "11px", margin: "3px 0 0", lineHeight: 1.5 }}><strong>Address:</strong> {shipAddr}</p>}
-              {shipPhone && <p style={{ fontSize: "11px", margin: "2px 0 0" }}><strong>Mobile:</strong> {shipPhone}</p>}
-            </td>
+            {showShip && (
+              <td colSpan={3} style={tdBase}>
+                <p style={{ fontSize: "11px", fontWeight: 800, margin: "0 0 3px" }}>SHIP TO</p>
+                <p style={{ fontSize: "13px", fontWeight: 800, margin: 0 }}>{shipName}</p>
+                {shipAddr && <p style={{ fontSize: "11px", margin: "3px 0 0", lineHeight: 1.5 }}><strong>Address:</strong> {shipAddr}</p>}
+                {shipPhone && <p style={{ fontSize: "11px", margin: "2px 0 0" }}><strong>Mobile:</strong> {shipPhone}</p>}
+              </td>
+            )}
           </tr>
 
           {/* Items header */}
@@ -1806,7 +1818,7 @@ function BorderedTemplate({ data }: { data: TemplateData }) {
       </table>
 
       {/* ── HSN tax summary ── */}
-      {hsnRows.length > 0 && (
+      {showHsn && hsnRows.length > 0 && (
         <table style={{ width: "100%", borderCollapse: "collapse", border: cell, marginTop: "10px" }}>
           <thead>
             <tr>
@@ -1851,35 +1863,40 @@ function BorderedTemplate({ data }: { data: TemplateData }) {
       )}
 
       {/* ── Amount in words ── */}
-      <div style={{ border: cell, marginTop: "10px", padding: "7px 9px" }}>
-        <p style={{ fontSize: "11px", fontWeight: 800, margin: 0 }}>Total Amount (in words)</p>
-        <p style={{ fontSize: "11px", margin: "3px 0 0" }}>{words}</p>
-      </div>
+      {showWords && (
+        <div style={{ border: cell, marginTop: "10px", padding: "7px 9px" }}>
+          <p style={{ fontSize: "11px", fontWeight: 800, margin: 0 }}>Total Amount (in words)</p>
+          <p style={{ fontSize: "11px", margin: "3px 0 0" }}>{words}</p>
+        </div>
+      )}
 
       {/* ── Bank + terms + sign/QR ── */}
-      <table style={{ width: "100%", borderCollapse: "collapse", border: cell, marginTop: "10px" }}>
-        <tbody>
-          <tr>
-            {showBank && (
-              <td style={{ ...tdBase, width: "30%" }}>
-                <p style={{ fontSize: "11px", fontWeight: 800, margin: "0 0 4px" }}>Bank Details</p>
-                <div style={{ fontSize: "10px", lineHeight: 1.7 }}>
-                  <div><strong>Name:</strong> {data.bankAccountName || data.orgName}</div>
-                  {data.bankIfsc && <div><strong>IFSC Code:</strong> {data.bankIfsc}</div>}
-                  {data.bankAccount && <div><strong>Account No:</strong> {data.bankAccount}</div>}
-                  {data.bankName && <div><strong>Bank:</strong> {data.bankName}{data.bankBranch ? `, ${data.bankBranch}` : ""}</div>}
-                  {data.upiId && <div><strong>UPI ID:</strong> {data.upiId}</div>}
-                </div>
-              </td>
-            )}
-            <td style={{ ...tdBase, width: showBank ? "44%" : "70%" }}>
-              <p style={{ fontSize: "11px", fontWeight: 800, margin: "0 0 4px" }}>Terms and Conditions</p>
-              <div style={{ fontSize: "10px", lineHeight: 1.7 }}>
-                {termsLines.map((t, i) => <div key={i}>{t}</div>)}
-              </div>
-            </td>
+      {(showBank || showTerms || showSignCell) && (
+        <table style={{ width: "100%", borderCollapse: "collapse", border: cell, marginTop: "10px" }}>
+          <tbody>
+            <tr>
+              {showBank && (
+                <td style={{ ...tdBase, width: showTerms ? "30%" : "60%" }}>
+                  <p style={{ fontSize: "11px", fontWeight: 800, margin: "0 0 4px" }}>Bank Details</p>
+                  <div style={{ fontSize: "10px", lineHeight: 1.7 }}>
+                    <div><strong>Name:</strong> {data.bankAccountName || data.orgName}</div>
+                    {data.bankIfsc && <div><strong>IFSC Code:</strong> {data.bankIfsc}</div>}
+                    {data.bankAccount && <div><strong>Account No:</strong> {data.bankAccount}</div>}
+                    {data.bankName && <div><strong>Bank:</strong> {data.bankName}{data.bankBranch ? `, ${data.bankBranch}` : ""}</div>}
+                    {data.upiId && <div><strong>UPI ID:</strong> {data.upiId}</div>}
+                  </div>
+                </td>
+              )}
+              {showTerms && (
+                <td style={{ ...tdBase, width: showBank && showSignCell ? "44%" : showBank || showSignCell ? "70%" : "100%" }}>
+                  <p style={{ fontSize: "11px", fontWeight: 800, margin: "0 0 4px" }}>Terms and Conditions</p>
+                  <div style={{ fontSize: "10px", lineHeight: 1.7 }}>
+                    {termsLines.map((t, i) => <div key={i}>{t}</div>)}
+                  </div>
+                </td>
+              )}
             {showSignCell && (
-              <td style={{ ...tdBase, width: "26%", textAlign: "center", verticalAlign: "middle" }}>
+              <td style={{ ...tdBase, width: showBank || showTerms ? "26%" : "100%", textAlign: "center", verticalAlign: "middle" }}>
                 {showQr && (
                   <div>
                     <div style={{ padding: "5px", background: "white", border: "1px solid #cbd5e1", borderRadius: "6px", display: "inline-block" }}>
@@ -1898,9 +1915,10 @@ function BorderedTemplate({ data }: { data: TemplateData }) {
                 )}
               </td>
             )}
-          </tr>
-        </tbody>
-      </table>
+            </tr>
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }

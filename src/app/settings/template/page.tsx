@@ -16,6 +16,11 @@ type TemplateSettings = {
   showGstin: boolean;
   showSignature: boolean;
   showQrCode: boolean;
+  showLogo: boolean;
+  showHsnSummary: boolean;
+  showAmountInWords: boolean;
+  showShipTo: boolean;
+  showTerms: boolean;
   // Bank details — saved once here (or on first invoice) and pre-filled everywhere.
   bankName: string;
   accountName: string;
@@ -33,6 +38,11 @@ const DEFAULTS: TemplateSettings = {
   showGstin: true,
   showSignature: true,
   showQrCode: false,
+  showLogo: true,
+  showHsnSummary: true,
+  showAmountInWords: true,
+  showShipTo: true,
+  showTerms: true,
   bankName: "",
   accountName: "",
   accountNumber: "",
@@ -61,6 +71,11 @@ export default function TemplateSettingsPage() {
           showGstin: data.showGstin !== false,
           showSignature: data.showSignature !== false,
           showQrCode: data.showQrCode === true,
+          showLogo: data.showLogo !== false,
+          showHsnSummary: data.showHsnSummary !== false,
+          showAmountInWords: data.showAmountInWords !== false,
+          showShipTo: data.showShipTo !== false,
+          showTerms: data.showTerms !== false,
           bankName: data.bankName || "",
           accountName: data.accountName || "",
           accountNumber: data.accountNumber || "",
@@ -254,6 +269,11 @@ export default function TemplateSettingsPage() {
                 { key: "showBankDetails", label: "Show Bank Details", desc: "Display bank account information for payments" },
                 { key: "showSignature", label: "Show Signature Line", desc: "Include an authorized signatory line" },
                 { key: "showQrCode", label: "Show QR Code", desc: "Display a QR code for quick payment" },
+                { key: "showLogo", label: "Show Logo", desc: "Display your company logo in the header" },
+                { key: "showHsnSummary", label: "Show HSN Tax Table", desc: "Display the HSN-wise tax summary table" },
+                { key: "showAmountInWords", label: "Show Amount in Words", desc: "Display the total amount in words" },
+                { key: "showShipTo", label: "Show Ship-To Block", desc: "Display the shipping address section" },
+                { key: "showTerms", label: "Show Terms & Conditions", desc: "Display terms at the bottom of the invoice" },
               ] as const).map(({ key, label, desc }) => (
                 <label
                   key={key}
@@ -322,6 +342,36 @@ export default function TemplateSettingsPage() {
                 <span className="text-muted">QR Code</span>
                 <span className={`font-medium ${settings.showQrCode ? "text-success" : "text-danger"}`}>
                   {settings.showQrCode ? "Visible" : "Hidden"}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted">Logo</span>
+                <span className={`font-medium ${settings.showLogo ? "text-success" : "text-danger"}`}>
+                  {settings.showLogo ? "Visible" : "Hidden"}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted">HSN Tax Table</span>
+                <span className={`font-medium ${settings.showHsnSummary ? "text-success" : "text-danger"}`}>
+                  {settings.showHsnSummary ? "Visible" : "Hidden"}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted">Amount in Words</span>
+                <span className={`font-medium ${settings.showAmountInWords ? "text-success" : "text-danger"}`}>
+                  {settings.showAmountInWords ? "Visible" : "Hidden"}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted">Ship-To Block</span>
+                <span className={`font-medium ${settings.showShipTo ? "text-success" : "text-danger"}`}>
+                  {settings.showShipTo ? "Visible" : "Hidden"}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted">Terms & Conditions</span>
+                <span className={`font-medium ${settings.showTerms ? "text-success" : "text-danger"}`}>
+                  {settings.showTerms ? "Visible" : "Hidden"}
                 </span>
               </div>
             </div>

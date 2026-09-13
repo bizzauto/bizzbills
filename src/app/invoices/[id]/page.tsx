@@ -98,6 +98,7 @@ export default function InvoiceDetailPage() {
     name?: string; address?: string; gstin?: string; email?: string; phone?: string; logo?: string;
     bankName?: string; accountName?: string; accountNumber?: string; ifscCode?: string; bankBranch?: string; upiId?: string;
     defaultAccentColor?: string; showBankDetails?: boolean; showQrCode?: boolean; showSignature?: boolean; showGstin?: boolean;
+    showLogo?: boolean; showHsnSummary?: boolean; showAmountInWords?: boolean; showShipTo?: boolean; showTerms?: boolean;
   } | null>(null);
 
   useEffect(() => {
@@ -130,6 +131,8 @@ export default function InvoiceDetailPage() {
             defaultAccentColor: org.defaultAccentColor,
             showBankDetails: org.showBankDetails, showQrCode: org.showQrCode,
             showSignature: org.showSignature, showGstin: org.showGstin,
+            showLogo: org.showLogo, showHsnSummary: org.showHsnSummary, showAmountInWords: org.showAmountInWords,
+            showShipTo: org.showShipTo, showTerms: org.showTerms,
           });
           if (org.defaultTemplate) setSelectedTemplate(org.defaultTemplate);
         }
@@ -311,6 +314,11 @@ export default function InvoiceDetailPage() {
     showQrCode: orgSettings?.showQrCode !== false,
     showSignature: orgSettings?.showSignature !== false,
     showGstin: orgSettings?.showGstin !== false,
+    showLogo: orgSettings?.showLogo !== false,
+    showHsnSummary: orgSettings?.showHsnSummary !== false,
+    showAmountInWords: orgSettings?.showAmountInWords !== false,
+    showShipTo: orgSettings?.showShipTo !== false,
+    showTerms: orgSettings?.showTerms !== false,
     // Bank/UPI: invoice fields win (as-entered at creation); org settings are
     // the fallback so invoices created before bank details existed still print.
     bankName: invoice.bankName || orgSettings?.bankName || undefined,
