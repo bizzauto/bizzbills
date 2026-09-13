@@ -14,6 +14,17 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Invalid body" }, { status: 400 });
   }
 
+  // Logo stored as URL or data-URL in DB — cap embedded uploads at ~2MB
+  const logoInput = (body as { logo?: unknown }).logo;
+  if (typeof logoInput === "string") {
+    const tooBig = logoInput.startsWith("data:")
+      ? logoInput.length > 3000000
+      : logoInput.length > 2000;
+    if (tooBig) {
+      return NextResponse.json({ error: "Logo too large (max 2MB upload or 2000-char URL)" }, { status: 400 });
+    }
+  }
+
   const { name, slug, businessType, gstin, address, phone, email, currency, website, pan, upiId, bankName, accountName, accountNumber, ifscCode, onboardingCompleted,
     defaultTemplate, defaultAccentColor, invoiceTitle, footerNotes, showBankDetails, showGstin, showSignature, showQrCode,
     showLogo, showHsnSummary, showAmountInWords, showShipTo, showTerms,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
@@ -18,6 +18,40 @@ export default function OrganizationSettingsPage() {
   const [orgPhone, setOrgPhone] = useState("");
   const [orgEmail, setOrgEmail] = useState("");
   const [orgCurrency, setOrgCurrency] = useState("INR");
+  const [logoError, setLogoError] = useState("");
+
+  // Prefill with saved values (logo preview included)
+  useEffect(() => {
+    fetch("/api/organization/settings")
+      .then((r) => r.json())
+      .then((d) => {
+        if (!d || d.error) return;
+        if (d.name) setOrgName(d.name);
+        if (d.logo) setOrgLogo(d.logo);
+        if (d.gstin) setOrgGstin(d.gstin);
+        if (d.address) setOrgAddress(d.address);
+        if (d.phone) setOrgPhone(d.phone);
+        if (d.email) setOrgEmail(d.email);
+        if (d.currency) setOrgCurrency(d.currency);
+      })
+      .catch(() => {});
+  }, []);
+
+  function handleLogoFile(file: File | undefined) {
+    setLogoError("");
+    if (!file) return;
+    if (!["image/png", "image/jpeg", "image/webp", "image/svg+xml"].includes(file.type)) {
+      setLogoError("Only PNG, JPG, WebP or SVG allowed.");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setLogoError("Logo must be under 2MB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setOrgLogo(String(reader.result || ""));
+    reader.readAsDataURL(file);
+  }
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -81,14 +115,49 @@ export default function OrganizationSettingsPage() {
         <label className="block text-sm text-slate-300">
           <span className="mb-1 block text-slate-400">Logo URL</span>
           <input
-            type="url"
-            value={orgLogo}
+            type="text"
+            value={orgLogo.startsWith("data:") ? "" : orgLogo}
             onChange={(e) => setOrgLogo(e.target.value)}
             placeholder="https://…/logo.png"
             className="w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-white outline-none ring-0 placeholder:text-slate-500 focus:border-cyan-500/50"
           />
-          <span className="mt-1 block text-xs text-slate-500">Shows on invoices (top-left of the header). Leave empty for no logo.</span>
+          <span className="mt-1 block text-xs text-slate-500">Paste a logo URL, or upload a file below. Shows on invoices (top-left of the header).</span>
         </label>
+
+        <div className="block text-sm text-slate-300">
+          <span className="mb-1 block text-slate-400">Upload Logo</span>
+          <div className="flex items-center gap-4">
+            {orgLogo ? (
+              <img src={orgLogo} alt="Logo preview" className="h-14 max-w-32 rounded-lg border border-white/10 bg-white object-contain p-1" />
+            ) : (
+              <div className="flex h-14 w-24 items-center justify-center rounded-lg border border-dashed border-white/15 text-xs text-slate-500">
+                No logo
+              </div>
+            )}
+            <div className="flex flex-col gap-2">
+              <label className="cursor-pointer rounded-full border border-white/15 px-4 py-1.5 text-xs font-medium text-white transition hover:bg-white/10">
+                Choose File
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                  className="hidden"
+                  onChange={(e) => handleLogoFile(e.target.files?.[0])}
+                />
+              </label>
+              {orgLogo && (
+                <button
+                  type="button"
+                  onClick={() => setOrgLogo("")}
+                  className="rounded-full border border-red-400/20 px-4 py-1.5 text-xs font-medium text-red-300 transition hover:bg-red-500/10"
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+          </div>
+          {logoError && <span className="mt-1 block text-xs text-red-400">{logoError}</span>}
+          <span className="mt-1 block text-xs text-slate-500">PNG/JPG/WebP/SVG, max 2MB. Saved with settings below.</span>
+        </div>
 
         <label className="block text-sm text-slate-300">
           <span className="mb-1 block text-slate-400">GSTIN</span>
