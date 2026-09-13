@@ -12,6 +12,7 @@ export default function OrganizationSettingsPage() {
   const [message, setMessage] = useState("");
 
   const [orgName, setOrgName] = useState("");
+  const [orgLogo, setOrgLogo] = useState("");
   const [orgGstin, setOrgGstin] = useState("");
   const [orgAddress, setOrgAddress] = useState("");
   const [orgPhone, setOrgPhone] = useState("");
@@ -29,6 +30,7 @@ export default function OrganizationSettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: orgName,
+          logo: orgLogo,
           gstin: orgGstin,
           address: orgAddress,
           phone: orgPhone,
@@ -74,6 +76,18 @@ export default function OrganizationSettingsPage() {
             required
             className="w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-white outline-none ring-0 placeholder:text-slate-500 focus:border-cyan-500/50"
           />
+        </label>
+
+        <label className="block text-sm text-slate-300">
+          <span className="mb-1 block text-slate-400">Logo URL</span>
+          <input
+            type="url"
+            value={orgLogo}
+            onChange={(e) => setOrgLogo(e.target.value)}
+            placeholder="https://…/logo.png"
+            className="w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-white outline-none ring-0 placeholder:text-slate-500 focus:border-cyan-500/50"
+          />
+          <span className="mt-1 block text-xs text-slate-500">Shows on invoices (top-left of the header). Leave empty for no logo.</span>
         </label>
 
         <label className="block text-sm text-slate-300">

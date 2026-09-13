@@ -557,3 +557,39 @@ html.light .list-item:hover {
   .invoice-template .inv-sign { border-top: 1px solid #cbd5e1 !important; padding-top: 4px !important; margin-top: 8px !important; }
   .invoice-template .inv-badge { background: #0f172a !important; color: white !important; padding: 2px 8px !important; font-size: 8px !important; font-weight: 600 !important; display: inline-block !important; }
 }
+
+/* ── Bordered GST template: full-page print, keep boxed design ──
+   Higher specificity than the generic shrink rules above so the
+   bordered layout prints full-width with readable sizes. */
+@media print {
+  .invoice-template.bordered-template {
+    max-width: 100% !important;
+    padding: 0 4px !important;
+    margin: 0 !important;
+    font-size: 10px !important;
+    line-height: 1.35 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    color: #111827 !important;
+  }
+  .invoice-template.bordered-template * {
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+  .invoice-template.bordered-template p { font-size: 10px !important; margin: 2px 0 !important; }
+  .invoice-template.bordered-template table { margin-top: 8px !important; font-size: 10px !important; }
+  .invoice-template.bordered-template th {
+    background: #c9e4f6 !important;
+    color: #111827 !important;
+    padding: 5px 7px !important;
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    border: 1px solid #1f2937 !important;
+  }
+  .invoice-template.bordered-template td {
+    padding: 5px 7px !important;
+    font-size: 10px !important;
+    color: #111827 !important;
+    border: 1px solid #1f2937 !important;
+  }
+}

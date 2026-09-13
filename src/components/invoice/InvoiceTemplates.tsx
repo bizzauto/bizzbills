@@ -1688,7 +1688,7 @@ function BorderedTemplate({ data }: { data: TemplateData }) {
   const words = data.amountInWords || numberToWords(data.total);
 
   return (
-    <div className="invoice-template" style={{ fontFamily: "'Arial', 'Helvetica', sans-serif", background: "white", color: "#111827", padding: "28px", maxWidth: "800px", margin: "0 auto", fontSize: "12px" }}>
+    <div className="invoice-template bordered-template" style={{ fontFamily: "'Arial', 'Helvetica', sans-serif", background: "white", color: "#111827", padding: "28px", maxWidth: "800px", margin: "0 auto", fontSize: "12px" }}>
       <p style={{ textAlign: "center", fontSize: "15px", fontWeight: 800, letterSpacing: "0.04em", margin: "0 0 8px" }}>
         {data.title.toUpperCase()}
       </p>

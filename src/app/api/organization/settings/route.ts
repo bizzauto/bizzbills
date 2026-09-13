@@ -16,7 +16,7 @@ export async function PUT(request: Request) {
 
   const { name, slug, businessType, gstin, address, phone, email, currency, website, pan, upiId, bankName, accountName, accountNumber, ifscCode, onboardingCompleted,
     defaultTemplate, defaultAccentColor, invoiceTitle, footerNotes, showBankDetails, showGstin, showSignature, showQrCode,
-    primaryColor, fontFamily, poweredByBizzBills, customFields,
+    primaryColor, fontFamily, poweredByBizzBills, customFields, logo,
   } = body as {
     name?: string; slug?: string; businessType?: string; gstin?: string; address?: string;
     phone?: string; email?: string; currency?: string; website?: string; pan?: string;
@@ -24,6 +24,7 @@ export async function PUT(request: Request) {
     defaultTemplate?: string; defaultAccentColor?: string; invoiceTitle?: string; footerNotes?: string;
     showBankDetails?: boolean; showGstin?: boolean; showSignature?: boolean; showQrCode?: boolean;
     primaryColor?: string; fontFamily?: string; poweredByBizzBills?: boolean; customFields?: string;
+    logo?: string;
   };
 
   const user = await prisma.user.findUnique({
@@ -41,6 +42,7 @@ export async function PUT(request: Request) {
   const updates: Record<string, unknown> = {};
   if (name !== undefined) updates.name = name;
   if (slug !== undefined) updates.slug = slug;
+  if (logo !== undefined) updates.logo = logo;
   if (gstin !== undefined) updates.gstin = gstin;
   if (address !== undefined) updates.address = address;
   if (phone !== undefined) updates.phone = phone;
