@@ -69,6 +69,12 @@ type DocumentData = {
   sgstBreakup?: Record<number, number>;
   igstBreakup?: Record<number, number>;
   isInterState?: boolean;
+  // Branding + visibility (org logo, Settings -> Template toggles)
+  orgLogo?: string;
+  showBankDetails?: boolean;
+  showQrCode?: boolean;
+  showSignature?: boolean;
+  showGstin?: boolean;
 };
 
 function toTemplateData(data: DocumentData): TemplateData {
@@ -136,6 +142,11 @@ function toTemplateData(data: DocumentData): TemplateData {
     orgGstin: data.orgGstin,
     orgEmail: data.orgEmail,
     orgPhone: data.orgPhone,
+    orgLogo: data.orgLogo,
+    showBankDetails: data.showBankDetails,
+    showQrCode: data.showQrCode,
+    showSignature: data.showSignature,
+    showGstin: data.showGstin,
     bankName: data.bankName,
     bankAccount: data.bankAccount,
     bankAccountName: data.bankAccountName,

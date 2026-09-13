@@ -330,10 +330,10 @@ export default function BillingPage() {
           <section className="rounded-2xl border border-[var(--card-border)] bg-[var(--card)] p-4">
             <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">Invoice Style</h2>
             <div className="flex flex-wrap gap-2 mb-3">
-              {(["mybillbook", "classic", "modern", "minimal", "premium", "best", "corporate", "compact"] as TemplateId[]).map((t) => (
+              {(["mybillbook", "classic", "modern", "minimal", "premium", "best", "bordered", "corporate", "compact"] as TemplateId[]).map((t) => (
                 <button key={t} onClick={() => setSelectedTemplate(t)}
                   className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${selectedTemplate === t ? "bg-accent text-white" : "border border-[var(--card-border)] text-muted hover:text-default"}`}>
-                  {t === "mybillbook" ? "Super" : t.charAt(0).toUpperCase() + t.slice(1)}
+                  {t === "mybillbook" ? "Super" : t === "bordered" ? "Bordered" : t.charAt(0).toUpperCase() + t.slice(1)}
                 </button>
               ))}
             </div>

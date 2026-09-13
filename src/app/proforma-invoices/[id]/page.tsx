@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useOrg } from "@/components/OrgProvider";
 import { formatAmount } from "@/lib/currency";
+import { PrintableDocument, handlePrint } from "@/components/PrintableInvoice";
+import type { TemplateId } from "@/components/invoice/InvoiceTemplates";
 
 const statusColor: Record<string, string> = {
   draft: "bg-slate-500/10 text-slate-300", sent: "bg-amber-500/10 text-amber-300",
@@ -16,8 +18,18 @@ export default function ProformaInvoiceDetailPage() {
   const router = useRouter();
   const { currentOrgCurrency } = useOrg();
   const [invoice, setInvoice] = useState<any>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>("bordered");
+  const [org, setOrg] = useState<any>(null);
 
-  useEffect(() => { fetch(`/api/proforma-invoices/${params.id}`).then((r) => r.json()).then((d) => setInvoice(d && !d.error ? d : null)); }, [params.id]);
+  useEffect(() => {
+    fetch(`/api/proforma-invoices/${params.id}`).then((r) => r.json()).then((d) => setInvoice(d && !d.error ? d : null));
+    fetch("/api/organization/settings").then((r) => r.json()).then((d) => {
+      if (d && d.name) {
+        setOrg(d);
+        if (d.defaultTemplate) setSelectedTemplate(d.defaultTemplate);
+      }
+    }).catch(() => {});
+  }, [params.id]);
 
   if (!invoice) return <main className="pb-10 text-sm text-slate-400">Loading…</main>;
 
@@ -32,6 +44,50 @@ export default function ProformaInvoiceDetailPage() {
     router.push("/proforma-invoices");
   }
 
+  const fmtDate = (v: any) => {
+    if (!v) return undefined;
+    const d = new Date(v);
+    return isNaN(d.getTime()) ? String(v) : d.toLocaleDateString("en-IN");
+  };
+
+  const docData = {
+    number: invoice.proformaNumber,
+    title: "Proforma Invoice",
+    customerName: invoice.customerName,
+    customerGstin: invoice.customerGstin || undefined,
+    date: fmtDate(invoice.createdAt) || "",
+    validUntil: fmtDate(invoice.validUntil),
+    lines: (invoice.lines || []).map((l: any) => ({
+      description: l.description,
+      hsnCode: l.hsnCode || undefined,
+      quantity: l.quantity,
+      unitPrice: l.unitPrice,
+      taxRate: l.taxRate || 0,
+    })),
+    subtotal: invoice.subtotal,
+    taxTotal: invoice.taxTotal,
+    total: invoice.total,
+    currency: invoice.currency || currentOrgCurrency,
+    notes: invoice.notes || undefined,
+    orgName: org?.name || "Your Company",
+    orgAddress: org?.address,
+    orgGstin: org?.gstin,
+    orgEmail: org?.email,
+    orgPhone: org?.phone,
+    orgLogo: org?.logo,
+    bankName: org?.bankName,
+    bankAccount: org?.accountNumber,
+    bankAccountName: org?.accountName,
+    bankIfsc: org?.ifscCode,
+    bankBranch: org?.bankBranch,
+    upiId: org?.upiId,
+    accentColor: org?.defaultAccentColor,
+    showBankDetails: org?.showBankDetails,
+    showQrCode: org?.showQrCode,
+    showSignature: org?.showSignature,
+    showGstin: org?.showGstin,
+  };
+
   return (
     <main className="mx-auto max-w-4xl pb-10">
       <div className="flex items-center gap-3 mb-6 flex-wrap">
@@ -39,6 +95,19 @@ export default function ProformaInvoiceDetailPage() {
         <h1 className="text-2xl font-semibold text-white">{invoice.proformaNumber}</h1>
         <span className="rounded-full bg-cyan-500/10 px-3 py-0.5 text-[10px] font-medium text-cyan-300">Proforma Invoice</span>
         <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${statusColor[invoice.status]}`}>{invoice.status}</span>
+        <select value={selectedTemplate} onChange={(e) => setSelectedTemplate(e.target.value as TemplateId)}
+          className="rounded-full border border-white/10 bg-transparent px-3 py-1 text-xs text-slate-300 outline-none">
+          <option value="bordered">Bordered GST</option>
+          <option value="classic">Classic GST</option>
+          <option value="modern">Modern</option>
+          <option value="minimal">Minimal</option>
+          <option value="premium">Premium</option>
+          <option value="mybillbook">Super</option>
+          <option value="best">Best (Tally)</option>
+          <option value="corporate">Corporate</option>
+          <option value="compact">Compact</option>
+        </select>
+        <button onClick={handlePrint} className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-300 hover:bg-white/5">🖨 Print</button>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -96,6 +165,8 @@ export default function ProformaInvoiceDetailPage() {
           <p className="text-sm text-slate-300">{invoice.notes}</p>
         </div>
       )}
+
+      <PrintableDocument data={docData} templateId={selectedTemplate} />
     </main>
   );
 }

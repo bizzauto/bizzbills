@@ -373,6 +373,7 @@ export default function InvoiceDetailPage() {
               <option value="premium">Premium</option>
               <option value="mybillbook">Super</option>
               <option value="best">Best (Tally)</option>
+              <option value="bordered">Bordered GST</option>
               <option value="corporate">Corporate</option>
               <option value="compact">Compact</option>
             </select>
