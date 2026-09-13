@@ -347,11 +347,21 @@ export function Sidebar() {
   const userRole = (session?.user as { role?: string })?.role;
   const isSuperAdmin = userRole === "SUPER_ADMIN";
   const allGroups = isSuperAdmin ? [...MENU_GROUPS, ADMIN_GROUP] : MENU_GROUPS;
+  const isOrgAdmin = userRole === "ORG_ADMIN" || userRole === "SUPER_ADMIN";
+  // Organization settings (logo upload etc.) deserves a sidebar entry so it is
+  // discoverable — the switcher-dropdown link stays as-is for admins.
+  const visibleGroups = isOrgAdmin
+    ? allGroups.map((g) =>
+        g.title === "System"
+          ? { ...g, items: [{ label: "Organization", href: "/organization/settings", icon: "settings" } as MenuItem, ...g.items] }
+          : g
+      )
+    : allGroups;
 
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
     // Auto-expand the group containing current route
     const initial: Record<string, boolean> = {};
-    for (const group of allGroups) {
+    for (const group of visibleGroups) {
       for (const item of group.items) {
         if (isActive(pathname, item.href, item.exact)) {
           initial[group.title] = true;
@@ -442,7 +452,7 @@ export function Sidebar() {
 
         {/* ── Scrollable menu ── */}
         <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-3 scrollbar-thin">
-          {allGroups.map((group) => (
+          {visibleGroups.map((group) => (
             <div key={group.title} className="mb-1">
               {/* Group header (collapsed = dot only) */}
               <button
