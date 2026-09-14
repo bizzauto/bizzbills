@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { formatAmount } from "@/lib/currency";
 import Link from "next/link";
+import { PrintableDocument, handlePrint } from "@/components/PrintableInvoice";
+import type { TemplateId } from "@/components/invoice/InvoiceTemplates";
 
 type DebitNoteLine = {
   id: string;
@@ -26,7 +28,7 @@ type DebitNoteDetail = {
   total: number;
   status: string;
   date: string;
-  invoice: { invoiceNumber: string; supplierName: string; total: number } | null;
+  invoice: { id: string; invoiceNumber: string; supplierName: string; total: number } | null;
   lines: DebitNoteLine[];
 };
 
@@ -36,16 +38,73 @@ export default function DebitNoteDetailPage() {
   const id = params.id as string;
   const [note, setNote] = useState<DebitNoteDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>("bordered");
+  const [org, setOrg] = useState<any>(null);
 
   useEffect(() => {
     fetch(`/api/debit-notes/${id}`)
       .then((r) => r.json())
       .then((data) => { setNote(data); setLoading(false); })
       .catch(() => setLoading(false));
+    fetch("/api/organization/settings").then((r) => r.json()).then((d) => {
+      if (d && d.name) {
+        setOrg(d);
+        if (d.defaultTemplate) setSelectedTemplate(d.defaultTemplate);
+      }
+    }).catch(() => {});
   }, [id]);
 
   if (loading) return <main className="p-6 text-sm text-slate-400">Loading…</main>;
   if (!note) return <main className="p-6 text-sm text-red-400">Debit note not found.</main>;
+
+  const fmtDate = (v: any) => {
+    if (!v) return undefined;
+    const d = new Date(v);
+    return isNaN(d.getTime()) ? String(v) : d.toLocaleDateString("en-IN");
+  };
+
+  const docData = {
+    number: note.debitNoteNumber,
+    title: "Debit Note",
+    customerName: note.supplierName,
+    customerGstin: note.supplierGstin || undefined,
+    date: fmtDate(note.date) || "",
+    referenceNumber: note.invoice?.invoiceNumber,
+    lines: note.lines.map((l) => ({
+      description: l.description,
+      hsnCode: l.hsnCode || undefined,
+      quantity: l.quantity,
+      unitPrice: l.unitPrice,
+      taxRate: l.taxRate || 0,
+    })),
+    subtotal: note.subtotal,
+    taxTotal: note.taxTotal,
+    total: note.total,
+    currency: note.currency,
+    notes: note.reason ? `Reason: ${note.reason}` : undefined,
+    orgName: org?.name || "Your Company",
+    orgAddress: org?.address,
+    orgGstin: org?.gstin,
+    orgEmail: org?.email,
+    orgPhone: org?.phone,
+    orgLogo: org?.logo,
+    bankName: org?.bankName,
+    bankAccount: org?.accountNumber,
+    bankAccountName: org?.accountName,
+    bankIfsc: org?.ifscCode,
+    bankBranch: org?.bankBranch,
+    upiId: org?.upiId,
+    accentColor: org?.defaultAccentColor,
+    showBankDetails: org?.showBankDetails,
+    showQrCode: org?.showQrCode,
+    showSignature: org?.showSignature,
+    showGstin: org?.showGstin,
+    showLogo: org?.showLogo,
+    showHsnSummary: org?.showHsnSummary,
+    showAmountInWords: org?.showAmountInWords,
+    showShipTo: org?.showShipTo,
+    showTerms: org?.showTerms,
+  };
 
   return (
     <main className="flex flex-1 flex-col gap-6 pb-10">
@@ -59,6 +118,22 @@ export default function DebitNoteDetailPage() {
             <button onClick={() => router.push("/debit-notes")}
               className="rounded-full border border-white/15 px-4 py-2 text-sm text-white transition hover:bg-white/10">
               ← Back
+            </button>
+            <select value={selectedTemplate} onChange={(e) => setSelectedTemplate(e.target.value as TemplateId)}
+              className="rounded-full border border-white/15 bg-transparent px-3 py-2 text-sm text-white outline-none">
+              <option value="bordered">Bordered GST</option>
+              <option value="classic">Classic GST</option>
+              <option value="modern">Modern</option>
+              <option value="minimal">Minimal</option>
+              <option value="premium">Premium</option>
+              <option value="mybillbook">Super</option>
+              <option value="best">Best (Tally)</option>
+              <option value="corporate">Corporate</option>
+              <option value="compact">Compact</option>
+            </select>
+            <button onClick={handlePrint}
+              className="rounded-full border border-white/15 px-4 py-2 text-sm text-white transition hover:bg-white/10">
+              🖨 Print
             </button>
           </div>
         </div>
@@ -88,7 +163,7 @@ export default function DebitNoteDetailPage() {
             {note.invoice && (
               <div>
                 <p className="text-xs text-slate-400">Original Invoice</p>
-                <Link href={`/invoices/${note.invoice}`} className="font-medium text-cyan-300 hover:text-cyan-200">
+                <Link href={`/invoices/${note.invoice.id}`} className="font-medium text-cyan-300 hover:text-cyan-200">
                   #{note.invoice.invoiceNumber}
                 </Link>
               </div>
@@ -142,6 +217,8 @@ export default function DebitNoteDetailPage() {
           <p className="mt-4 text-xs text-slate-500">Debit notes are created with &quot;issued&quot; status and automatically post reversing journal entries.</p>
         </div>
       </section>
+
+      <PrintableDocument data={docData} templateId={selectedTemplate} />
     </main>
   );
 }

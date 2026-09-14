@@ -27,8 +27,8 @@ const DEFAULT_STATS: DashboardStats = {
   quickActions: [
     { label: "New Invoice", href: "/invoices/new", icon: "📄" },
     { label: "Add Party", href: "/parties/new", icon: "👤" },
-    { label: "Record Payment", href: "/payments/new", icon: "💰" },
-    { label: "Scan Bill", href: "/scan", icon: "📷" },
+    { label: "Record Payment", href: "/payments", icon: "💰" },
+    { label: "Scan Bill", href: "/ai/ocr", icon: "📷" },
   ],
 };
 

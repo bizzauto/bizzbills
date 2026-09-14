@@ -370,6 +370,13 @@ export default function InvoiceDetailPage() {
             >
               Markdown
             </button>
+            <Link
+              href="/accounting/journal-entries"
+              title="Auto-posted journal entries for this invoice live here"
+              className="rounded-full border border-white/15 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
+            >
+              Journal
+            </Link>
             <select
               value={selectedTemplate}
               onChange={(e) => setSelectedTemplate(e.target.value as TemplateId)}

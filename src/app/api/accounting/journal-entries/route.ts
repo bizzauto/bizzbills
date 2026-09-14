@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { getSessionOrg } from "@/lib/org";
 import { prisma } from "@/lib/db";
 import { Prisma } from "@prisma/client";
+import { postLedgerLines } from "@/lib/journal";
 
 
 
@@ -72,6 +73,15 @@ export async function POST(request: Request) {
           },
         });
       }
+
+      // Ledger mirrors the journal in the same transaction so the
+      // ledger page and financial reports stay in sync.
+      await postLedgerLines(tx, orgId, journalEntry.id, new Date(body.date), lines.map((l) => ({
+        accountId: l.accountId,
+        debit: l.debit || 0,
+        credit: l.credit || 0,
+        description: l.description ?? "",
+      })));
 
       return journalEntry;
     });

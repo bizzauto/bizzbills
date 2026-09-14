@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { Prisma } from "@prisma/client";
 import { calculateInvoiceSummary, sanitizeInvoiceDraft, type InvoiceDraft } from "@/lib/invoicing";
 import { snapshotFromInvoice, diffSnapshots } from "@/lib/diff";
+import { autoPostInvoiceJournal, deleteAutoJournal } from "@/lib/journal";
 
 async function getAuthInvoice(id: string, userId: string) {
   const orgId = await getSessionOrgId(userId);
@@ -161,16 +162,31 @@ export async function PATCH(
       const afterSnapshot = snapshotFromInvoice(updated);
       const changes = diffSnapshots(beforeSnapshot, afterSnapshot);
 
-      await tx.invoiceVersion.create({
-        data: {
-          invoiceId: id,
-          version: updated.version,
-          snapshot: JSON.stringify(afterSnapshot),
-          changeComment,
-        },
-      });
+        await tx.invoiceVersion.create({
+          data: {
+            invoiceId: id,
+            version: updated.version,
+            snapshot: JSON.stringify(afterSnapshot),
+            changeComment,
+          },
+        });
 
-      return { updated, changes };
+        // Re-sync auto-posted accounting: drop the old entry (old number)
+        // and repost from updated totals so the ledger matches the invoice.
+        if (invoice.orgId && invoice.invoiceNumber) {
+          await deleteAutoJournal(tx, invoice.orgId, `INV-${invoice.invoiceNumber}`);
+        }
+        if (invoice.orgId) {
+          await autoPostInvoiceJournal(
+            invoice.orgId,
+            { id, invoiceNumber, customerName: clean.customerName },
+            clean,
+            summary,
+            tx,
+          );
+        }
+
+        return { updated, changes };
     });
 
     return NextResponse.json({
@@ -226,9 +242,16 @@ export async function DELETE(
     );
   }
 
-  try {
-    await prisma.invoice.delete({ where: { id } });
-    return NextResponse.json({ ok: true });
+    try {
+      await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+        // Remove the auto-posted journal + ledger rows first so no orphan
+        // accounting survives the deleted draft.
+        if (invoice.orgId && invoice.invoiceNumber) {
+          await deleteAutoJournal(tx, invoice.orgId, `INV-${invoice.invoiceNumber}`);
+        }
+        await tx.invoice.delete({ where: { id } });
+      });
+      return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: "Failed to delete invoice" }, { status: 500 });
   }

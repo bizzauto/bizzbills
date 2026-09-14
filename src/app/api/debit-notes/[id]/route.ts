@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getSessionOrgId } from "@/lib/org";
 import { prisma } from "@/lib/db";
+import { Prisma } from "@prisma/client";
+import { deleteAutoJournal } from "@/lib/journal";
 
 
 
@@ -20,7 +22,7 @@ export async function GET(
 
   const note = await prisma.debitNote.findFirst({
     where: { id, orgId },
-    include: { lines: true, invoice: { select: { invoiceNumber: true, customerName: true, total: true } } },
+    include: { lines: true, invoice: { select: { id: true, invoiceNumber: true, customerName: true, total: true } } },
   });
 
   if (!note) return NextResponse.json({ error: "Debit note not found" }, { status: 404 });
@@ -40,10 +42,13 @@ export async function DELETE(
 
   const { id } = await params;
 
-  const existing = await prisma.debitNote.findFirst({ where: { id, orgId } });
-  if (!existing) return NextResponse.json({ error: "Debit note not found" }, { status: 404 });
+    const existing = await prisma.debitNote.findFirst({ where: { id, orgId } });
+    if (!existing) return NextResponse.json({ error: "Debit note not found" }, { status: 404 });
 
-  await prisma.debitNote.delete({ where: { id } });
-  return NextResponse.json({ deleted: true });
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      await deleteAutoJournal(tx, orgId, `DEBIT-NOTE-${existing.debitNoteNumber}`);
+      await tx.debitNote.delete({ where: { id } });
+    });
+    return NextResponse.json({ deleted: true });
 }
 

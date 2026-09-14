@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { getSessionOrgId } from "@/lib/org";
 import { prisma } from "@/lib/db";
 import { generateUpiLink } from "@/lib/upi";
+import { autoPostPaymentJournal } from "@/lib/journal";
 
 
 
@@ -74,6 +75,14 @@ export async function POST(request: Request) {
       },
       include: { invoice: { select: { invoiceNumber: true, customerName: true } } },
     });
+
+    // Auto-post the receipt to accounting: Debit Cash, Credit Receivable.
+    // Helper never throws, so the payment flow stays intact.
+    await autoPostPaymentJournal(
+      orgId,
+      { id: payment.id, amount },
+      payment.invoice?.invoiceNumber ? `Payment for Invoice ${payment.invoice.invoiceNumber}` : `Direct payment ${payment.id.slice(0, 8)}`,
+    );
 
     // Generate UPI link if method is UPI
     let upiLink: string | null = null;

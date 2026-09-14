@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getSessionOrgId } from "@/lib/org";
+import { autoPostExpenseJournal } from "@/lib/journal";
 
 export async function GET() {
   try {
@@ -37,6 +38,10 @@ export async function POST(request: Request) {
         userId: session.user.id, orgId: orgId || null,
       },
     });
+    // Auto-post to accounting when the expense belongs to an org (never throws).
+    if (orgId) {
+      await autoPostExpenseJournal(orgId, { id: expense.id, amount: expense.amount, description: expense.description });
+    }
     return NextResponse.json(expense, { status: 201 });
   } catch (error) {
     console.error("POST expenses error:", error);

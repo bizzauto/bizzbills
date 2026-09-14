@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getSessionOrgId } from "@/lib/org";
 import { prisma } from "@/lib/db";
+import { autoPostPaymentJournal } from "@/lib/journal";
 
 
 
@@ -33,7 +34,7 @@ export async function POST(request: Request) {
 
     const invoice = await prisma.invoice.findFirst({
       where: { id: invoiceId, orgId },
-      select: { id: true, total: true, currency: true },
+      select: { id: true, total: true, currency: true, invoiceNumber: true },
     });
 
     if (!invoice) {
@@ -80,6 +81,13 @@ export async function POST(request: Request) {
       where: { id: invoice.id },
       data: { status: "paid" },
     });
+
+    // Auto-post the receipt to accounting (never throws).
+    await autoPostPaymentJournal(
+      orgId,
+      { id: payment.id, amount: payment.amount },
+      `Payment for Invoice ${invoice.invoiceNumber}`,
+    );
 
     return NextResponse.json(payment, { status: 201 });
   } catch {

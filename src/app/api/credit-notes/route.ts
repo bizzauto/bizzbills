@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { getSessionOrgId } from "@/lib/org";
 import { prisma } from "@/lib/db";
 import type { AccountType } from "@prisma/client";
+import { ensureDefaultAccounts, postLedgerLines } from "@/lib/journal";
 
 
 
@@ -100,6 +101,7 @@ export async function POST(request: Request) {
     });
 
     // Auto-post journal entries for the credit note (reversal of invoice)
+    await ensureDefaultAccounts(orgId);
     const revenueAccount = await findAccount(orgId, ["INCOME"], "REV");
     const receivableAccount = await findAccount(orgId, ["ASSET"], "AR");
     const taxAccount = await findAccount(orgId, ["LIABILITY"], "GST-PAY");
@@ -123,17 +125,20 @@ export async function POST(request: Request) {
     const totalCredit = jeLines.reduce((s, l) => s + l.credit, 0);
 
     if (Math.abs(totalDebit - totalCredit) < 0.01 && jeLines.length > 0) {
-      await prisma.journalEntry.create({
+      const entryDate = new Date(date);
+      const entry = await prisma.journalEntry.create({
         data: {
           orgId,
           entryNumber: `JE-CN-${creditNoteNumber}`,
-          date: new Date(date),
+          date: entryDate,
           description: `Auto-posted for Credit Note ${creditNoteNumber} to ${customerName}`,
           reference: `CREDIT-NOTE-${creditNoteNumber}`,
           isPosted: true,
           lines: { create: jeLines },
         },
       });
+      // Ledger mirrors the journal so the ledger page and reports pick it up.
+      await postLedgerLines(prisma, orgId, entry.id, entryDate, jeLines);
     }
 
     // If linked to invoice, update invoice status back to sent/overdue if it was paid

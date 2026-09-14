@@ -23,6 +23,7 @@ export default function LedgerPage() {
   const [entries, setEntries] = useState<LedgerEntry[]>([]);
   const [accounts, setAccounts] = useState<{ id: string; code: string; name: string; type: string }[]>([]);
   const [loading, setLoading] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -36,6 +37,23 @@ export default function LedgerPage() {
       setAccounts(Array.isArray(data) ? data : []);
     } catch {
       setAccounts([]);
+    }
+  }
+
+  async function syncLedger() {
+    setSyncing(true);
+    setMessage("");
+    try {
+      const res = await fetch("/api/accounting/ledger/sync", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Sync failed");
+      const skipped = Array.isArray(data.skipped) && data.skipped.length > 0 ? ` Skipped unbalanced: ${data.skipped.join(", ")}.` : "";
+      setMessage(`Synced ${data.synced} journal entr${data.synced === 1 ? "y" : "ies"} to the ledger.${skipped}`);
+      if (accountId) fetchLedger();
+    } catch {
+      setMessage("Failed to sync ledger");
+    } finally {
+      setSyncing(false);
     }
   }
 
@@ -91,6 +109,9 @@ export default function LedgerPage() {
         </label>
         <button onClick={fetchLedger} disabled={loading} className="rounded-full bg-cyan-500 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:opacity-50">
           {loading ? "Loading…" : "View Ledger"}
+        </button>
+        <button onClick={syncLedger} disabled={syncing} title="Backfill ledger rows for older journal entries" className="rounded-full border border-white/15 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-white/10 disabled:opacity-50">
+          {syncing ? "Syncing…" : "Sync from Journals"}
         </button>
       </div>
 

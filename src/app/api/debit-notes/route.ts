@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { getSessionOrgId } from "@/lib/org";
 import { prisma } from "@/lib/db";
 import type { AccountType } from "@prisma/client";
+import { ensureDefaultAccounts, postLedgerLines } from "@/lib/journal";
 
 
 
@@ -100,6 +101,7 @@ export async function POST(request: Request) {
     });
 
     // Auto-post journal entries for debit note
+    await ensureDefaultAccounts(orgId);
     const expenseAccount = await findAccount(orgId, ["EXPENSE"], "EXP");
     const payableAccount = await findAccount(orgId, ["LIABILITY"], "AP");
     const taxAccount = await findAccount(orgId, ["LIABILITY"], "GST-PAY");
@@ -127,17 +129,20 @@ export async function POST(request: Request) {
     const totalCredit = jeLines.reduce((s, l) => s + l.credit, 0);
 
     if (Math.abs(totalDebit - totalCredit) < 0.01 && jeLines.length > 0) {
-      await prisma.journalEntry.create({
+      const entryDate = new Date(date);
+      const entry = await prisma.journalEntry.create({
         data: {
           orgId,
           entryNumber: `JE-DN-${debitNoteNumber}`,
-          date: new Date(date),
+          date: entryDate,
           description: `Auto-posted for Debit Note ${debitNoteNumber} from ${supplierName}`,
           reference: `DEBIT-NOTE-${debitNoteNumber}`,
           isPosted: true,
           lines: { create: jeLines },
         },
       });
+      // Ledger mirrors the journal so the ledger page and reports pick it up.
+      await postLedgerLines(prisma, orgId, entry.id, entryDate, jeLines);
     }
 
     return NextResponse.json(note, { status: 201 });

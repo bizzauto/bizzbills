@@ -185,7 +185,7 @@ export function GlobalSearch({
               .forEach((p: Record<string, unknown>) =>
                 grouped.products.push({
                   label: p.name as string,
-                  href: `/inventory/${p.id}`,
+                    href: `/inventory/products/${p.id}`,
                   subtitle: `Rs. ${p.price ?? 0}`,
                   icon: "📦",
                   category: "products",
