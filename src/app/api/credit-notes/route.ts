@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { getSessionOrgId } from "@/lib/org";
 import { prisma } from "@/lib/db";
 import type { AccountType } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { ensureDefaultAccounts, postLedgerLines } from "@/lib/journal";
 
 
@@ -81,7 +82,9 @@ export async function POST(request: Request) {
     });
     const total = subtotal + taxTotal;
 
-    const note = await prisma.creditNote.create({
+    // Note + journal + ledger + invoice-status flip succeed or fail together.
+    const note = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const created = await tx.creditNote.create({
       data: {
         creditNoteNumber,
         orgId,
@@ -124,9 +127,9 @@ export async function POST(request: Request) {
     const totalDebit = jeLines.reduce((s, l) => s + l.debit, 0);
     const totalCredit = jeLines.reduce((s, l) => s + l.credit, 0);
 
-    if (Math.abs(totalDebit - totalCredit) < 0.01 && jeLines.length > 0) {
+      if (Math.abs(totalDebit - totalCredit) < 0.01 && jeLines.length > 0) {
       const entryDate = new Date(date);
-      const entry = await prisma.journalEntry.create({
+      const entry = await tx.journalEntry.create({
         data: {
           orgId,
           entryNumber: `JE-CN-${creditNoteNumber}`,
@@ -137,17 +140,20 @@ export async function POST(request: Request) {
           lines: { create: jeLines },
         },
       });
-      // Ledger mirrors the journal so the ledger page and reports pick it up.
-      await postLedgerLines(prisma, orgId, entry.id, entryDate, jeLines);
+        // Ledger mirrors the journal so the ledger page and reports pick it up.
+        await postLedgerLines(tx, orgId, entry.id, entryDate, jeLines);
     }
 
-    // If linked to invoice, update invoice status back to sent/overdue if it was paid
-    if (invoiceId) {
-      await prisma.invoice.update({
-        where: { id: invoiceId },
-        data: { status: "sent" },
-      });
-    }
+      // If linked to invoice, update invoice status back to sent/overdue if it was paid
+      if (invoiceId) {
+        await tx.invoice.update({
+          where: { id: invoiceId },
+          data: { status: "sent" },
+        });
+      }
+
+      return created;
+    });
 
     return NextResponse.json(note, { status: 201 });
   } catch (e) {

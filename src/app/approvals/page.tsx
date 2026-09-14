@@ -36,6 +36,7 @@ export default function ApprovalsPage() {
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [reasonInputs, setReasonInputs] = useState<Record<string, string>>({});
+  const [actionError, setActionError] = useState("");
 
   const fetchApprovals = useCallback(async () => {
     try {
@@ -56,24 +57,26 @@ export default function ApprovalsPage() {
 
   const handleAction = async (id: string, docType: string, action: "approve" | "reject") => {
     setProcessingId(id);
+    setActionError("");
     const reason = reasonInputs[id] || undefined;
 
     try {
-      if (docType === "invoice") {
-        await fetch(`/api/invoices/${id}/approve`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action, reason }),
-        });
-      } else {
-        // For orders, use the same approve endpoint pattern via a generic API
-        await fetch(`/api/approvals`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ docType: "order", docId: id, action, reason }),
-        });
+      const res = docType === "invoice"
+        ? await fetch(`/api/invoices/${id}/approve`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action, reason }),
+          })
+        : await fetch(`/api/approvals`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ docType: "order", docId: id, action, reason }),
+          });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || `Failed to ${action}`);
       }
-      // Remove the item from the local list optimistically
+      // Only remove locally after the server confirms success
       setItems((prev) => prev.filter((item) => item.id !== id));
       setStats((prev) => ({
         ...prev,
@@ -81,8 +84,8 @@ export default function ApprovalsPage() {
         approvedToday: action === "approve" ? prev.approvedToday + 1 : prev.approvedToday,
         rejectedToday: action === "reject" ? prev.rejectedToday + 1 : prev.rejectedToday,
       }));
-    } catch {
-      // silent
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : `Failed to ${action}. Try again.`);
     } finally {
       setProcessingId(null);
     }
@@ -118,6 +121,11 @@ export default function ApprovalsPage() {
       </div>
 
       {/* Pending items list */}
+      {actionError && (
+        <div className="rounded-xl border border-red-400/20 bg-red-500/10 p-3 text-sm text-red-300">
+          {actionError}
+        </div>
+      )}
       <section className="rounded-[1.5rem] border border-white/10 bg-slate-900/70 backdrop-blur overflow-hidden">
         {loading ? (
           <div className="p-6 text-sm text-slate-500">Loading...</div>

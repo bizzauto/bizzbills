@@ -12,10 +12,29 @@ export default function PaymentsPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [outstanding, setOutstanding] = useState<any[]>([]);
   const [totalOutstanding, setTotalOutstanding] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch("/api/payments").then((r) => r.json()).then((d) => setPayments(Array.isArray(d) ? d : []));
-    fetch("/api/outstanding").then((r) => r.json()).then((d) => { setOutstanding(d.outstanding ?? []); setTotalOutstanding(d.totalOutstanding ?? 0); });
+    setLoading(true);
+    setError("");
+    Promise.all([
+      fetch("/api/payments").then((r) => {
+        if (!r.ok) throw new Error("payments");
+        return r.json();
+      }),
+      fetch("/api/outstanding").then((r) => {
+        if (!r.ok) throw new Error("outstanding");
+        return r.json();
+      }),
+    ])
+      .then(([p, o]) => {
+        setPayments(Array.isArray(p) ? p : []);
+        setOutstanding(o.outstanding ?? []);
+        setTotalOutstanding(o.totalOutstanding ?? 0);
+      })
+      .catch(() => setError("Could not load payments. Check your connection and retry."))
+      .finally(() => setLoading(false));
   }, []);
 
   const filtered = tab === "all" ? payments : payments.filter((p) => p.status === tab);
@@ -46,7 +65,9 @@ export default function PaymentsPage() {
 
       <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
         <div className="rounded-[1.5rem] border border-white/10 bg-slate-900/70 backdrop-blur overflow-hidden">
-          {filtered.length === 0 ? <div className="p-6 text-sm text-slate-500">No payments.</div> : (
+          {loading ? <div className="p-6 text-sm text-slate-500">Loading payments…</div>
+          : error ? <div className="p-6 text-sm text-red-300">{error}</div>
+          : filtered.length === 0 ? <div className="p-6 text-sm text-slate-500">No payments.</div> : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead><tr className="border-b border-white/10 text-slate-400">

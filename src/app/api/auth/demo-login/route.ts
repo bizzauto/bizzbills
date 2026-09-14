@@ -5,6 +5,10 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
 export async function POST(request: Request) {
+  // Debug-only oracle: disabled in production unless explicitly enabled.
+  if (process.env.ALLOW_DEMO_LOGIN !== "1") {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
   try {
     const { email, password } = await request.json();
 

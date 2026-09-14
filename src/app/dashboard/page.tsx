@@ -200,7 +200,7 @@ export default function DashboardPage() {
       {/* KPI Cards */}
       <section className="grid gap-4 md:grid-cols-4">
         <div className="kpi-card">
-          <span className="kpi-label">Today's Sales</span>
+          <span className="kpi-label">Today&apos;s Sales</span>
           <span className="kpi-value kpi-accent-cyan">{formatAmount(todaySales, currentOrgCurrency)}</span>
         </div>
         <div className="kpi-card">

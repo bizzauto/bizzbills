@@ -34,17 +34,28 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const existing = await getProformaInvoice(id, session.user.id);
     if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    const body = await request.json();
-    const { lines, ...fields } = body;
+      const body = await request.json();
+      const { lines, ...fields } = body;
 
-    const invoice = await prisma.$transaction(async (tx) => {
-      if (lines) {
-        await tx.proformaInvoiceLine.deleteMany({ where: { proformaInvoiceId: id } });
+      // Whitelist client-settable fields — never let callers overwrite
+      // ownership (orgId/userId) or computed totals via raw body spread.
+      const allowed = [
+        "proformaNumber", "customerName", "customerGstin", "currency",
+        "validUntil", "status", "subtotal", "taxTotal", "total", "notes",
+      ] as const;
+      const safeFields: Record<string, unknown> = {};
+      for (const key of allowed) {
+        if (fields[key] !== undefined) safeFields[key] = fields[key];
       }
-      return tx.proformaInvoice.update({
-        where: { id },
-        data: {
-          ...fields,
+
+      const invoice = await prisma.$transaction(async (tx) => {
+        if (lines) {
+          await tx.proformaInvoiceLine.deleteMany({ where: { proformaInvoiceId: id } });
+        }
+        return tx.proformaInvoice.update({
+          where: { id },
+          data: {
+            ...safeFields,
           ...(lines ? {
             lines: {
               create: lines.map((l: { description?: string; quantity?: number; unitPrice?: number; taxRate?: number; hsnCode?: string }) => ({

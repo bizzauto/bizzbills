@@ -7,6 +7,11 @@ import { fetchLatestRates } from "@/lib/forex";
 import { getExchangeRates } from "@/lib/currency-rates";
 
 export async function GET(request: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { searchParams } = new URL(request.url);
   const baseCurrency = searchParams.get("base") || "INR";
 

@@ -20,38 +20,65 @@ export default function CurrencyPage() {
   const [syncing, setSyncing] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [newRate, setNewRate] = useState({ toCurrency: "USD", rate: 0 });
+  const [error, setError] = useState("");
 
   async function fetchRates() {
     setLoading(true);
-    const res = await fetch(`/api/currency/rates?base=${baseCurrency}`);
-    const data = await res.json();
-    setRates(data?.rates ?? []);
-    setLoading(false);
+    setError("");
+    try {
+      const res = await fetch(`/api/currency/rates?base=${baseCurrency}`);
+      if (!res.ok) throw new Error("Failed to load rates");
+      const data = await res.json();
+      setRates(data?.rates ?? []);
+    } catch {
+      setError("Could not load exchange rates. Check your connection and retry.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => { fetchRates(); }, [baseCurrency]);
 
   async function handleSync() {
     setSyncing(true);
-    await fetch("/api/currency/rates", { method: "PUT" });
-    await fetchRates();
-    setSyncing(false);
+    setError("");
+    try {
+      const res = await fetch("/api/currency/rates", { method: "PUT" });
+      if (!res.ok) throw new Error("Sync failed");
+      await fetchRates();
+    } catch {
+      setError("Rate sync failed. Try again.");
+    } finally {
+      setSyncing(false);
+    }
   }
 
   async function handleAdd() {
-    await fetch("/api/currency/rates", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fromCurrency: baseCurrency, toCurrency: newRate.toCurrency, rate: newRate.rate }),
-    });
-    setShowAdd(false);
-    setNewRate({ toCurrency: "USD", rate: 0 });
-    await fetchRates();
+    setError("");
+    try {
+      const res = await fetch("/api/currency/rates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fromCurrency: baseCurrency, toCurrency: newRate.toCurrency, rate: newRate.rate }),
+      });
+      if (!res.ok) throw new Error("Add failed");
+      setShowAdd(false);
+      setNewRate({ toCurrency: "USD", rate: 0 });
+      await fetchRates();
+    } catch {
+      setError("Could not add the rate. Try again.");
+    }
   }
 
   async function handleDelete(id: string) {
-    await fetch(`/api/currency/rates?id=${id}`, { method: "DELETE" });
-    await fetchRates();
+    setError("");
+    try {
+      const res = await fetch(`/api/currency/rates?id=${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Delete failed");
+      await fetchRates();
+    } catch {
+      setError("Could not delete the rate. Try again.");
+    }
   }
 
   return (
@@ -79,6 +106,12 @@ export default function CurrencyPage() {
           </div>
         </div>
       </section>
+
+      {error && (
+        <div className="rounded-xl border border-red-400/20 bg-red-500/10 p-3 text-sm text-red-300">
+          {error}
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_2fr]">
         <div className="rounded-[1.5rem] border border-white/10 bg-slate-900/70 p-6 backdrop-blur">

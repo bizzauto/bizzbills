@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { getSessionOrgId } from "@/lib/org";
 import { prisma } from "@/lib/db";
 import type { AccountType } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { ensureDefaultAccounts, postLedgerLines } from "@/lib/journal";
 
 
@@ -81,7 +82,9 @@ export async function POST(request: Request) {
     });
     const total = subtotal + taxTotal;
 
-    const note = await prisma.debitNote.create({
+    // Note + journal + ledger succeed or fail together.
+    const note = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const created = await tx.debitNote.create({
       data: {
         debitNoteNumber,
         orgId,
@@ -130,7 +133,7 @@ export async function POST(request: Request) {
 
     if (Math.abs(totalDebit - totalCredit) < 0.01 && jeLines.length > 0) {
       const entryDate = new Date(date);
-      const entry = await prisma.journalEntry.create({
+      const entry = await tx.journalEntry.create({
         data: {
           orgId,
           entryNumber: `JE-DN-${debitNoteNumber}`,
@@ -142,8 +145,11 @@ export async function POST(request: Request) {
         },
       });
       // Ledger mirrors the journal so the ledger page and reports pick it up.
-      await postLedgerLines(prisma, orgId, entry.id, entryDate, jeLines);
-    }
+      await postLedgerLines(tx, orgId, entry.id, entryDate, jeLines);
+      }
+
+      return created;
+    });
 
     return NextResponse.json(note, { status: 201 });
   } catch {

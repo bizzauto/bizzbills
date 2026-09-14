@@ -14,7 +14,16 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   if (!orgId) return NextResponse.json({ error: "No organization" }, { status: 400 });
 
   const { id } = await params;
-  const data = await request.json();
+  const body = await request.json();
+
+  // Whitelist — callers must not reassign orgId or touch server fields.
+  const data: Record<string, unknown> = {};
+  if (body.name !== undefined) data.name = body.name;
+  if (body.address !== undefined) data.address = body.address;
+  if (body.city !== undefined) data.city = body.city;
+  if (body.state !== undefined) data.state = body.state;
+  if (body.isActive !== undefined) data.isActive = body.isActive;
+
   await prisma.warehouse.updateMany({ where: { id, orgId }, data });
   return NextResponse.json({ success: true });
 }

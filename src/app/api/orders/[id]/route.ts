@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getSessionOrgId } from "@/lib/org";
 import { prisma } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 
 type OrderLineInput = {
   description?: string;
@@ -87,37 +88,44 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   const body = await request.json();
   const data = pickOrderFields(body);
 
-  const lines: OrderLineInput[] = Array.isArray(body.lines) ? body.lines : [];
-  if (lines.length > 0) {
-    const totals = computeTotals(lines);
-    data.subtotal = totals.subtotal;
-    data.taxTotal = totals.taxTotal;
-    data.total = totals.total;
-    await prisma.orderLine.deleteMany({ where: { orderId: id } });
-  }
+    const lines: OrderLineInput[] = Array.isArray(body.lines) ? body.lines : [];
+    if (lines.length > 0) {
+      const totals = computeTotals(lines);
+      data.subtotal = totals.subtotal;
+      data.taxTotal = totals.taxTotal;
+      data.total = totals.total;
+    }
 
-  const order = await prisma.order.update({
-    where: { id },
-    data: {
-      ...data,
-      ...(lines.length > 0
-        ? {
-            lines: {
-              create: lines.map((l) => ({
-                description: l.description ?? "",
-                quantity: Number(l.quantity) || 0,
-                unitPrice: Number(l.unitPrice) || 0,
-                taxRate: Number(l.taxRate) || 0,
-                hsnCode: l.hsnCode ?? "",
-                productId: l.productId ?? null,
-              })),
-            },
-          }
-        : {}),
-    },
-    include: { lines: true },
-  });
-  return NextResponse.json(order);
+    // Lines are wiped before recreate — keep both steps in one transaction
+    // so a mid-way failure can never leave an order without lines.
+    const order = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      if (lines.length > 0) {
+        await tx.orderLine.deleteMany({ where: { orderId: id } });
+      }
+
+      return tx.order.update({
+        where: { id },
+        data: {
+          ...data,
+          ...(lines.length > 0
+            ? {
+                lines: {
+                  create: lines.map((l) => ({
+                    description: l.description ?? "",
+                    quantity: Number(l.quantity) || 0,
+                    unitPrice: Number(l.unitPrice) || 0,
+                    taxRate: Number(l.taxRate) || 0,
+                    hsnCode: l.hsnCode ?? "",
+                    productId: l.productId ?? null,
+                  })),
+                },
+              }
+            : {}),
+        },
+        include: { lines: true },
+      });
+    });
+    return NextResponse.json(order);
 }
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {

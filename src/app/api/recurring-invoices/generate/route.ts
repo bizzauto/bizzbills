@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getPlanLimit, invoiceCountWhere } from "@/lib/planLimits";
 
+const CRON_SECRET = process.env.CRON_SECRET;
+
 function calcNextRunDate(date: Date, freq: string, interval: number): Date {
   const d = new Date(date);
   switch (freq) {
@@ -16,9 +18,18 @@ function calcNextRunDate(date: Date, freq: string, interval: number): Date {
   return d;
 }
 
-export async function POST() {
-  // Allow both authenticated and API-key access for cron jobs
+export async function POST(request: Request) {
+  // This endpoint mutates billing state across orgs — require either a
+  // logged-in session (scoped to the caller's org) or the CRON_SECRET
+  // bearer token (server-to-server cron). Never allow anonymous access.
+  const cronAuth = request.headers.get("authorization")?.replace("Bearer ", "");
+  const cronOk = !!CRON_SECRET && cronAuth === CRON_SECRET;
   const session = await getServerSession(authOptions);
+  if (!cronOk && !session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Allow both authenticated and API-key access for cron jobs
   let orgId: string | null = null;
   let userId: string | null = null;
 

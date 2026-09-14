@@ -12,11 +12,36 @@ export default function PartiesPage() {
   const [tab, setTab] = useState("customer");
   const [parties, setParties] = useState<Party[]>([]);
   const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
+  // Debounced search with abort — rapid keystrokes must not let a stale
+  // response overwrite newer results.
   useEffect(() => {
-    const params = new URLSearchParams({ type: tab });
-    if (search) params.set("search", search);
-    fetch(`/api/parties?${params}`).then((r) => r.json()).then((d) => setParties(Array.isArray(d) ? d : []));
+    const abort = new AbortController();
+    setLoading(true);
+    setError("");
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams({ type: tab });
+      if (search) params.set("search", search);
+      fetch(`/api/parties?${params}`, { signal: abort.signal })
+        .then((r) => {
+          if (!r.ok) throw new Error("load failed");
+          return r.json();
+        })
+        .then((d) => setParties(Array.isArray(d) ? d : []))
+        .catch((e) => {
+          if (e instanceof DOMException && e.name === "AbortError") return;
+          setError("Could not load parties. Check your connection and retry.");
+        })
+        .finally(() => {
+          if (!abort.signal.aborted) setLoading(false);
+        });
+    }, 300);
+    return () => {
+      clearTimeout(timer);
+      abort.abort();
+    };
   }, [tab, search]);
 
   return (
@@ -42,7 +67,11 @@ export default function PartiesPage() {
       </div>
 
       <div className="rounded-[1.5rem] border border-white/10 bg-slate-900/70 backdrop-blur overflow-hidden">
-        {parties.length === 0 ? (
+        {loading ? (
+          <div className="p-6 text-sm text-slate-500">Loading parties…</div>
+        ) : error ? (
+          <div className="p-6 text-sm text-red-300">{error}</div>
+        ) : parties.length === 0 ? (
           <div className="p-6 text-sm text-slate-500">No {tab}s yet.</div>
         ) : (
           <div className="overflow-x-auto">

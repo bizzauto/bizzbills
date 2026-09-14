@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getSessionOrgId } from "@/lib/org";
 import { prisma } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
@@ -54,20 +55,25 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   const existing = await prisma.party.findFirst({ where: { id, orgId }, select: { id: true } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const body = await request.json();
-  const { addresses, ...data } = body;
-  const partyData = pickPartyFields(data);
+    const body = await request.json();
+    const { addresses, ...data } = body;
+    const partyData = pickPartyFields(data);
+    const hasAddresses = Array.isArray(addresses) && addresses.length > 0;
 
-  if (Array.isArray(addresses) && addresses.length > 0) {
-    await prisma.partyAddress.deleteMany({ where: { partyId: id } });
-  }
-  const party = await prisma.party.update({
-    where: { id },
-    data: {
-      ...partyData,
-      ...(Array.isArray(addresses) && addresses.length ? { addresses: { create: addresses } } : {}),
-    },
-    include: { addresses: true },
-  });
-  return NextResponse.json(party);
+    // Addresses are wiped before recreate — one transaction so a failure
+    // can never leave a party without addresses.
+    const party = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      if (hasAddresses) {
+        await tx.partyAddress.deleteMany({ where: { partyId: id } });
+      }
+      return tx.party.update({
+        where: { id },
+        data: {
+          ...partyData,
+          ...(hasAddresses ? { addresses: { create: addresses } } : {}),
+        },
+        include: { addresses: true },
+      });
+    });
+    return NextResponse.json(party);
 }

@@ -1,9 +1,17 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import crypto from "crypto";
+import { rateLimit, ipFromRequest } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   try {
+    // Token-spam guard: unbounded calls would flood the DB + mailbox.
+    const ip = ipFromRequest(request);
+    const rl = rateLimit({ key: `forgot:${ip}`, limit: 5, windowMs: 3600_000 });
+    if (!rl.allowed) {
+      return NextResponse.json({ error: "Too many requests. Try again later." }, { status: 429 });
+    }
+
     const { email } = await request.json();
     if (!email) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });

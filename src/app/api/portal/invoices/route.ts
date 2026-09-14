@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { getSessionOrgId } from "@/lib/org";
 
 /**
  * GET /api/portal/invoices?customer=xxx&orgId=xxx
@@ -24,6 +25,12 @@ export async function GET(request: Request) {
         { error: "Both 'customer' and 'orgId' query parameters are required" },
         { status: 400 }
       );
+    }
+
+    // Callers may only read their OWN org — never trust the query param alone.
+    const callerOrgId = await getSessionOrgId(session.user.id);
+    if (!callerOrgId || callerOrgId !== orgId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // Verify the org exists
