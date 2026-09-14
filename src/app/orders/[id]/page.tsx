@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useOrg } from "@/components/OrgProvider";
 import { formatAmount } from "@/lib/currency";
+import { PrintableDocument, handlePrint } from "@/components/PrintableInvoice";
+import type { TemplateId } from "@/components/invoice/InvoiceTemplates";
 
 const statuses = ["draft", "pending", "approved", "delivered", "completed", "cancelled"];
 const statusColor: Record<string, string> = {
@@ -17,9 +19,17 @@ export default function OrderDetailPage() {
   const router = useRouter();
   const { currentOrgCurrency } = useOrg();
   const [order, setOrder] = useState<any>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateId>("bordered");
+  const [org, setOrg] = useState<any>(null);
 
   useEffect(() => {
     fetch(`/api/orders/${params.id}`).then((r) => r.json()).then((d) => setOrder(Array.isArray(d) ? d[0] || d : d));
+    fetch("/api/organization/settings").then((r) => r.json()).then((d) => {
+      if (d && d.name) {
+        setOrg(d);
+        if (d.defaultTemplate) setSelectedTemplate(d.defaultTemplate);
+      }
+    }).catch(() => {});
   }, [params.id]);
 
   if (!order) return <main className="pb-10 text-sm text-slate-400">Loading…</main>;
@@ -31,6 +41,54 @@ export default function OrderDetailPage() {
 
   const typeLabel: Record<string, string> = { sales_order: "Sales Order", purchase_order: "Purchase Order", quotation: "Quotation", delivery_challan: "Delivery Challan" };
 
+  const fmtDate = (v: any) => {
+    if (!v) return undefined;
+    const d = new Date(v);
+    return isNaN(d.getTime()) ? String(v) : d.toLocaleDateString("en-IN");
+  };
+
+  const docData = {
+    number: order.orderNumber,
+    title: typeLabel[order.orderType] || "Order",
+    customerName: order.partyName,
+    customerGstin: order.partyGstin || undefined,
+    date: fmtDate(order.orderDate) || "",
+    lines: (order.lines || []).map((l: any) => ({
+      description: l.description,
+      hsnCode: l.hsnCode || undefined,
+      quantity: l.quantity,
+      unitPrice: l.unitPrice,
+      taxRate: l.taxRate || 0,
+    })),
+    subtotal: order.subtotal,
+    taxTotal: order.taxTotal,
+    total: order.total,
+    currency: order.currency || currentOrgCurrency,
+    notes: order.notes || undefined,
+    orgName: org?.name || "Your Company",
+    orgAddress: org?.address,
+    orgGstin: org?.gstin,
+    orgEmail: org?.email,
+    orgPhone: org?.phone,
+    orgLogo: org?.logo,
+    bankName: org?.bankName,
+    bankAccount: org?.accountNumber,
+    bankAccountName: org?.accountName,
+    bankIfsc: org?.ifscCode,
+    bankBranch: org?.bankBranch,
+    upiId: org?.upiId,
+    accentColor: org?.defaultAccentColor,
+    showBankDetails: org?.showBankDetails,
+    showQrCode: org?.showQrCode,
+    showSignature: org?.showSignature,
+    showGstin: org?.showGstin,
+    showLogo: org?.showLogo,
+    showHsnSummary: org?.showHsnSummary,
+    showAmountInWords: org?.showAmountInWords,
+    showShipTo: org?.showShipTo,
+    showTerms: org?.showTerms,
+  };
+
   return (
     <main className="mx-auto max-w-4xl pb-10">
       <div className="flex items-center gap-3 mb-6 flex-wrap">
@@ -38,6 +96,19 @@ export default function OrderDetailPage() {
         <h1 className="text-2xl font-semibold text-white">{order.orderNumber}</h1>
         <span className="rounded-full bg-cyan-500/10 px-3 py-0.5 text-[10px] font-medium text-cyan-300">{typeLabel[order.orderType] || order.orderType}</span>
         <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${statusColor[order.status]}`}>{order.status}</span>
+        <select value={selectedTemplate} onChange={(e) => setSelectedTemplate(e.target.value as TemplateId)}
+          className="rounded-full border border-white/10 bg-transparent px-3 py-1 text-xs text-slate-300 outline-none">
+          <option value="bordered">Bordered GST</option>
+          <option value="classic">Classic GST</option>
+          <option value="modern">Modern</option>
+          <option value="minimal">Minimal</option>
+          <option value="premium">Premium</option>
+          <option value="mybillbook">Super</option>
+          <option value="best">Best (Tally)</option>
+          <option value="corporate">Corporate</option>
+          <option value="compact">Compact</option>
+        </select>
+        <button onClick={handlePrint} className="rounded-full border border-white/10 px-3 py-1 text-xs text-slate-300 hover:bg-white/5">🖨 Print</button>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -95,6 +166,8 @@ export default function OrderDetailPage() {
           <p className="text-sm text-slate-300">{order.notes}</p>
         </div>
       )}
+
+      <PrintableDocument data={docData} templateId={selectedTemplate} />
     </main>
   );
 }

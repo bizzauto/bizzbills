@@ -27,6 +27,7 @@ export default function PaymentDetailPage() {
   const [payment, setPayment] = useState<PaymentDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [orgUpi, setOrgUpi] = useState<{ upiId?: string; name?: string }>({});
 
   useEffect(() => {
     async function load() {
@@ -39,6 +40,10 @@ export default function PaymentDetailPage() {
       setLoading(false);
     }
     load();
+    fetch("/api/organization/settings")
+      .then((r) => r.json())
+      .then((d) => { if (d && !d.error) setOrgUpi({ upiId: d.upiId, name: d.name }); })
+      .catch(() => {});
   }, [params]);
 
   async function markCompleted() {
@@ -72,13 +77,15 @@ export default function PaymentDetailPage() {
     );
   }
 
-  const upiLink = generateUpiLink({
-    pa: "merchant@upi", // Will be replaced with org's UPI ID
-    pn: "Business",
-    am: String(payment.amount),
-    tn: `Payment ${payment.id.slice(0, 8)}`,
-    tr: payment.id.slice(0, 12),
-  });
+  const upiLink = orgUpi.upiId
+    ? generateUpiLink({
+        pa: orgUpi.upiId,
+        pn: orgUpi.name || "Business",
+        am: String(payment.amount),
+        tn: `Payment ${payment.id.slice(0, 8)}`,
+        tr: payment.id.slice(0, 12),
+      })
+    : "";
 
   return (
     <main className="flex flex-1 flex-col gap-6 pb-10">
@@ -152,7 +159,7 @@ export default function PaymentDetailPage() {
         </div>
 
         <div className="space-y-6">
-          {payment.method === "upi" && (
+          {payment.method === "upi" && orgUpi.upiId && (
             <div className="rounded-[1.5rem] border border-white/10 bg-slate-900/70 p-6 backdrop-blur text-center">
               <h2 className="text-lg font-semibold text-white">UPI Payment</h2>
               <img
@@ -160,13 +167,18 @@ export default function PaymentDetailPage() {
                 alt="UPI QR Code"
                 className="mx-auto mt-4 rounded-xl"
               />
-              <p className="mt-3 text-xs text-slate-400">Scan with any UPI app to pay</p>
+              <p className="mt-3 text-xs text-slate-400">Scan with any UPI app to pay · {orgUpi.upiId}</p>
               <a
                 href={upiLink}
                 className="mt-3 inline-block rounded-full bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-400"
               >
                 Open UPI App →
               </a>
+            </div>
+          )}
+          {payment.method === "upi" && !orgUpi.upiId && (
+            <div className="rounded-[1.5rem] border border-white/10 bg-slate-900/70 p-6 backdrop-blur text-center">
+              <p className="text-xs text-slate-400">Add your UPI ID in Template Settings → Bank Details to show a scannable QR here.</p>
             </div>
           )}
 

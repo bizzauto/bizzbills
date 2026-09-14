@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { useOrg } from "@/components/OrgProvider";
 import { formatAmount } from "@/lib/currency";
 
@@ -11,10 +12,25 @@ export default function PartyDetailPage() {
   const { currentOrgCurrency } = useOrg();
   const [party, setParty] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [partyInvoices, setPartyInvoices] = useState<any[]>([]);
+  const [partyPayments, setPartyPayments] = useState<any[]>([]);
 
   useEffect(() => {
     fetch(`/api/parties/${params.id}`).then((r) => r.json()).then((d) => { setParty(d); setLoading(false); });
   }, [params.id]);
+
+  // Party ↔ documents connection: invoices + payments for this party
+  useEffect(() => {
+    if (!party?.name) return;
+    fetch("/api/invoices")
+      .then((r) => r.json())
+      .then((d) => setPartyInvoices(Array.isArray(d) ? d.filter((inv: any) => inv.customerName === party.name).slice(0, 8) : []))
+      .catch(() => {});
+    fetch("/api/payments")
+      .then((r) => r.json())
+      .then((d) => setPartyPayments(Array.isArray(d) ? d.filter((p: any) => p.invoice?.customerName === party.name).slice(0, 8) : []))
+      .catch(() => {});
+  }, [party?.name]);
 
   if (loading) return <main className="pb-10 text-sm text-slate-400">Loading…</main>;
   if (!party) return <main className="pb-10"><p className="text-slate-400">Party not found.</p></main>;
@@ -58,6 +74,47 @@ export default function PartyDetailPage() {
           <p className="text-sm text-slate-300">{party.notes}</p>
         </div>
       )}
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <div className="rounded-[1.5rem] border border-white/10 bg-slate-900/70 p-6">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-white">Recent Invoices</h2>
+            <Link href="/invoices" className="text-xs text-cyan-300 hover:text-cyan-200">View all →</Link>
+          </div>
+          {partyInvoices.length > 0 ? (
+            <div className="space-y-2">
+              {partyInvoices.map((inv: any) => (
+                <div key={inv.id} className="flex items-center justify-between rounded-xl border border-white/5 bg-slate-950/50 px-3 py-2 text-sm">
+                  <div>
+                    <Link href={`/invoices/${inv.id}`} className="font-medium text-white hover:text-cyan-300">#{inv.invoiceNumber}</Link>
+                    <p className="text-xs text-slate-500">{inv.date ? new Date(inv.date).toLocaleDateString("en-IN") : inv.createdAt ? new Date(inv.createdAt).toLocaleDateString("en-IN") : ""} · {inv.status}</p>
+                  </div>
+                  <span className="font-medium text-white">{formatAmount(inv.total, currentOrgCurrency)}</span>
+                </div>
+              ))}
+            </div>
+          ) : <p className="text-sm text-slate-500">No invoices for this party yet.</p>}
+        </div>
+
+        <div className="rounded-[1.5rem] border border-white/10 bg-slate-900/70 p-6">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-white">Recent Payments</h2>
+            <Link href="/payments" className="text-xs text-cyan-300 hover:text-cyan-200">View all →</Link>
+          </div>
+          {partyPayments.length > 0 ? (
+            <div className="space-y-2">
+              {partyPayments.map((p: any) => (
+                <div key={p.id} className="flex items-center justify-between rounded-xl border border-white/5 bg-slate-950/50 px-3 py-2 text-sm">
+                  <div>
+                    <Link href={`/payments/${p.id}`} className="font-medium text-white hover:text-cyan-300">{formatAmount(p.amount, currentOrgCurrency)}</Link>
+                    <p className="text-xs text-slate-500">{p.paidAt ? new Date(p.paidAt).toLocaleDateString("en-IN") : p.createdAt ? new Date(p.createdAt).toLocaleDateString("en-IN") : ""} · {p.invoice ? `#${p.invoice.invoiceNumber}` : p.method} · {p.status}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : <p className="text-sm text-slate-500">No payments from this party yet.</p>}
+        </div>
+      </div>
     </main>
   );
 }
