@@ -435,7 +435,7 @@ function ClassicGSTTemplate({ data }: { data: TemplateData }) {
   const r2 = (x: number) => Math.round(x * 100) / 100;
 
   return (
-    <div className="invoice-template" style={{ fontFamily: fontFamily(data), background: "white", color: "#0f172a", maxWidth: "800px", margin: "0 auto", fontSize: "11px" }}>
+    <div className="invoice-template" style={{ fontFamily: fontFamily(data), background: "white", color: "#0f172a", maxWidth: "800px", margin: "0 auto", fontSize: "11px", minHeight: "100vh", paddingBottom: "16px" }}>
       {/* Double outer frame — Tally signature look */}
       <div style={{ border: `3px double ${accent(data, "#0f172a")}`, padding: "1px" }}>
         <div style={{ border: inner, padding: "14px 16px" }}>
@@ -717,7 +717,7 @@ function ClassicGSTTemplate({ data }: { data: TemplateData }) {
 function ModernCleanTemplate({ data }: { data: TemplateData }) {
   const cur = currency(data);
   return (
-    <div className="invoice-template" style={{ fontFamily: fontFamily(data), background: "white", color: "#1e293b", padding: "48px", maxWidth: "800px", margin: "0 auto" }}>
+    <div className="invoice-template" style={{ fontFamily: fontFamily(data), background: "white", color: "#1e293b", padding: "48px", maxWidth: "800px", margin: "0 auto", minHeight: "100vh", paddingBottom: "16px" }}>
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "40px" }}>
         <div>
@@ -836,7 +836,7 @@ function ModernCleanTemplate({ data }: { data: TemplateData }) {
 function MinimalTemplate({ data }: { data: TemplateData }) {
   const cur = currency(data);
   return (
-    <div className="invoice-template" style={{ fontFamily: fontFamily(data), background: "white", color: "#1e293b", padding: "36px", maxWidth: "800px", margin: "0 auto" }}>
+    <div className="invoice-template" style={{ fontFamily: fontFamily(data), background: "white", color: "#1e293b", padding: "36px", maxWidth: "800px", margin: "0 auto", minHeight: "100vh", paddingBottom: "16px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "32px", borderBottom: "1px solid #e2e8f0", paddingBottom: "16px" }}>
         <div>
           <p style={{ fontSize: "18px", fontWeight: "700", color: "#0f172a", margin: 0 }}>{data.orgName}</p>
@@ -898,7 +898,7 @@ function MinimalTemplate({ data }: { data: TemplateData }) {
 function PremiumTemplate({ data }: { data: TemplateData }) {
   const cur = currency(data);
   return (
-    <div className="invoice-template" style={{ fontFamily: fontFamily(data), background: "white", color: "#1e293b", padding: "40px", maxWidth: "800px", margin: "0 auto" }}>
+    <div className="invoice-template" style={{ fontFamily: fontFamily(data), background: "white", color: "#1e293b", padding: "40px", maxWidth: "800px", margin: "0 auto", minHeight: "100vh", paddingBottom: "16px" }}>
       {/* Premium header with large accent block */}
       <div style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", margin: "-40px -40px 32px", padding: "36px 40px", color: "white", borderRadius: "0 0 24px 24px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -1268,7 +1268,7 @@ function BankQrCard({ data, amount }: { data: TemplateData; amount?: number }) {
 function MyBillBookTemplate({ data }: { data: TemplateData }) {
   const cur = currency(data);
   return (
-    <div className="invoice-template" style={{ fontFamily: fontFamily(data), background: "white", color: "#1e293b", padding: "36px", maxWidth: "800px", margin: "0 auto" }}>
+    <div className="invoice-template" style={{ fontFamily: fontFamily(data), background: "white", color: "#1e293b", padding: "36px", maxWidth: "800px", margin: "0 auto", minHeight: "100vh", paddingBottom: "16px" }}>
       {/* Blue gradient header */}
       <div style={{ background: accentGradient(data, "#2563eb"), margin: "-36px -36px 28px", padding: "28px 36px", borderRadius: "0 0 20px 20px", color: "white" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -1427,7 +1427,7 @@ function MyBillBookTemplate({ data }: { data: TemplateData }) {
 function BestTemplate({ data }: { data: TemplateData }) {
   const cur = currency(data);
   return (
-    <div className="invoice-template" style={{ fontFamily: data.fontFamily ? `'${data.fontFamily}', 'Courier New', monospace` : "'Courier New', 'Consolas', monospace", background: "white", color: "#1a1a1a", padding: "32px", maxWidth: "800px", margin: "0 auto", fontSize: "12px" }}>
+    <div className="invoice-template" style={{ fontFamily: data.fontFamily ? `'${data.fontFamily}', 'Courier New', monospace` : "'Courier New', 'Consolas', monospace", background: "white", color: "#1a1a1a", padding: "32px", maxWidth: "800px", margin: "0 auto", fontSize: "12px", minHeight: "100vh", paddingBottom: "16px" }}>
       {/* Header with double line */}
       <div style={{ borderBottom: `3px double ${accent(data, "#1a1a1a")}`, paddingBottom: "12px", marginBottom: "16px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -1698,7 +1698,7 @@ function BorderedTemplate({ data }: { data: TemplateData }) {
   const words = data.amountInWords || numberToWords(data.total);
 
   return (
-    <div className="invoice-template bordered-template" style={{ fontFamily: "'Arial', 'Helvetica', sans-serif", background: "white", color: "#111827", padding: "28px", maxWidth: "800px", margin: "0 auto", fontSize: "12px" }}>
+    <div className="invoice-template bordered-template" style={{ fontFamily: "'Arial', 'Helvetica', sans-serif", background: "white", color: "#111827", padding: "16px", maxWidth: "800px", margin: "0 auto", fontSize: "12px", minHeight: "100vh", paddingBottom: "16px" }}>
       <p style={{ textAlign: "center", fontSize: "15px", fontWeight: 800, letterSpacing: "0.04em", margin: "0 0 8px" }}>
         {data.title.toUpperCase()}
       </p>
@@ -1896,9 +1896,9 @@ function BorderedTemplate({ data }: { data: TemplateData }) {
                 </td>
               )}
             {showSignCell && (
-              <td style={{ ...tdBase, width: showBank || showTerms ? "26%" : "100%", textAlign: "center", verticalAlign: "middle" }}>
+              <td style={{ ...tdBase, width: showBank || showTerms ? "30%" : "100%", textAlign: "center", verticalAlign: "bottom", paddingTop: "20px" }}>
                 {showQr && (
-                  <div>
+                  <div style={{ marginBottom: "16px" }}>
                     <div style={{ padding: "5px", background: "white", border: "1px solid #cbd5e1", borderRadius: "6px", display: "inline-block" }}>
                       <QRCodeSVG value={qrPayload as string} size={84} level="M" />
                     </div>
@@ -1907,10 +1907,14 @@ function BorderedTemplate({ data }: { data: TemplateData }) {
                   </div>
                 )}
                 {showSign && (
-                  <div style={{ marginTop: showQr ? "10px" : 0 }}>
-                    {data.signatureName && <p style={{ fontSize: "12px", fontStyle: "italic", margin: "0 0 2px" }}>{data.signatureName}</p>}
-                    <p style={{ fontSize: "10px", margin: 0 }}>Authorised Signatory For</p>
-                    <p style={{ fontSize: "11px", fontWeight: 800, margin: "2px 0 0" }}>{data.orgName}</p>
+                  <div style={{ marginTop: showQr ? "20px" : "60px" }}>
+                    <div style={{ height: "50px" }}></div>
+                    <div style={{ borderTop: "1px solid #111827", paddingTop: "6px", margin: "0 auto", width: "90%" }}>
+                      {data.signatureName && <p style={{ fontSize: "12px", fontWeight: 700, margin: "0 0 2px" }}>{data.signatureName}</p>}
+                      {data.signatureDesignation && <p style={{ fontSize: "10px", fontStyle: "italic", color: "#6b7280", margin: "0 0 4px" }}>{data.signatureDesignation}</p>}
+                      <p style={{ fontSize: "10px", margin: 0 }}>Authorised Signatory</p>
+                      <p style={{ fontSize: "11px", fontWeight: 800, margin: "2px 0 0" }}>For {data.orgName}</p>
+                    </div>
                   </div>
                 )}
               </td>
@@ -1929,7 +1933,7 @@ function BorderedTemplate({ data }: { data: TemplateData }) {
 function CorporateTemplate({ data }: { data: TemplateData }) {
   const cur = currency(data);
   return (
-    <div className="invoice-template" style={{ fontFamily: fontFamily(data), background: "white", color: "#1e293b", padding: "40px", maxWidth: "800px", margin: "0 auto" }}>
+    <div className="invoice-template" style={{ fontFamily: fontFamily(data), background: "white", color: "#1e293b", padding: "40px", maxWidth: "800px", margin: "0 auto", minHeight: "100vh", paddingBottom: "16px" }}>
       {/* Corporate header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px" }}>
         <div>
@@ -2077,7 +2081,7 @@ function CorporateTemplate({ data }: { data: TemplateData }) {
 function GradientTemplate({ data }: { data: TemplateData }) {
   const cur = currency(data);
   return (
-    <div className="invoice-template" style={{ fontFamily: fontFamily(data), background: "white", color: "#1e293b", padding: "40px", maxWidth: "800px", margin: "0 auto" }}>
+    <div className="invoice-template" style={{ fontFamily: fontFamily(data), background: "white", color: "#1e293b", padding: "40px", maxWidth: "800px", margin: "0 auto", minHeight: "100vh", paddingBottom: "16px" }}>
       {/* Gradient header */}
       <div style={{ background: accentGradient(data, "#ec4899"), margin: "-40px -40px 32px", padding: "36px 40px", borderRadius: "0 0 28px 28px", color: "white" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -2201,7 +2205,7 @@ function GradientTemplate({ data }: { data: TemplateData }) {
 function BlueTemplate({ data }: { data: TemplateData }) {
   const cur = currency(data);
   return (
-    <div className="invoice-template" style={{ fontFamily: fontFamily(data), background: "white", color: "#1e293b", padding: "40px", maxWidth: "800px", margin: "0 auto" }}>
+    <div className="invoice-template" style={{ fontFamily: fontFamily(data), background: "white", color: "#1e293b", padding: "40px", maxWidth: "800px", margin: "0 auto", minHeight: "100vh", paddingBottom: "16px" }}>
       {/* Blue header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
         <div>
@@ -2330,7 +2334,7 @@ function BlueTemplate({ data }: { data: TemplateData }) {
 function GreenTemplate({ data }: { data: TemplateData }) {
   const cur = currency(data);
   return (
-    <div className="invoice-template" style={{ fontFamily: fontFamily(data), background: "white", color: "#1e293b", padding: "40px", maxWidth: "800px", margin: "0 auto" }}>
+    <div className="invoice-template" style={{ fontFamily: fontFamily(data), background: "white", color: "#1e293b", padding: "40px", maxWidth: "800px", margin: "0 auto", minHeight: "100vh", paddingBottom: "16px" }}>
       {/* Green header */}
       <div style={{ background: accentGradient(data, "#059669"), margin: "-40px -40px 28px", padding: "32px 40px", borderRadius: "0 0 24px 24px", color: "white" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -2443,7 +2447,7 @@ function GreenTemplate({ data }: { data: TemplateData }) {
 function DarkTemplate({ data }: { data: TemplateData }) {
   const cur = currency(data);
   return (
-    <div className="invoice-template" style={{ fontFamily: fontFamily(data), background: "#0f172a", color: "#e2e8f0", padding: "40px", maxWidth: "800px", margin: "0 auto" }}>
+    <div className="invoice-template" style={{ fontFamily: fontFamily(data), background: "#0f172a", color: "#e2e8f0", padding: "40px", maxWidth: "800px", margin: "0 auto", minHeight: "100vh", paddingBottom: "16px" }}>
       {/* Dark header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px", paddingBottom: "20px", borderBottom: "1px solid #1e293b" }}>
         <div>
@@ -2563,7 +2567,7 @@ function DarkTemplate({ data }: { data: TemplateData }) {
 function CompactTemplate({ data }: { data: TemplateData }) {
   const cur = currency(data);
   return (
-    <div className="invoice-template" style={{ fontFamily: fontFamily(data), background: "white", color: "#1e293b", padding: "24px", maxWidth: "800px", margin: "0 auto", fontSize: "11px" }}>
+    <div className="invoice-template" style={{ fontFamily: fontFamily(data), background: "white", color: "#1e293b", padding: "24px", maxWidth: "800px", margin: "0 auto", fontSize: "11px", minHeight: "100vh", paddingBottom: "16px" }}>
       {/* Compact header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "8px", borderBottom: `2px solid ${accent(data, "#0f172a")}`, marginBottom: "12px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
