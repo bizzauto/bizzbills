@@ -7,6 +7,7 @@ import { Prisma } from "@prisma/client";
 import { calculateInvoiceSummary, sanitizeInvoiceDraft, type InvoiceDraft } from "@/lib/invoicing";
 import { snapshotFromInvoice, diffSnapshots } from "@/lib/diff";
 import { autoPostInvoiceJournal, deleteAutoJournal } from "@/lib/journal";
+import { syncPartyAndBalance } from "@/lib/pipeline";
 
 async function getAuthInvoice(id: string, userId: string) {
   const orgId = await getSessionOrgId(userId);
@@ -184,6 +185,16 @@ export async function PATCH(
             summary,
             tx,
           );
+          await syncPartyAndBalance(tx, invoice.orgId, clean.customerName, {
+            type: "customer",
+            gstin: clean.customerGstin,
+            email: clean.customerEmail,
+            phone: clean.customerPhone,
+            address: clean.customerAddress,
+          });
+          if (invoice.customerName !== clean.customerName) {
+            await syncPartyAndBalance(tx, invoice.orgId, invoice.customerName);
+          }
         }
 
         return { updated, changes };
@@ -250,6 +261,9 @@ export async function DELETE(
           await deleteAutoJournal(tx, invoice.orgId, `INV-${invoice.invoiceNumber}`);
         }
         await tx.invoice.delete({ where: { id } });
+        if (invoice.orgId && invoice.customerName) {
+          await syncPartyAndBalance(tx, invoice.orgId, invoice.customerName);
+        }
       });
       return NextResponse.json({ ok: true });
   } catch {

@@ -75,6 +75,70 @@ export default function PartyDetailPage() {
         </div>
       )}
 
+      {/* Party Ledger Statement Table */}
+      <div className="mt-6 rounded-[1.5rem] border border-white/10 bg-slate-900/70 p-6">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-white">Party Ledger Statement</h2>
+            <p className="text-xs text-slate-400">Complete transaction history and running balance</p>
+          </div>
+          <button
+            onClick={() => window.print()}
+            className="rounded-xl border border-white/10 bg-slate-950 px-3 py-1.5 text-xs text-slate-300 hover:border-white/20 hover:text-white"
+          >
+            🖨 Print Ledger
+          </button>
+        </div>
+
+        {party.ledger && party.ledger.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs text-slate-300">
+              <thead className="border-b border-white/10 bg-slate-950/60 text-slate-400 uppercase text-[10px]">
+                <tr>
+                  <th className="p-3">Date</th>
+                  <th className="p-3">Type</th>
+                  <th className="p-3">Ref</th>
+                  <th className="p-3">Description</th>
+                  <th className="p-3 text-right">Debit</th>
+                  <th className="p-3 text-right">Credit</th>
+                  <th className="p-3 text-right">Balance</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {party.ledger.map((entry: any) => (
+                  <tr key={entry.id} className="hover:bg-slate-950/40">
+                    <td className="p-3 text-slate-400">{entry.dateStr}</td>
+                    <td className="p-3">
+                      <span className={`rounded-md px-2 py-0.5 text-[10px] font-medium ${
+                        entry.type === "Invoice" ? "bg-cyan-500/10 text-cyan-300" :
+                        entry.type === "Payment" ? "bg-emerald-500/10 text-emerald-300" :
+                        entry.type === "Credit Note" ? "bg-purple-500/10 text-purple-300" :
+                        "bg-amber-500/10 text-amber-300"
+                      }`}>
+                        {entry.type}
+                      </span>
+                    </td>
+                    <td className="p-3 font-mono font-medium text-white">{entry.reference}</td>
+                    <td className="p-3 text-slate-300">{entry.description}</td>
+                    <td className="p-3 text-right font-medium text-slate-200">
+                      {entry.debit > 0 ? formatAmount(entry.debit, currentOrgCurrency) : "—"}
+                    </td>
+                    <td className="p-3 text-right font-medium text-emerald-400">
+                      {entry.credit > 0 ? formatAmount(entry.credit, currentOrgCurrency) : "—"}
+                    </td>
+                    <td className="p-3 text-right font-semibold text-white">
+                      {formatAmount(entry.runningBalance, currentOrgCurrency)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-sm text-slate-500">No transactions recorded for this party yet.</p>
+        )}
+      </div>
+
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <div className="rounded-[1.5rem] border border-white/10 bg-slate-900/70 p-6">
           <div className="mb-4 flex items-center justify-between">

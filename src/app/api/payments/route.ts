@@ -5,6 +5,7 @@ import { getSessionOrgId } from "@/lib/org";
 import { prisma } from "@/lib/db";
 import { generateUpiLink } from "@/lib/upi";
 import { autoPostPaymentJournal } from "@/lib/journal";
+import { syncPaymentToInvoice, syncPartyAndBalance } from "@/lib/pipeline";
 
 
 
@@ -64,25 +65,37 @@ export async function POST(request: Request) {
       }
     }
 
-    const payment = await prisma.payment.create({
-      data: {
-        orgId,
-        invoiceId: invoiceId ?? null,
-        amount,
-        currency: currency ?? "INR",
-        method: method ?? "upi",
-        notes: notes ?? null,
-      },
-      include: { invoice: { select: { invoiceNumber: true, customerName: true } } },
-    });
+    const payment = await prisma.$transaction(async (tx) => {
+      const created = await tx.payment.create({
+        data: {
+          orgId,
+          invoiceId: invoiceId ?? null,
+          amount,
+          currency: currency ?? "INR",
+          method: method ?? "upi",
+          status: "completed",
+          notes: notes ?? null,
+          paidAt: new Date(),
+        },
+        include: { invoice: { select: { invoiceNumber: true, customerName: true } } },
+      });
 
-    // Auto-post the receipt to accounting: Debit Cash, Credit Receivable.
-    // Helper never throws, so the payment flow stays intact.
-    await autoPostPaymentJournal(
-      orgId,
-      { id: payment.id, amount },
-      payment.invoice?.invoiceNumber ? `Payment for Invoice ${payment.invoice.invoiceNumber}` : `Direct payment ${payment.id.slice(0, 8)}`,
-    );
+      // Auto-post the receipt to accounting: Debit Cash, Credit Receivable.
+      await autoPostPaymentJournal(
+        orgId,
+        { id: created.id, amount },
+        created.invoice?.invoiceNumber ? `Payment for Invoice ${created.invoice.invoiceNumber}` : `Direct payment ${created.id.slice(0, 8)}`,
+        tx,
+      );
+
+      if (invoiceId) {
+        await syncPaymentToInvoice(tx, orgId, invoiceId);
+      } else if (created.invoice?.customerName) {
+        await syncPartyAndBalance(tx, orgId, created.invoice.customerName);
+      }
+
+      return created;
+    });
 
     // Generate UPI link if method is UPI
     let upiLink: string | null = null;

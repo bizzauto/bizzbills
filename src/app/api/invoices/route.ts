@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { Prisma, PrismaClient } from "@prisma/client";
 import { calculateInvoiceSummary, sanitizeInvoiceDraft, type InvoiceDraft, type InvoiceSummary } from "@/lib/invoicing";
 import { autoPostInvoiceJournal } from "@/lib/journal";
+import { syncPartyAndBalance, syncInvoiceInventory } from "@/lib/pipeline";
 import { snapshotFromInvoice } from "@/lib/diff";
 import { getPlanLimit, invoiceCountWhere } from "@/lib/planLimits";
 
@@ -247,6 +248,29 @@ async function createInvoiceTx(
 
     if (orgId) {
       await autoPostInvoiceJournal(orgId, created, clean, summary, tx);
+
+      // System Integration: Auto-create/sync Party and update Party Outstanding Balance
+      await syncPartyAndBalance(tx, orgId, created.customerName, {
+        type: "customer",
+        gstin: clean.customerGstin,
+        email: clean.customerEmail,
+        phone: clean.customerPhone,
+        address: clean.customerAddress,
+      });
+
+      // System Integration: Auto-deduct stock and record Stock Movement for products sold
+      await syncInvoiceInventory(
+        tx,
+        orgId,
+        `INV-${created.invoiceNumber}`,
+        clean.lines.map((l) => ({
+          description: l.description,
+          quantity: l.quantity,
+          hsnCode: l.hsnCode,
+          unitPrice: l.unitPrice,
+        })),
+        "out",
+      );
 
       // Persist entered bank details into the org so they pre-fill every
       // future invoice (saved once, reused everywhere). Only overwrite a

@@ -15,7 +15,131 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const { id } = await params;
   const party = await prisma.party.findFirst({ where: { id, orgId }, include: { addresses: true } });
   if (!party) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json(party);
+
+  // Build complete Party Ledger statement
+  const isVendor = party.type === "vendor";
+
+  const [invoices, payments, creditNotes, debitNotes] = await Promise.all([
+    prisma.invoice.findMany({
+      where: {
+        orgId,
+        customerName: { equals: party.name, mode: "insensitive" },
+        status: { notIn: ["draft", "cancelled"] },
+      },
+      select: { id: true, invoiceNumber: true, total: true, date: true, createdAt: true, status: true },
+    }),
+    prisma.payment.findMany({
+      where: {
+        orgId,
+        status: "completed",
+        invoice: { customerName: { equals: party.name, mode: "insensitive" } },
+      },
+      select: { id: true, amount: true, method: true, paidAt: true, createdAt: true, invoice: { select: { invoiceNumber: true } } },
+    }),
+    prisma.creditNote.findMany({
+      where: {
+        orgId,
+        customerName: { equals: party.name, mode: "insensitive" },
+        status: { notIn: ["draft", "cancelled"] },
+      },
+      select: { id: true, creditNoteNumber: true, total: true, date: true, createdAt: true, reason: true },
+    }),
+    prisma.debitNote.findMany({
+      where: {
+        orgId,
+        supplierName: { equals: party.name, mode: "insensitive" },
+        status: { notIn: ["draft", "cancelled"] },
+      },
+      select: { id: true, debitNoteNumber: true, total: true, date: true, createdAt: true, reason: true },
+    }),
+  ]);
+
+  type RawEntry = {
+    id: string;
+    timestamp: number;
+    dateStr: string;
+    type: string;
+    reference: string;
+    description: string;
+    debit: number;
+    credit: number;
+  };
+
+  const rawEntries: RawEntry[] = [];
+
+  for (const inv of invoices) {
+    const d = inv.date ? new Date(inv.date) : inv.createdAt;
+    rawEntries.push({
+      id: inv.id,
+      timestamp: d.getTime(),
+      dateStr: inv.date || d.toISOString().split("T")[0],
+      type: "Invoice",
+      reference: `#${inv.invoiceNumber}`,
+      description: `Sales Invoice ${inv.invoiceNumber} (${inv.status})`,
+      debit: isVendor ? 0 : inv.total,
+      credit: isVendor ? inv.total : 0,
+    });
+  }
+
+  for (const p of payments) {
+    const d = p.paidAt ?? p.createdAt;
+    rawEntries.push({
+      id: p.id,
+      timestamp: d.getTime(),
+      dateStr: d.toISOString().split("T")[0],
+      type: "Payment",
+      reference: p.invoice?.invoiceNumber ? `#${p.invoice.invoiceNumber}` : p.method.toUpperCase(),
+      description: `Payment received (${p.method.toUpperCase()})`,
+      debit: isVendor ? p.amount : 0,
+      credit: isVendor ? 0 : p.amount,
+    });
+  }
+
+  for (const cn of creditNotes) {
+    const d = cn.date ?? cn.createdAt;
+    rawEntries.push({
+      id: cn.id,
+      timestamp: d.getTime(),
+      dateStr: d.toISOString().split("T")[0],
+      type: "Credit Note",
+      reference: `#${cn.creditNoteNumber}`,
+      description: `Credit Note / Return (${cn.reason})`,
+      debit: isVendor ? cn.total : 0,
+      credit: isVendor ? 0 : cn.total,
+    });
+  }
+
+  for (const dn of debitNotes) {
+    const d = dn.date ?? dn.createdAt;
+    rawEntries.push({
+      id: dn.id,
+      timestamp: d.getTime(),
+      dateStr: d.toISOString().split("T")[0],
+      type: "Debit Note",
+      reference: `#${dn.debitNoteNumber}`,
+      description: `Debit Note / Return (${dn.reason})`,
+      debit: isVendor ? 0 : dn.total,
+      credit: isVendor ? dn.total : 0,
+    });
+  }
+
+  // Sort entries chronologically
+  rawEntries.sort((a, b) => a.timestamp - b.timestamp);
+
+  // Compute running balance
+  let running = 0;
+  const ledger = rawEntries.map((e) => {
+    running = running + e.debit - e.credit;
+    return {
+      ...e,
+      runningBalance: Math.round(running * 100) / 100,
+    };
+  });
+
+  return NextResponse.json({
+    ...party,
+    ledger,
+  });
 }
 
 /** Whitelist of party fields clients may set — never spread the raw request body. */

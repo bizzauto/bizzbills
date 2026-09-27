@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import type { AccountType } from "@prisma/client";
 import { Prisma } from "@prisma/client";
 import { ensureDefaultAccounts, postLedgerLines } from "@/lib/journal";
+import { syncPartyAndBalance, syncInvoiceInventory } from "@/lib/pipeline";
 
 
 
@@ -147,6 +148,26 @@ export async function POST(request: Request) {
       // Ledger mirrors the journal so the ledger page and reports pick it up.
       await postLedgerLines(tx, orgId, entry.id, entryDate, jeLines);
       }
+
+      // Reduce inventory for purchase returned items
+      await syncInvoiceInventory(
+        tx,
+        orgId,
+        `DN-${debitNoteNumber}`,
+        cleanLines.map((l) => ({
+          description: l.description,
+          quantity: l.quantity,
+          hsnCode: l.hsnCode,
+          unitPrice: l.unitPrice,
+        })),
+        "out",
+      );
+
+      // System Integration: Re-sync vendor balance
+      await syncPartyAndBalance(tx, orgId, supplierName, {
+        type: "vendor",
+        gstin: supplierGstin,
+      });
 
       return created;
     });

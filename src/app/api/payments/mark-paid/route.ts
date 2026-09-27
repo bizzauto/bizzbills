@@ -5,6 +5,7 @@ import { getSessionOrgId } from "@/lib/org";
 import { prisma } from "@/lib/db";
 import { Prisma } from "@prisma/client";
 import { autoPostPaymentJournal } from "@/lib/journal";
+import { syncPaymentToInvoice } from "@/lib/pipeline";
 
 
 
@@ -92,6 +93,9 @@ export async function POST(request: Request) {
         `Payment for Invoice ${invoice.invoiceNumber}`,
         tx,
       );
+
+      // System Integration: Re-sync invoice amountPaid, status, and Party outstanding balance
+      await syncPaymentToInvoice(tx, orgId, invoice.id);
 
       return created;
     });
